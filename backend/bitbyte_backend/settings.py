@@ -1,15 +1,18 @@
 from pathlib import Path
 from datetime import timedelta
+# import dj_database_url
+# from decouple import config
+
+import os
 import dj_database_url
-from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = config("SECRET_KEY")
+SECRET_KEY = os.environ.get("SECRET_KEY", "unsafe-secret-key")
 
-DEBUG = config("DEBUG", cast=bool)
+DEBUG = False
 
-ALLOWED_HOSTS = config("ALLOWED_HOSTS").split(",")
+ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     'django.contrib.admin', 
@@ -67,7 +70,7 @@ WSGI_APPLICATION = 'bitbyte_backend.wsgi.application'
 # }
 
 DATABASES = {
-    'default': dj_database_url.parse(config("DATABASE_URL"))
+    'default': dj_database_url.parse(os.environ.get("DATABASE_URL"))
 }
 
 AUTH_USER_MODEL = 'accounts.User'
