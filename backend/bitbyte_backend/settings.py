@@ -1,23 +1,25 @@
 from pathlib import Path
 from datetime import timedelta
+import dj_database_url
+from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'bitbyte-secret-key-2024-senthil'
+SECRET_KEY = config("SECRET_KEY")
 
-DEBUG = True
+DEBUG = config("DEBUG", cast=bool)
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = config("ALLOWED_HOSTS").split(",")
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
+    'django.contrib.admin', 
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'rest_framework_simplejwt',
+    # 'rest_framework_simplejwt',
     'corsheaders',
     'accounts',
 ]
@@ -53,15 +55,19 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'bitbyte_backend.wsgi.application'
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'bitbyte_db',
+#         'USER': 'postgres',
+#         'PASSWORD': 'Senthil@2003',
+#         'HOST': 'localhost',
+#         'PORT': '5432',
+#     }
+# }
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'bitbyte_db',
-        'USER': 'postgres',
-        'PASSWORD': 'Senthil@2003',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
+    'default': dj_database_url.parse(config("DATABASE_URL"))
 }
 
 AUTH_USER_MODEL = 'accounts.User'
