@@ -7,6 +7,23 @@ from django.contrib.auth import authenticate
 from .models import User, AdminProfile, CustomerProfile
 from .serializers import *
 
+# class LoginView(APIView):
+#     permission_classes = [AllowAny]
+
+#     def post(self, request):
+#         email = request.data.get('email')
+#         password = request.data.get('password')
+#         user = authenticate(request, username=email, password=password)
+#         if user:
+#             refresh = RefreshToken.for_user(user)
+#             return Response({
+#                 'access': str(refresh.access_token),
+#                 'refresh': str(refresh),
+#                 'role': user.role,
+#                 'email': user.email,
+#             })
+#         return Response({'error': 'Invalid credentials'}, status=400)
+
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
@@ -14,21 +31,14 @@ class LoginView(APIView):
         email = request.data.get('email')
         password = request.data.get('password')
         user = authenticate(request, username=email, password=password)
-        # if user:
-        #     # refresh = RefreshToken.for_user(user)
-        #     return Response({
-        #         'access': str(refresh.access_token),
-        #         'refresh': str(refresh),
-        #         'role': user.role,
-        #         'email': user.email,
-        #     })
 
         if user:
-    return Response({
-        'message': 'Login successful',
-        'role': user.role,
-        'email': user.email,
-    })
+            return Response({
+                'message': 'Login successful',
+                'role': user.role,
+                'email': user.email,
+            })
+
         return Response({'error': 'Invalid credentials'}, status=400)
 
 class CreateAdminView(APIView):
