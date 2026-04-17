@@ -1,4 +1,4 @@
-from django.db import migrations
+from django.db import migrations, models
 
 def fix_customer_ids(apps, schema_editor):
     CustomerProfile = apps.get_model('accounts', 'CustomerProfile')
@@ -12,9 +12,16 @@ def fix_customer_ids(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0002_customerprofile_aadhaar_no_and_more'),  # உன் last migration
+        ('accounts', '0002_customerprofile_aadhaar_no_and_more'),
     ]
 
     operations = [
+        # Step 1: Data fix பண்ணு
         migrations.RunPython(fix_customer_ids, migrations.RunPython.noop),
+        # Step 2: இப்போ unique constraint போடு
+        migrations.AlterField(
+            model_name='customerprofile',
+            name='customer_id',
+            field=models.CharField(blank=True, max_length=20, unique=True),
+        ),
     ]
