@@ -80,6 +80,14 @@ class CustomerProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='customer_profile')
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_customers')
 
+    # ✅ இந்த line புதுசா add பண்ணு — மத்தபடி எல்லாம் same
+    assigned_admin = models.ForeignKey(
+        'AdminProfile',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='assigned_customers'
+    )
+
     # Personal Info
     name = models.CharField(max_length=100)
     mobile_number = models.CharField(max_length=10)

@@ -36,6 +36,9 @@ export default function AdminDashboard() {
   const navigate = useNavigate()
   const [customers, setCustomers] = useState([])
   const [showForm, setShowForm] = useState(false)
+  // ✅ இந்த 2 lines add பண்ணு:
+const [admins, setAdmins] = useState([])
+const [selectedAdmin, setSelectedAdmin] = useState(null)
   const [msg, setMsg] = useState('')
   const [msgType, setMsgType] = useState('success') // 'success' | 'error'
   const [form, setForm] = useState(emptyForm)
@@ -47,9 +50,24 @@ export default function AdminDashboard() {
     } catch {}
   }
 
-  useEffect(() => { fetchCustomers() }, [])
+  // ✅ இந்த function புதுசா add பண்ணு:
+const fetchAdmins = async () => {
+  try {
+    const res = await api.get('/admins/')
+    setAdmins(res.data)
+  } catch {}
+}
+
+  useEffect(() => { fetchCustomers(); fetchAdmins() }, [])
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value })
+
+  const handleAdminChange = (e) => {
+  const adminId = parseInt(e.target.value)
+  const admin = admins.find(a => a.id === adminId)
+  setSelectedAdmin(admin || null)
+  setForm({ ...form, assigned_admin_id: adminId })
+}
 
   const handleSubmit = async e => {
     e.preventDefault()
@@ -173,6 +191,37 @@ export default function AdminDashboard() {
                   <input name="annual_salary" value={form.annual_salary} onChange={handleChange} required maxLength={10} style={inputStyle} placeholder="e.g. 500000" />
                 </Field>
               </Grid>
+
+              {/* இருக்கற Occupation section கீழே இதை add பண்ணு */}
+<SectionTitle>Admin Info</SectionTitle>
+<Grid cols={3}>
+  <Field label="Admin Name *">
+    <select onChange={handleAdminChange} style={{ ...inputStyle, cursor: 'pointer' }}>
+      <option value="">Select Admin</option>
+      {admins.map(a => (
+        <option key={a.id} value={a.id} style={{ background: '#1a1f26' }}>
+          {a.name}
+        </option>
+      ))}
+    </select>
+  </Field>
+  <Field label="Admin ID">
+    <input
+      value={selectedAdmin?.admin_id || ''}
+      readOnly
+      style={{ ...inputStyle, opacity: 0.6, cursor: 'not-allowed' }}
+      placeholder="Auto fetch"
+    />
+  </Field>
+  <Field label="Admin Contact No">
+    <input
+      value={selectedAdmin?.admin_contact_no || ''}
+      readOnly
+      style={{ ...inputStyle, opacity: 0.6, cursor: 'not-allowed' }}
+      placeholder="Auto fetch"
+    />
+  </Field>
+</Grid>
 
               <button type="submit" style={{ marginTop: '1.5rem', padding: '0.75rem 2.5rem', background: 'linear-gradient(to right,#a1faff,#00ffab)', border: 'none', borderRadius: '0.5rem', fontWeight: 700, cursor: 'pointer', color: '#006165', fontSize: '0.875rem' }}>
                 Create Customer

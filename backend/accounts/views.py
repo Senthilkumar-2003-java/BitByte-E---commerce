@@ -84,7 +84,33 @@ class DashboardView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        return Response({
-            'role': request.user.role,
-            'email': request.user.email,
-        })
+        user = request.user
+        data = {'role': user.role, 'email': user.email}
+
+        if user.role == 'customer':
+            try:
+                p = user.customer_profile
+                data.update({
+                    'name': p.name,
+                    'mobile_number': p.mobile_number,
+                    'customer_id': p.customer_id,
+                    'door_no': p.door_no,
+                    'street_name': p.street_name,
+                    'town_name': p.town_name,
+                    'city_name': p.city_name,
+                    'district': p.district,
+                    'state': p.state,
+                    'aadhaar_no': p.aadhaar_no,
+                    'pan_no': p.pan_no,
+                    'occupation': p.occupation,
+                    'occupation_detail': p.occupation_detail,
+                    'annual_salary': p.annual_salary,
+                    'created_at': p.created_at,
+                    'admin_name': p.assigned_admin.admin_name if p.assigned_admin else None,
+                    'admin_id': p.assigned_admin.admin_id if p.assigned_admin else None,
+                    'admin_contact_no': p.assigned_admin.admin_contact_no if p.assigned_admin else None,
+                })
+            except CustomerProfile.DoesNotExist:
+                pass
+
+        return Response(data)
