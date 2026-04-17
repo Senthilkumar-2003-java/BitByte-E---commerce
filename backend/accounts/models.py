@@ -79,9 +79,40 @@ class AdminProfile(models.Model):
 class CustomerProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='customer_profile')
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_customers')
+
+    # Personal Info
     name = models.CharField(max_length=100)
     mobile_number = models.CharField(max_length=10)
+
+    # Address
+    door_no = models.CharField(max_length=25, blank=True, null=True)
+    street_name = models.CharField(max_length=100, blank=True, null=True)
+    town_name = models.CharField(max_length=100, blank=True, null=True)
+    city_name = models.CharField(max_length=25, blank=True, null=True)
+    district = models.CharField(max_length=25, blank=True, null=True)
+    state = models.CharField(max_length=25, blank=True, null=True)
+
+    # Identity
+    aadhaar_no = models.CharField(max_length=12, blank=True, null=True)
+    pan_no = models.CharField(max_length=10, blank=True, null=True)
+
+    # Occupation
+    occupation = models.CharField(max_length=20, choices=OCCUPATION_CHOICES, blank=True, null=True)
+    occupation_detail = models.CharField(max_length=25, blank=True, null=True)
+    annual_salary = models.CharField(max_length=10, blank=True, null=True)
+
+    # Auto-generated customer ID
+    customer_id = models.CharField(max_length=20, unique=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.customer_id:
+            from django.utils import timezone
+            year = timezone.now().year
+            count = CustomerProfile.objects.count() + 1
+            self.customer_id = f"BBCUS{year}{count:07d}"
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name

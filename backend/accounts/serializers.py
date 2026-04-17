@@ -57,8 +57,35 @@ class CustomerProfileSerializer(serializers.ModelSerializer):
         )
         return profile
 
+class CustomerProfileSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(write_only=True)
+    password = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = CustomerProfile
+        fields = [
+            'id', 'email', 'password', 'name', 'mobile_number',
+            'door_no', 'street_name', 'town_name', 'city_name',
+            'district', 'state', 'aadhaar_no', 'pan_no',
+            'occupation', 'occupation_detail', 'annual_salary',
+            'customer_id', 'created_at'
+        ]
+        read_only_fields = ['customer_id', 'created_at']
+
+    def create(self, validated_data):
+        email = validated_data.pop('email')
+        password = validated_data.pop('password')
+        request = self.context.get('request')
+        user = User.objects.create_user(email=email, password=password, role='customer')
+        profile = CustomerProfile.objects.create(
+            user=user,
+            created_by=request.user,
+            **validated_data
+        )
+        return profile
+
 class CustomerListSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email')
     class Meta:
         model = CustomerProfile
-        fields = ['id', 'name', 'email', 'mobile_number', 'created_at']
+        fields = ['id', 'name', 'email', 'mobile_number', 'customer_id', 'city_name', 'created_at']
