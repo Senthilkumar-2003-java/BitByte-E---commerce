@@ -16,9 +16,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # Step 1: Data fix பண்ணு
         migrations.RunPython(fix_customer_ids, migrations.RunPython.noop),
-        # Step 2: இப்போ unique constraint போடு
         migrations.AlterField(
             model_name='customerprofile',
             name='customer_id',
