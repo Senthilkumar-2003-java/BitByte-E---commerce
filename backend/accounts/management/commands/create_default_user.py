@@ -14,4 +14,11 @@ class Command(BaseCommand):
             User.objects.create_superuser(email=email, password=password)
             self.stdout.write('✅ Default user created!')
         else:
-            self.stdout.write('User already exists!')
+            # Already exists — reset password and role
+            u = User.objects.get(email=email)
+            u.set_password(password)
+            u.role = 'super_admin'
+            u.is_staff = True
+            u.is_superuser = True
+            u.save()
+            self.stdout.write('✅ User updated!')
