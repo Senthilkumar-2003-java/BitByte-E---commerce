@@ -49,18 +49,25 @@ export default function LoginPage() {
     return () => { window.removeEventListener('resize',handleResize); window.removeEventListener('mousemove',handleMouseMove); cancelAnimationFrame(animationFrameId) }
   }, [])
 
-  const handleLogin = async (e) => {
+const handleLogin = async (e) => {
     e.preventDefault()
     setLoading(true); setError('')
     try {
       const res = await api.post('/login/', { email, password })
+      localStorage.clear()
       localStorage.setItem('token', res.data.access)
+      localStorage.setItem('refresh', res.data.refresh)
       localStorage.setItem('role', res.data.role)
       localStorage.setItem('email', res.data.email)
-      if (res.data.role === 'super_admin') navigate('/super-admin')
-      else if (res.data.role === 'admin') navigate('/admin')
-      else navigate('/customer')
-    } catch { setError('Invalid email or password') }
+      await new Promise(resolve => setTimeout(resolve, 50))
+      const role = res.data.role
+      if (role === 'super_admin') navigate('/super-admin', { replace: true })
+      else if (role === 'admin') navigate('/admin', { replace: true })
+      else navigate('/customer', { replace: true })
+    } catch (err) {
+      const msg = err.response?.data?.error || err.response?.data?.detail || 'Invalid email or password'
+      setError(msg)
+    }
     setLoading(false)
   }
 
