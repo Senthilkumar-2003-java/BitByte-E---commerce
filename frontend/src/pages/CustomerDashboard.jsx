@@ -49,12 +49,12 @@ export default function CustomerDashboard() {
     api.get('/dashboard/').then(res => setProfile(res.data)).catch(() => {})
   }, [])
 
-  const card  = { background:'rgba(255,255,255,0.03)', border:'1px solid rgba(103,232,249,0.1)', borderRadius:'20px', padding:'22px 24px', marginBottom:'16px' }
-  const sHead = { color:'#86efac', fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', margin:'0 0 16px', paddingBottom:'10px', borderBottom:'1px solid rgba(103,232,249,0.1)' }
-  const lbl   = { color:'#6b7280', fontSize:'11px', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'4px' }
-  const val   = { color:'#f1f5f9', fontSize:'14px' }
-  const g2    = { display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px' }
-  const g3    = { display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'16px' }
+  const card  = { background:'rgba(255,255,255,0.03)', border:'1px solid rgba(103,232,249,0.1)', borderRadius:'20px', padding:'32px 36px', marginBottom:'20px' }
+  const sHead = { color:'#86efac', fontSize:'13px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', margin:'0 0 20px', paddingBottom:'14px', borderBottom:'1px solid rgba(103,232,249,0.1)' }
+  const lbl   = { color:'#6b7280', fontSize:'12px', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'6px' }
+  const val   = { color:'#f1f5f9', fontSize:'15px' }
+  const g2    = { display:'grid', gridTemplateColumns:'1fr 1fr', gap:'20px' }
+  const g3    = { display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'20px' }
 
   const Row = ({ label, value, mono }) => (
     <div style={{ display:'flex', flexDirection:'column', gap:'4px' }}>
@@ -81,38 +81,36 @@ export default function CustomerDashboard() {
 
       <canvas ref={canvasRef} style={{ position:'fixed', top:0, left:0, pointerEvents:'none', zIndex:1, opacity:0.45 }} />
 
-      {/* Liquid orbs */}
       <div style={{ position:'absolute', borderRadius:'50%', filter:'blur(80px)', animation:'float-orb 20s infinite ease-in-out', zIndex:0, top:'8%', left:'8%', width:'380px', height:'380px', background:'rgba(34,211,238,0.08)' }} />
       <div style={{ position:'absolute', borderRadius:'50%', filter:'blur(80px)', animation:'float-orb 20s infinite ease-in-out', zIndex:0, bottom:'10%', right:'4%', width:'460px', height:'460px', background:'rgba(74,222,128,0.06)', animationDelay:'-5s' }} />
 
-      {/* Anti-gravity particles */}
       {PARTICLES.map(p => (
         <div key={p.id} style={{ position:'absolute', left:`${p.x}%`, bottom:'-100px', width:p.size, height:p.size, borderRadius:'40% 60% 60% 40% / 40% 40% 60% 60%', border:'1px solid rgba(34,211,238,0.25)', opacity:p.opacity, animation:`antigravity ${p.duration}s ${p.delay}s infinite linear`, '--op':p.opacity, pointerEvents:'none', zIndex:0 }} />
       ))}
 
       {/* Navbar */}
-      <div style={{ position:'relative', zIndex:10, background:'rgba(15,23,42,0.65)', borderBottom:'1px solid rgba(103,232,249,0.1)', padding:'14px 28px', display:'flex', justifyContent:'space-between', alignItems:'center', backdropFilter:'blur(16px)' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
-          <div style={{ width:34, height:34, borderRadius:'10px', background:'#4ade80', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900, color:'#065f46', fontSize:'15px' }}>B</div>
-          <span style={{ fontWeight:800, fontSize:'16px' }}>BitByte</span>
-          <span style={{ color:'#86efac', fontWeight:700, fontSize:'13px', marginLeft:'6px' }}>👤 My Dashboard</span>
-        </div>
+      <div style={{ position:'relative', zIndex:10, background:'rgba(15,23,42,0.65)', borderBottom:'1px solid rgba(103,232,249,0.1)', padding:'18px 40px', display:'flex', justifyContent:'space-between', alignItems:'center', backdropFilter:'blur(16px)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
-          <span style={{ color:'#6b7280', fontSize:'12px' }}>{localStorage.getItem('email')}</span>
+          <div style={{ width:38, height:38, borderRadius:'10px', background:'#4ade80', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900, color:'#065f46', fontSize:'17px' }}>B</div>
+          <span style={{ fontWeight:800, fontSize:'18px' }}>BitByte</span>
+          <span style={{ color:'#86efac', fontWeight:700, fontSize:'14px', marginLeft:'6px' }}>👤 My Dashboard</span>
+        </div>
+        <div style={{ display:'flex', alignItems:'center', gap:'14px' }}>
+          <span style={{ color:'#6b7280', fontSize:'14px' }}>{localStorage.getItem('email')}</span>
           <button onClick={() => { localStorage.clear(); navigate('/login') }}
-            style={{ padding:'6px 14px', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', borderRadius:'10px', fontSize:'12px', cursor:'pointer' }}>
+            style={{ padding:'8px 18px', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', borderRadius:'10px', fontSize:'13px', cursor:'pointer' }}>
             Logout
           </button>
         </div>
       </div>
 
-      <div style={{ position:'relative', zIndex:10, padding:'24px 28px', maxWidth:'900px', margin:'0 auto' }}>
+      <div style={{ position:'relative', zIndex:10, padding:'36px 40px', maxWidth:'1000px', margin:'0 auto' }}>
         {profile ? (
           <>
             {/* Customer ID Banner */}
-            <div className="cd-fade" style={{ background:'rgba(74,222,128,0.05)', border:'1px solid rgba(74,222,128,0.2)', borderRadius:'16px', padding:'16px 22px', marginBottom:'18px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-              <span style={{ color:'#9ca3af', fontSize:'13px' }}>Customer ID</span>
-              <span style={{ color:'#4ade80', fontFamily:'monospace', fontSize:'18px', fontWeight:700 }}>{profile.customer_id}</span>
+            <div className="cd-fade" style={{ background:'rgba(74,222,128,0.05)', border:'1px solid rgba(74,222,128,0.2)', borderRadius:'16px', padding:'20px 28px', marginBottom:'24px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <span style={{ color:'#9ca3af', fontSize:'15px' }}>Customer ID</span>
+              <span style={{ color:'#4ade80', fontFamily:'monospace', fontSize:'22px', fontWeight:700 }}>{profile.customer_id}</span>
             </div>
 
             <Section title="Personal Info" grid={g3}>
@@ -148,7 +146,7 @@ export default function CustomerDashboard() {
             </Section>
           </>
         ) : (
-          <p style={{ color:'#4b5563', textAlign:'center', padding:'80px 0' }}>Loading profile...</p>
+          <p style={{ color:'#4b5563', textAlign:'center', padding:'80px 0', fontSize:'16px' }}>Loading profile...</p>
         )}
       </div>
     </div>

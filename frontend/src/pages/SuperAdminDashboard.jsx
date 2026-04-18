@@ -74,16 +74,16 @@ export default function SuperAdminDashboard() {
     }
   }
 
-  const s = { // styles
+  const s = {
     wrap: { minHeight:'100vh', background:'#020617', color:'#f8fafc', fontFamily:'"Inter",system-ui,sans-serif', position:'relative', overflow:'hidden' },
     orb1: { position:'absolute', borderRadius:'50%', filter:'blur(80px)', animation:'float-orb 20s infinite ease-in-out', zIndex:0, top:'8%', left:'8%', width:'380px', height:'380px', background:'rgba(34,211,238,0.08)' },
     orb2: { position:'absolute', borderRadius:'50%', filter:'blur(80px)', animation:'float-orb 20s infinite ease-in-out', zIndex:0, bottom:'10%', right:'4%', width:'460px', height:'460px', background:'rgba(236,72,153,0.05)', animationDelay:'-5s' },
-    nav: { position:'relative', zIndex:10, background:'rgba(15,23,42,0.65)', borderBottom:'1px solid rgba(103,232,249,0.1)', padding:'14px 28px', display:'flex', justifyContent:'space-between', alignItems:'center', backdropFilter:'blur(16px)' },
-    content: { position:'relative', zIndex:10, padding:'24px 28px' },
-    card: { background:'rgba(255,255,255,0.03)', border:'1px solid rgba(103,232,249,0.1)', borderRadius:'20px', padding:'22px 24px', marginBottom:'18px' },
-    secHead: { color:'#a5f3fc', fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', margin:'0 0 14px', paddingBottom:'10px', borderBottom:'1px solid rgba(103,232,249,0.1)' },
-    lbl: { display:'block', color:'#6b7280', fontSize:'11px', marginBottom:'5px', textTransform:'uppercase', letterSpacing:'0.04em' },
-    inp: { width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid #374151', borderRadius:'10px', padding:'10px 13px', color:'#fff', fontSize:'13px', outline:'none', boxSizing:'border-box' },
+    nav: { position:'relative', zIndex:10, background:'rgba(15,23,42,0.65)', borderBottom:'1px solid rgba(103,232,249,0.1)', padding:'18px 40px', display:'flex', justifyContent:'space-between', alignItems:'center', backdropFilter:'blur(16px)' },
+    content: { position:'relative', zIndex:10, padding:'36px 40px', maxWidth:'1200px', margin:'0 auto' },
+    card: { background:'rgba(255,255,255,0.03)', border:'1px solid rgba(103,232,249,0.1)', borderRadius:'20px', padding:'32px 36px', marginBottom:'24px' },
+    secHead: { color:'#a5f3fc', fontSize:'13px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', margin:'0 0 20px', paddingBottom:'14px', borderBottom:'1px solid rgba(103,232,249,0.1)' },
+    lbl: { display:'block', color:'#6b7280', fontSize:'12px', marginBottom:'7px', textTransform:'uppercase', letterSpacing:'0.04em' },
+    inp: { width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid #374151', borderRadius:'10px', padding:'12px 16px', color:'#fff', fontSize:'14px', outline:'none', boxSizing:'border-box' },
   }
 
   const inp = s.inp
@@ -111,15 +111,15 @@ export default function SuperAdminDashboard() {
 
       {/* Navbar */}
       <div style={s.nav}>
-        <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
-          <div style={{ width:34, height:34, borderRadius:'10px', background:'#22d3ee', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900, color:'#fff', fontSize:'15px' }}>B</div>
-          <span style={{ fontWeight:800, fontSize:'16px' }}>BitByte</span>
-          <span style={{ color:'#a5f3fc', fontWeight:700, fontSize:'13px', marginLeft:'6px' }}>🛡️ Super Admin</span>
-        </div>
         <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
-          <span style={{ color:'#6b7280', fontSize:'12px' }}>{localStorage.getItem('email')}</span>
+          <div style={{ width:38, height:38, borderRadius:'10px', background:'#22d3ee', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900, color:'#fff', fontSize:'17px' }}>B</div>
+          <span style={{ fontWeight:800, fontSize:'18px' }}>BitByte</span>
+          <span style={{ color:'#a5f3fc', fontWeight:700, fontSize:'14px', marginLeft:'6px' }}>🛡️ Super Admin</span>
+        </div>
+        <div style={{ display:'flex', alignItems:'center', gap:'14px' }}>
+          <span style={{ color:'#6b7280', fontSize:'14px' }}>{localStorage.getItem('email')}</span>
           <button onClick={() => { localStorage.clear(); navigate('/login') }}
-            style={{ padding:'6px 14px', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', borderRadius:'10px', fontSize:'12px', cursor:'pointer' }}>
+            style={{ padding:'8px 18px', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', borderRadius:'10px', fontSize:'13px', cursor:'pointer' }}>
             Logout
           </button>
         </div>
@@ -127,15 +127,15 @@ export default function SuperAdminDashboard() {
 
       <div style={s.content}>
         {msg && (
-          <div style={{ background: msg.includes('✅') ? 'rgba(74,222,128,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${msg.includes('✅') ? 'rgba(74,222,128,0.25)' : 'rgba(239,68,68,0.3)'}`, color: msg.includes('✅') ? '#4ade80' : '#f87171', borderRadius:'12px', padding:'12px 16px', fontSize:'13px', marginBottom:'16px' }}>
+          <div style={{ background: msg.includes('✅') ? 'rgba(74,222,128,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${msg.includes('✅') ? 'rgba(74,222,128,0.25)' : 'rgba(239,68,68,0.3)'}`, color: msg.includes('✅') ? '#4ade80' : '#f87171', borderRadius:'12px', padding:'14px 20px', fontSize:'14px', marginBottom:'20px' }}>
             {msg}
           </div>
         )}
 
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'18px' }}>
-          <h2 style={{ fontSize:'17px', fontWeight:800, margin:0 }}>Admin Management</h2>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'24px' }}>
+          <h2 style={{ fontSize:'22px', fontWeight:800, margin:0 }}>Admin Management</h2>
           <button onClick={() => setShowForm(!showForm)} className="sa-grad-btn"
-            style={{ padding:'9px 22px', background:'linear-gradient(90deg,#22d3ee,#4ade80)', border:'none', borderRadius:'12px', fontWeight:800, color:'#006165', fontSize:'13px', cursor:'pointer' }}>
+            style={{ padding:'11px 28px', background:'linear-gradient(90deg,#22d3ee,#4ade80)', border:'none', borderRadius:'12px', fontWeight:800, color:'#006165', fontSize:'14px', cursor:'pointer' }}>
             {showForm ? 'Cancel' : '+ Create Admin'}
           </button>
         </div>
@@ -143,18 +143,18 @@ export default function SuperAdminDashboard() {
         {showForm && (
           <div style={s.card}>
             <p style={s.secHead}>Create New Admin</p>
-            <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'14px' }}>
+            <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
 
-              <p style={{ color:'#a5f3fc', fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', margin:'4px 0 0', paddingBottom:'8px', borderBottom:'1px solid rgba(103,232,249,0.1)' }}>Account Info</p>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' }}>
+              <p style={{ color:'#a5f3fc', fontSize:'12px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', margin:'4px 0 0', paddingBottom:'10px', borderBottom:'1px solid rgba(103,232,249,0.1)' }}>Account Info</p>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'14px' }}>
                 <div><label style={lbl}>Name *</label><input name="name" value={form.name} onChange={handleChange} required className="sa-inp" style={inp}/></div>
                 <div><label style={lbl}>Mobile *</label><input name="mobile_number" maxLength={10} value={form.mobile_number} onChange={handleChange} required className="sa-inp" style={inp}/></div>
                 <div><label style={lbl}>Email *</label><input type="email" name="email" value={form.email} onChange={handleChange} required className="sa-inp" style={inp}/></div>
                 <div><label style={lbl}>Password *</label><input type="password" name="password" value={form.password} onChange={handleChange} required className="sa-inp" style={inp}/></div>
               </div>
 
-              <p style={{ color:'#a5f3fc', fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', margin:'4px 0 0', paddingBottom:'8px', borderBottom:'1px solid rgba(103,232,249,0.1)' }}>📍 Address</p>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'10px' }}>
+              <p style={{ color:'#a5f3fc', fontSize:'12px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', margin:'4px 0 0', paddingBottom:'10px', borderBottom:'1px solid rgba(103,232,249,0.1)' }}>📍 Address</p>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'14px' }}>
                 <div><label style={lbl}>Door No</label><input name="door_no" value={form.door_no} onChange={handleChange} required className="sa-inp" style={inp}/></div>
                 <div><label style={lbl}>Street Name</label><input name="street_name" value={form.street_name} onChange={handleChange} required className="sa-inp" style={inp}/></div>
                 <div><label style={lbl}>Town</label><input name="town_name" value={form.town_name} onChange={handleChange} required className="sa-inp" style={inp}/></div>
@@ -163,14 +163,14 @@ export default function SuperAdminDashboard() {
                 <div><label style={lbl}>State</label><input name="state" value={form.state} onChange={handleChange} required className="sa-inp" style={inp}/></div>
               </div>
 
-              <p style={{ color:'#a5f3fc', fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', margin:'4px 0 0', paddingBottom:'8px', borderBottom:'1px solid rgba(103,232,249,0.1)' }}>🪪 Identity</p>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' }}>
+              <p style={{ color:'#a5f3fc', fontSize:'12px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', margin:'4px 0 0', paddingBottom:'10px', borderBottom:'1px solid rgba(103,232,249,0.1)' }}>🪪 Identity</p>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'14px' }}>
                 <div><label style={lbl}>Aadhaar No</label><input name="aadhaar_no" maxLength={12} value={form.aadhaar_no} onChange={handleChange} required className="sa-inp" style={inp}/></div>
                 <div><label style={lbl}>PAN No</label><input name="pan_no" maxLength={10} value={form.pan_no} onChange={handleChange} required className="sa-inp" style={inp}/></div>
               </div>
 
-              <p style={{ color:'#a5f3fc', fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', margin:'4px 0 0', paddingBottom:'8px', borderBottom:'1px solid rgba(103,232,249,0.1)' }}>💼 Occupation</p>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'10px' }}>
+              <p style={{ color:'#a5f3fc', fontSize:'12px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', margin:'4px 0 0', paddingBottom:'10px', borderBottom:'1px solid rgba(103,232,249,0.1)' }}>💼 Occupation</p>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'14px' }}>
                 <div><label style={lbl}>Occupation</label>
                   <select name="occupation" value={form.occupation} onChange={handleChange} className="sa-inp" style={{ ...inp, cursor:'pointer' }}>
                     {OCCUPATION_OPTIONS.map(o => <option key={o} value={o} style={{ background:'#1a1f26' }}>{o.charAt(0).toUpperCase()+o.slice(1)}</option>)}
@@ -180,20 +180,20 @@ export default function SuperAdminDashboard() {
                 <div><label style={lbl}>Annual Salary *</label><input name="annual_salary" value={form.annual_salary} onChange={handleChange} required className="sa-inp" style={inp}/></div>
               </div>
 
-              <p style={{ color:'#a5f3fc', fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', margin:'4px 0 0', paddingBottom:'8px', borderBottom:'1px solid rgba(103,232,249,0.1)' }}>🛡️ Admin Info</p>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'10px' }}>
+              <p style={{ color:'#a5f3fc', fontSize:'12px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', margin:'4px 0 0', paddingBottom:'10px', borderBottom:'1px solid rgba(103,232,249,0.1)' }}>🛡️ Admin Info</p>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'14px' }}>
                 <div><label style={lbl}>Admin Name *</label><input name="admin_name" value={form.admin_name} onChange={handleChange} required className="sa-inp" style={inp}/></div>
                 <div><label style={lbl}>Admin ID *</label><input name="admin_id" value={form.admin_id} onChange={handleChange} required className="sa-inp" style={inp}/></div>
                 <div><label style={lbl}>Admin Contact *</label><input name="admin_contact_no" maxLength={10} value={form.admin_contact_no} onChange={handleChange} required className="sa-inp" style={inp}/></div>
               </div>
 
-              <div style={{ display:'flex', gap:'10px', marginTop:'4px' }}>
+              <div style={{ display:'flex', gap:'12px', marginTop:'6px' }}>
                 <button type="submit" className="sa-grad-btn"
-                  style={{ padding:'10px 24px', background:'linear-gradient(90deg,#22d3ee,#4ade80)', border:'none', borderRadius:'12px', fontWeight:800, color:'#006165', fontSize:'13px', cursor:'pointer' }}>
+                  style={{ padding:'12px 28px', background:'linear-gradient(90deg,#22d3ee,#4ade80)', border:'none', borderRadius:'12px', fontWeight:800, color:'#006165', fontSize:'14px', cursor:'pointer' }}>
                   Create Admin
                 </button>
                 <button type="button" onClick={() => setShowForm(false)}
-                  style={{ padding:'10px 20px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'12px', color:'#9ca3af', fontSize:'13px', cursor:'pointer' }}>
+                  style={{ padding:'12px 24px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'12px', color:'#9ca3af', fontSize:'14px', cursor:'pointer' }}>
                   Cancel
                 </button>
               </div>
@@ -205,25 +205,25 @@ export default function SuperAdminDashboard() {
         <div style={s.card}>
           <p style={s.secHead}>All Admins ({admins.length})</p>
           {admins.length === 0 ? (
-            <p style={{ color:'#4b5563', textAlign:'center', padding:'40px 0' }}>No admins yet!</p>
+            <p style={{ color:'#4b5563', textAlign:'center', padding:'60px 0', fontSize:'15px' }}>No admins yet!</p>
           ) : (
             <div style={{ overflowX:'auto' }}>
-              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'13px' }}>
+              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'15px' }}>
                 <thead>
                   <tr style={{ borderBottom:'1px solid #1f2937' }}>
                     {['Name','Email','Mobile','Admin ID','City'].map(h => (
-                      <th key={h} style={{ padding:'10px 12px', textAlign:'left', color:'#6b7280', fontSize:'11px', fontWeight:600, whiteSpace:'nowrap' }}>{h}</th>
+                      <th key={h} style={{ padding:'14px 16px', textAlign:'left', color:'#6b7280', fontSize:'13px', fontWeight:600, whiteSpace:'nowrap' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {admins.map((a, i) => (
                     <tr key={i} className="sa-tr" style={{ borderBottom:'1px solid rgba(31,41,55,0.6)' }}>
-                      <td style={{ padding:'10px 12px' }}>{a.name}</td>
-                      <td style={{ padding:'10px 12px', color:'#6b7280' }}>{a.email}</td>
-                      <td style={{ padding:'10px 12px', color:'#6b7280' }}>{a.mobile_number}</td>
-                      <td style={{ padding:'10px 12px', color:'#22d3ee', fontFamily:'monospace' }}>{a.admin_id}</td>
-                      <td style={{ padding:'10px 12px', color:'#6b7280' }}>{a.city_name}</td>
+                      <td style={{ padding:'14px 16px' }}>{a.name}</td>
+                      <td style={{ padding:'14px 16px', color:'#6b7280' }}>{a.email}</td>
+                      <td style={{ padding:'14px 16px', color:'#6b7280' }}>{a.mobile_number}</td>
+                      <td style={{ padding:'14px 16px', color:'#22d3ee', fontFamily:'monospace' }}>{a.admin_id}</td>
+                      <td style={{ padding:'14px 16px', color:'#6b7280' }}>{a.city_name}</td>
                     </tr>
                   ))}
                 </tbody>
