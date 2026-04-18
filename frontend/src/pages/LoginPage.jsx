@@ -49,27 +49,51 @@ export default function LoginPage() {
     return () => { window.removeEventListener('resize',handleResize); window.removeEventListener('mousemove',handleMouseMove); cancelAnimationFrame(animationFrameId) }
   }, [])
 
+useEffect(() => {
+  api.get('/dashboard/').catch(() => {})
+}, [])
+
 const handleLogin = async (e) => {
-    e.preventDefault()
-    setLoading(true); setError('')
+  e.preventDefault()
+  setLoading(true)
+  setError('')
+
+  const attemptLogin = () => api.post('/login/', { email, password })
+
+  try {
+    let res
     try {
-      const res = await api.post('/login/', { email, password })
-      localStorage.clear()
-      localStorage.setItem('token', res.data.access)
-      localStorage.setItem('refresh', res.data.refresh)
-      localStorage.setItem('role', res.data.role)
-      localStorage.setItem('email', res.data.email)
-      await new Promise(resolve => setTimeout(resolve, 50))
-      const role = res.data.role
-      if (role === 'super_admin') navigate('/super-admin', { replace: true })
-      else if (role === 'admin') navigate('/admin', { replace: true })
-      else navigate('/customer', { replace: true })
-    } catch (err) {
-      const msg = err.response?.data?.error || err.response?.data?.detail || 'Invalid email or password'
-      setError(msg)
+      res = await attemptLogin()
+    } catch (firstErr) {
+      const isServerSleep = !firstErr.response || firstErr.response?.status >= 500
+      if (isServerSleep) {
+        setError('⏳ Server starting... Retrying')
+        await new Promise(resolve => setTimeout(resolve, 2000)) // 4s → 2s
+        res = await attemptLogin()
+      } else {
+        throw firstErr
+      }
     }
-    setLoading(false)
+
+    localStorage.clear()
+    localStorage.setItem('token', res.data.access)
+    localStorage.setItem('refresh', res.data.refresh)
+    localStorage.setItem('role', res.data.role)
+    localStorage.setItem('email', res.data.email)
+
+    // ❌ 50ms delay remove பண்ணிட்டோம் — directly navigate
+    const role = res.data.role
+    if (role === 'super_admin') navigate('/super-admin', { replace: true })
+    else if (role === 'admin') navigate('/admin', { replace: true })
+    else navigate('/customer', { replace: true })
+
+  } catch (err) {
+    const msg = err.response?.data?.error || err.response?.data?.detail || 'Invalid email or password'
+    setError(msg)
   }
+
+  setLoading(false)
+}
 
   return (
     <div style={{ minHeight:'100vh', background:'#020617', display:'flex', alignItems:'center', justifyContent:'center', padding:'20px', position:'relative', overflow:'hidden', fontFamily:'"Inter",system-ui,sans-serif' }}>
