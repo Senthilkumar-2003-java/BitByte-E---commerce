@@ -125,3 +125,10 @@ class AdminListForAdminView(APIView):
         admins = AdminProfile.objects.all()
         serializer = AdminListSerializer(admins, many=True)
         return Response(serializer.data)
+
+from rest_framework.decorators import api_view, permission_classes
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def ping(request):
+    return Response({'status': 'ok'})

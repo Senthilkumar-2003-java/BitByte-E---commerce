@@ -1,7 +1,8 @@
 from django.urls import path
-from .views import LoginView, CreateAdminView, CreateCustomerView, DashboardView,AdminListForAdminView
+from .views import LoginView, CreateAdminView, CreateCustomerView, DashboardView, AdminListForAdminView, ping
 
 urlpatterns = [
+    path('ping/', ping),
     path('login/', LoginView.as_view()),
     path('admins/', CreateAdminView.as_view()),
     path('customers/', CreateCustomerView.as_view()),

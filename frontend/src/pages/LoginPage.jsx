@@ -49,8 +49,20 @@ export default function LoginPage() {
     return () => { window.removeEventListener('resize',handleResize); window.removeEventListener('mousemove',handleMouseMove); cancelAnimationFrame(animationFrameId) }
   }, [])
 
+const pingInterval = useRef(null)
+
 useEffect(() => {
-  api.get('/dashboard/').catch(() => {})
+  const wakeUp = async () => {
+    try {
+      await fetch('https://bitbyte-e-commerce.onrender.com/api/ping/')
+      clearInterval(pingInterval.current)
+    } catch {
+      // retry continue
+    }
+  }
+  wakeUp()
+  pingInterval.current = setInterval(wakeUp, 3000)
+  return () => clearInterval(pingInterval.current)
 }, [])
 
 const handleLogin = async (e) => {
