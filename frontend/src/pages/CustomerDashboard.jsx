@@ -5,96 +5,82 @@ import api from '../api'
 export default function CustomerDashboard() {
   const navigate = useNavigate()
   const [profile, setProfile] = useState(null)
-  const logout = () => { localStorage.clear(); navigate('/login') }
 
   useEffect(() => {
     api.get('/dashboard/').then(res => setProfile(res.data)).catch(() => {})
   }, [])
 
-  const InfoRow = ({ label, value }) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-      <span style={{ color: '#a7abb2', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
-      <span style={{ color: '#eaeef6', fontSize: '0.9rem' }}>{value || '—'}</span>
+  const Row = ({ label, value }) => (
+    <div className="flex flex-col gap-1">
+      <span className="text-gray-500 text-xs uppercase tracking-wider">{label}</span>
+      <span className="text-white text-sm">{value || '—'}</span>
     </div>
   )
 
-  const Section = ({ title, children }) => (
-    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(161,250,255,0.1)', borderRadius: '1rem', padding: '1.5rem', marginBottom: '1.5rem' }}>
-      <h3 style={{ color: '#a1faff', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: '1px solid rgba(161,250,255,0.1)' }}>{title}</h3>
-      {children}
-    </div>
-  )
-
-  const Grid = ({ children, cols = 2 }) => (
-    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '1rem' }}>
-      {children}
+  const Section = ({ title, children, cols = 2 }) => (
+    <div className="bg-white/3 border border-cyan-300/10 rounded-2xl p-4 md:p-6 mb-4">
+      <h3 className="text-cyan-200 text-xs font-bold uppercase tracking-wider mb-4 pb-2 border-b border-cyan-300/10">{title}</h3>
+      <div className={`grid grid-cols-1 sm:grid-cols-${cols} gap-4`}>{children}</div>
     </div>
   )
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0f14', color: '#eaeef6' }}>
+    <div className="min-h-screen bg-[#0a0f14] text-white">
       {/* Navbar */}
-      <div style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(161,250,255,0.1)', padding: '1rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 style={{ fontFamily: 'Space Grotesk', color: '#00ffab', fontWeight: 900, fontSize: '1.5rem' }}>👤 Customer Dashboard</h1>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <span style={{ color: '#a7abb2', fontSize: '0.875rem' }}>{localStorage.getItem('email')}</span>
-          <button onClick={logout} style={{ padding: '0.5rem 1rem', background: 'rgba(255,113,108,0.1)', border: '1px solid rgba(255,113,108,0.3)', borderRadius: '0.5rem', color: '#ff716c', cursor: 'pointer', fontSize: '0.875rem' }}>Logout</button>
+      <div className="bg-white/3 border-b border-cyan-300/10 px-4 md:px-8 py-4 flex justify-between items-center">
+        <h1 className="text-green-400 font-black text-base md:text-xl">👤 My Dashboard</h1>
+        <div className="flex items-center gap-3">
+          <span className="text-gray-400 text-xs hidden sm:block">{localStorage.getItem('email')}</span>
+          <button onClick={() => { localStorage.clear(); navigate('/login') }}
+            className="px-3 py-1.5 bg-red-500/10 border border-red-400/30 text-red-400 rounded-lg text-xs hover:bg-red-500/20 transition">
+            Logout
+          </button>
         </div>
       </div>
 
-      <div style={{ padding: '2rem' }}>
+      <div className="p-4 md:p-8 max-w-4xl mx-auto">
         {profile ? (
           <>
             {/* Customer ID Banner */}
-            <div style={{ background: 'rgba(0,255,171,0.05)', border: '1px solid rgba(0,255,171,0.2)', borderRadius: '1rem', padding: '1rem 2rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: '#a7abb2' }}>Customer ID</span>
-              <span style={{ color: '#00ffab', fontFamily: 'monospace', fontSize: '1.1rem', fontWeight: 700 }}>{profile.customer_id}</span>
+            <div className="bg-green-400/5 border border-green-400/20 rounded-2xl px-5 py-4 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+              <span className="text-gray-400 text-sm">Customer ID</span>
+              <span className="text-green-400 font-mono text-lg font-bold">{profile.customer_id}</span>
             </div>
 
-            <Section title="Personal Info">
-              <Grid>
-                <InfoRow label="Full Name" value={profile.name} />
-                <InfoRow label="Mobile Number" value={profile.mobile_number} />
-                <InfoRow label="Email" value={profile.email} />
-              </Grid>
+            <Section title="Personal Info" cols={2}>
+              <Row label="Full Name" value={profile.name} />
+              <Row label="Mobile" value={profile.mobile_number} />
+              <Row label="Email" value={profile.email} />
             </Section>
 
-            <Section title="Address">
-              <Grid cols={3}>
-                <InfoRow label="Door No" value={profile.door_no} />
-                <InfoRow label="Street Name" value={profile.street_name} />
-                <InfoRow label="Town" value={profile.town_name} />
-                <InfoRow label="City" value={profile.city_name} />
-                <InfoRow label="District" value={profile.district} />
-                <InfoRow label="State" value={profile.state} />
-              </Grid>
+            <Section title="Address" cols={3}>
+              <Row label="Door No" value={profile.door_no} />
+              <Row label="Street" value={profile.street_name} />
+              <Row label="Town" value={profile.town_name} />
+              <Row label="City" value={profile.city_name} />
+              <Row label="District" value={profile.district} />
+              <Row label="State" value={profile.state} />
             </Section>
 
-            <Section title="Identity">
-              <Grid>
-                <InfoRow label="Aadhaar No" value={profile.aadhaar_no} />
-                <InfoRow label="PAN No" value={profile.pan_no} />
-              </Grid>
+            <Section title="Identity" cols={2}>
+              <Row label="Aadhaar No" value={profile.aadhaar_no} />
+              <Row label="PAN No" value={profile.pan_no} />
             </Section>
 
-            <Section title="Occupation">
-              <Grid cols={3}>
-                <InfoRow label="Occupation" value={profile.occupation} />
-                <InfoRow label="Detail" value={profile.occupation_detail} />
-                <InfoRow label="Annual Salary" value={profile.annual_salary} />
-              </Grid>
+            <Section title="Occupation" cols={3}>
+              <Row label="Occupation" value={profile.occupation} />
+              <Row label="Detail" value={profile.occupation_detail} />
+              <Row label="Annual Salary" value={profile.annual_salary} />
             </Section>
 
-            <Section title="Admin Info">
-              <Grid cols={3}>
-                <InfoRow label="Admin Name" value={profile.admin_name} />
-                <InfoRow label="Admin ID" value={profile.admin_id} />
-                <InfoRow label="Admin Contact No" value={profile.admin_contact_no} />
-              </Grid>
+            <Section title="Admin Info" cols={3}>
+              <Row label="Admin Name" value={profile.admin_name} />
+              <Row label="Admin ID" value={profile.admin_id} />
+              <Row label="Admin Contact" value={profile.admin_contact_no} />
             </Section>
           </>
         ) : (
-          <p style={{ color: '#a7abb2', textAlign: 'center', padding: '3rem' }}>Loading profile...</p>
+          <p className="text-gray-500 text-center py-20">Loading profile...</p>
         )}
       </div>
     </div>

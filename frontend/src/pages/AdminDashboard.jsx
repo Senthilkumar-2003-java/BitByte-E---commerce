@@ -2,78 +2,41 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api'
 
-const OCCUPATION_CHOICES = ['employee', 'business', 'others']
-
+const OCCUPATIONS = ['employee', 'business', 'others']
 const emptyForm = {
-  name: '', mobile_number: '', email: '', password: '',
-  door_no: '', street_name: '', town_name: '', city_name: '',
-  district: '', state: '', aadhaar_no: '', pan_no: '',
-  occupation: '', occupation_detail: '', annual_salary: ''
+  name:'', mobile_number:'', email:'', password:'',
+  door_no:'', street_name:'', town_name:'', city_name:'',
+  district:'', state:'', aadhaar_no:'', pan_no:'',
+  occupation:'', occupation_detail:'', annual_salary:''
 }
-
-const inputStyle = {
-  width: '100%', padding: '0.65rem 0.875rem',
-  background: 'rgba(255,255,255,0.05)',
-  border: '1px solid rgba(67,72,78,0.5)',
-  borderRadius: '0.5rem', color: '#eaeef6',
-  fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box'
-}
-
-const Label = ({ children }) => (
-  <label style={{ display: 'block', marginBottom: '0.35rem', color: '#a7abb2', fontSize: '0.8rem' }}>
-    {children}
-  </label>
-)
-
-const Field = ({ label, children }) => (
-  <div>
-    <Label>{label}</Label>
-    {children}
-  </div>
-)
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
   const [customers, setCustomers] = useState([])
+  const [admins, setAdmins] = useState([])
+  const [selectedAdmin, setSelectedAdmin] = useState(null)
   const [showForm, setShowForm] = useState(false)
-  // ✅ இந்த 2 lines add பண்ணு:
-const [admins, setAdmins] = useState([])
-const [selectedAdmin, setSelectedAdmin] = useState(null)
   const [msg, setMsg] = useState('')
-  const [msgType, setMsgType] = useState('success') // 'success' | 'error'
+  const [msgType, setMsgType] = useState('success')
   const [form, setForm] = useState(emptyForm)
 
-const fetchCustomers = async () => {
-  try {
-    const res = await api.get('/customers/')
-    console.log('Customers:', res.data)  // ✅ Debug log
-    setCustomers(res.data)
-  } catch (err) {
-    console.error('fetchCustomers error:', err.response?.status, err.response?.data)
+  const fetchCustomers = async () => {
+    try { const res = await api.get('/customers/'); setCustomers(res.data) }
+    catch (err) { console.error('customers error:', err.response?.status) }
   }
-}
-
-const fetchAdmins = async () => {
-  try {
-    const res = await api.get('/admins/list/')
-    console.log('Admins:', res.data)  // ✅ Debug log
-    setAdmins(res.data)
-  } catch (err) {
-    console.error('fetchAdmins error:', err.response?.status, err.response?.data)
+  const fetchAdmins = async () => {
+    try { const res = await api.get('/admins/list/'); setAdmins(res.data) }
+    catch (err) { console.error('admins error:', err.response?.status) }
   }
-}
-
   useEffect(() => { fetchCustomers(); fetchAdmins() }, [])
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value })
-
   const handleAdminChange = (e) => {
-  const adminId = parseInt(e.target.value)
-  const admin = admins.find(a => a.id === adminId)
-  setSelectedAdmin(admin || null)
-  setForm({ ...form, assigned_admin_id: adminId })
-}
-
+    const id = parseInt(e.target.value)
+    const admin = admins.find(a => a.id === id)
+    setSelectedAdmin(admin || null)
+    setForm({ ...form, assigned_admin_id: id })
+  }
   const handleSubmit = async e => {
     e.preventDefault()
     try {
@@ -83,181 +46,135 @@ const fetchAdmins = async () => {
       setShowForm(false)
       fetchCustomers()
       setForm(emptyForm)
+      setSelectedAdmin(null)
     } catch (err) {
       setMsg('❌ Error: ' + JSON.stringify(err.response?.data))
       setMsgType('error')
     }
   }
 
-  const logout = () => { localStorage.clear(); navigate('/login') }
+  const inp = "w-full bg-white/5 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm outline-none focus:border-cyan-400 transition"
+  const lbl = "block text-gray-400 text-xs mb-1"
+  const sec = "text-cyan-200 text-xs font-bold uppercase tracking-wider pt-4 pb-2 border-b border-cyan-300/10 mb-3"
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0f14', color: '#eaeef6' }}>
+    <div className="min-h-screen bg-[#0a0f14] text-white">
       {/* Navbar */}
-      <div style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(161,250,255,0.1)', padding: '1rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 style={{ fontFamily: 'Space Grotesk', color: '#00ffab', fontWeight: 900, fontSize: '1.5rem' }}>🛡️ Admin Dashboard</h1>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <span style={{ color: '#a7abb2', fontSize: '0.875rem' }}>{localStorage.getItem('email')}</span>
-          <button onClick={logout} style={{ padding: '0.5rem 1rem', background: 'rgba(255,113,108,0.1)', border: '1px solid rgba(255,113,108,0.3)', borderRadius: '0.5rem', color: '#ff716c', cursor: 'pointer', fontSize: '0.875rem' }}>Logout</button>
+      <div className="bg-white/3 border-b border-cyan-300/10 px-4 md:px-8 py-4 flex justify-between items-center">
+        <h1 className="text-green-400 font-black text-base md:text-xl">🛡️ Admin Dashboard</h1>
+        <div className="flex items-center gap-3">
+          <span className="text-gray-400 text-xs hidden sm:block">{localStorage.getItem('email')}</span>
+          <button onClick={() => { localStorage.clear(); navigate('/login') }}
+            className="px-3 py-1.5 bg-red-500/10 border border-red-400/30 text-red-400 rounded-lg text-xs hover:bg-red-500/20 transition">
+            Logout
+          </button>
         </div>
       </div>
 
-      <div style={{ padding: '2rem' }}>
+      <div className="p-4 md:p-8">
         {msg && (
-          <div style={{
-            background: msgType === 'success' ? 'rgba(0,255,171,0.1)' : 'rgba(255,113,108,0.1)',
-            border: `1px solid ${msgType === 'success' ? 'rgba(0,255,171,0.3)' : 'rgba(255,113,108,0.3)'}`,
-            borderRadius: '0.5rem', padding: '0.75rem', marginBottom: '1.5rem',
-            color: msgType === 'success' ? '#00ffab' : '#ff716c'
-          }}>{msg}</div>
+          <div className={`rounded-lg p-3 mb-4 text-sm ${msgType === 'success' ? 'bg-green-500/10 border border-green-400/30 text-green-400' : 'bg-red-500/10 border border-red-400/30 text-red-400'}`}>
+            {msg}
+          </div>
         )}
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Customer Management</h2>
-          <button onClick={() => setShowForm(!showForm)} style={{ padding: '0.65rem 1.5rem', background: 'linear-gradient(to right,#a1faff,#00ffab)', border: 'none', borderRadius: '0.5rem', fontWeight: 700, cursor: 'pointer', color: '#006165', fontSize: '0.875rem' }}>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-lg font-bold">Customer Management</h2>
+          <button onClick={() => setShowForm(!showForm)}
+            className="px-4 py-2 bg-gradient-to-r from-cyan-300 to-green-300 rounded-lg font-bold text-[#006165] text-sm hover:opacity-90 transition">
             {showForm ? 'Cancel' : '+ Create Customer'}
           </button>
         </div>
 
-        {/* CREATE FORM */}
+        {/* Create Form */}
         {showForm && (
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(161,250,255,0.1)', borderRadius: '1rem', padding: '2rem', marginBottom: '2rem' }}>
-            <h3 style={{ marginBottom: '1.5rem', color: '#00ffab' }}>Create New Customer</h3>
-            <form onSubmit={handleSubmit}>
+          <div className="bg-white/3 border border-cyan-300/10 rounded-2xl p-4 md:p-6 mb-6">
+            <h3 className="text-green-400 font-bold mb-4">Create New Customer</h3>
+            <form onSubmit={handleSubmit} className="space-y-2">
 
-              {/* Section: Account */}
-              <SectionTitle>Account Info</SectionTitle>
-              <Grid>
-                <Field label="Full Name *">
-                  <input name="name" value={form.name} onChange={handleChange} required maxLength={100} style={inputStyle} placeholder="Customer name" />
-                </Field>
-                <Field label="Mobile Number *">
-                  <input name="mobile_number" value={form.mobile_number} onChange={handleChange} required maxLength={10} style={inputStyle} placeholder="10-digit mobile" />
-                </Field>
-                <Field label="Email *">
-                  <input type="email" name="email" value={form.email} onChange={handleChange} required style={inputStyle} placeholder="email@example.com" />
-                </Field>
-                <Field label="Password *">
-                  <input type="password" name="password" value={form.password} onChange={handleChange} required style={inputStyle} placeholder="Set password" />
-                </Field>
-              </Grid>
+              <p className={sec}>Account Info</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div><label className={lbl}>Full Name *</label><input name="name" value={form.name} onChange={handleChange} required className={inp} placeholder="Customer name"/></div>
+                <div><label className={lbl}>Mobile *</label><input name="mobile_number" maxLength={10} value={form.mobile_number} onChange={handleChange} required className={inp} placeholder="10-digit"/></div>
+                <div><label className={lbl}>Email *</label><input type="email" name="email" value={form.email} onChange={handleChange} required className={inp} placeholder="email@example.com"/></div>
+                <div><label className={lbl}>Password *</label><input type="password" name="password" value={form.password} onChange={handleChange} required className={inp}/></div>
+              </div>
 
-              {/* Section: Address */}
-              <SectionTitle>Address</SectionTitle>
-              <Grid cols={3}>
-                <Field label="Door No *">
-                  <input name="door_no" value={form.door_no} onChange={handleChange} required maxLength={25} style={inputStyle} />
-                </Field>
-                <Field label="Street Name *">
-                  <input name="street_name" value={form.street_name} onChange={handleChange} required maxLength={100} style={inputStyle} />
-                </Field>
-                <Field label="Town Name *">
-                  <input name="town_name" value={form.town_name} onChange={handleChange} required maxLength={100} style={inputStyle} />
-                </Field>
-                <Field label="City *">
-                  <input name="city_name" value={form.city_name} onChange={handleChange} required maxLength={25} style={inputStyle} />
-                </Field>
-                <Field label="District *">
-                  <input name="district" value={form.district} onChange={handleChange} required maxLength={25} style={inputStyle} />
-                </Field>
-                <Field label="State *">
-                  <input name="state" value={form.state} onChange={handleChange} required maxLength={25} style={inputStyle} />
-                </Field>
-              </Grid>
+              <p className={sec}>Address</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                <div><label className={lbl}>Door No *</label><input name="door_no" value={form.door_no} onChange={handleChange} required maxLength={25} className={inp}/></div>
+                <div><label className={lbl}>Street Name *</label><input name="street_name" value={form.street_name} onChange={handleChange} required maxLength={100} className={inp}/></div>
+                <div><label className={lbl}>Town *</label><input name="town_name" value={form.town_name} onChange={handleChange} required maxLength={100} className={inp}/></div>
+                <div><label className={lbl}>City *</label><input name="city_name" value={form.city_name} onChange={handleChange} required maxLength={25} className={inp}/></div>
+                <div><label className={lbl}>District *</label><input name="district" value={form.district} onChange={handleChange} required maxLength={25} className={inp}/></div>
+                <div><label className={lbl}>State *</label><input name="state" value={form.state} onChange={handleChange} required maxLength={25} className={inp}/></div>
+              </div>
 
-              {/* Section: Identity */}
-              <SectionTitle>Identity</SectionTitle>
-              <Grid>
-                <Field label="Aadhaar No *">
-                  <input name="aadhaar_no" value={form.aadhaar_no} onChange={handleChange} required maxLength={12} style={inputStyle} placeholder="12-digit Aadhaar" />
-                </Field>
-                <Field label="PAN No *">
-                  <input name="pan_no" value={form.pan_no} onChange={handleChange} required maxLength={10} style={inputStyle} placeholder="ABCDE1234F" />
-                </Field>
-              </Grid>
+              <p className={sec}>Identity</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div><label className={lbl}>Aadhaar No *</label><input name="aadhaar_no" value={form.aadhaar_no} onChange={handleChange} required maxLength={12} className={inp} placeholder="12-digit"/></div>
+                <div><label className={lbl}>PAN No *</label><input name="pan_no" value={form.pan_no} onChange={handleChange} required maxLength={10} className={inp} placeholder="ABCDE1234F"/></div>
+              </div>
 
-              {/* Section: Occupation */}
-              <SectionTitle>Occupation</SectionTitle>
-              <Grid>
-                <Field label="Occupation *">
-                  <select name="occupation" value={form.occupation} onChange={handleChange} required style={{ ...inputStyle, cursor: 'pointer' }}>
-                    <option value="">Select occupation</option>
-                    {OCCUPATION_CHOICES.map(o => (
-                      <option key={o} value={o} style={{ background: '#1a1f26' }}>
-                        {o.charAt(0).toUpperCase() + o.slice(1)}
-                      </option>
-                    ))}
+              <p className={sec}>Occupation</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div><label className={lbl}>Occupation *</label>
+                  <select name="occupation" value={form.occupation} onChange={handleChange} required className={inp + " cursor-pointer"}>
+                    <option value="" className="bg-[#1a1f26]">Select</option>
+                    {OCCUPATIONS.map(o => <option key={o} value={o} className="bg-[#1a1f26]">{o.charAt(0).toUpperCase()+o.slice(1)}</option>)}
                   </select>
-                </Field>
-                <Field label="Occupation Detail">
-                  <input name="occupation_detail" value={form.occupation_detail} onChange={handleChange} maxLength={25} style={inputStyle} placeholder="Company name / Business type / etc." />
-                </Field>
-                <Field label="Annual Salary *">
-                  <input name="annual_salary" value={form.annual_salary} onChange={handleChange} required maxLength={10} style={inputStyle} placeholder="e.g. 500000" />
-                </Field>
-              </Grid>
+                </div>
+                <div><label className={lbl}>Detail</label><input name="occupation_detail" value={form.occupation_detail} onChange={handleChange} maxLength={25} className={inp}/></div>
+                <div><label className={lbl}>Annual Salary *</label><input name="annual_salary" value={form.annual_salary} onChange={handleChange} required maxLength={10} className={inp} placeholder="e.g. 500000"/></div>
+              </div>
 
-<SectionTitle>Admin Info</SectionTitle>
-<Grid cols={3}>
-  <Field label="Admin ID *">
-    <select onChange={handleAdminChange} style={{ ...inputStyle, cursor: 'pointer' }}>
-      <option value="">Select Admin ID</option>
-      {admins.map(a => (
-        <option key={a.id} value={a.id} style={{ background: '#1a1f26' }}>
-          {a.admin_id}
-        </option>
-      ))}
-    </select>
-  </Field>
-  <Field label="Admin Name">
-    <input
-      value={selectedAdmin?.name || ''}
-      readOnly
-      style={{ ...inputStyle, opacity: 0.6, cursor: 'not-allowed' }}
-      placeholder="Auto fetch"
-    />
-  </Field>
-  <Field label="Admin Contact No">
-    <input
-      value={selectedAdmin?.admin_contact_no || ''}
-      readOnly
-      style={{ ...inputStyle, opacity: 0.6, cursor: 'not-allowed' }}
-      placeholder="Auto fetch"
-    />
-  </Field>
-</Grid>
+              <p className={sec}>Admin Info</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div><label className={lbl}>Admin ID *</label>
+                  <select onChange={handleAdminChange} className={inp + " cursor-pointer"}>
+                    <option value="" className="bg-[#1a1f26]">Select Admin ID</option>
+                    {admins.map(a => <option key={a.id} value={a.id} className="bg-[#1a1f26]">{a.admin_id}</option>)}
+                  </select>
+                </div>
+                <div><label className={lbl}>Admin Name</label>
+                  <input value={selectedAdmin?.name || ''} readOnly className={inp + " opacity-50 cursor-not-allowed"} placeholder="Auto fetch"/>
+                </div>
+                <div><label className={lbl}>Admin Contact</label>
+                  <input value={selectedAdmin?.admin_contact_no || ''} readOnly className={inp + " opacity-50 cursor-not-allowed"} placeholder="Auto fetch"/>
+                </div>
+              </div>
 
-              <button type="submit" style={{ marginTop: '1.5rem', padding: '0.75rem 2.5rem', background: 'linear-gradient(to right,#a1faff,#00ffab)', border: 'none', borderRadius: '0.5rem', fontWeight: 700, cursor: 'pointer', color: '#006165', fontSize: '0.875rem' }}>
+              <button type="submit" className="mt-4 px-6 py-2.5 bg-gradient-to-r from-cyan-300 to-green-300 rounded-lg font-bold text-[#006165] text-sm hover:opacity-90 transition">
                 Create Customer
               </button>
             </form>
           </div>
         )}
 
-        {/* CUSTOMER TABLE */}
-        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(161,250,255,0.1)', borderRadius: '1rem', padding: '1.5rem' }}>
-          <h3 style={{ marginBottom: '1rem', color: '#00ffab' }}>My Customers ({customers.length})</h3>
+        {/* Customer Table */}
+        <div className="bg-white/3 border border-cyan-300/10 rounded-2xl p-4 md:p-6">
+          <h3 className="text-green-400 font-bold mb-4">My Customers ({customers.length})</h3>
           {customers.length === 0 ? (
-            <p style={{ color: '#a7abb2', textAlign: 'center', padding: '2rem' }}>No customers yet!</p>
+            <p className="text-gray-500 text-center py-8">No customers yet!</p>
           ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
                 <thead>
-                  <tr style={{ borderBottom: '1px solid rgba(67,72,78,0.5)' }}>
-                    {['Customer ID', 'Name', 'Email', 'Mobile', 'City', 'Created'].map(h => (
-                      <th key={h} style={{ padding: '0.75rem', textAlign: 'left', color: '#a7abb2', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
+                  <tr className="border-b border-gray-700">
+                    {['Customer ID','Name','Email','Mobile','City','Created'].map(h => (
+                      <th key={h} className="p-3 text-left text-gray-400 font-semibold whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {customers.map((c, i) => (
-                    <tr key={i} style={{ borderBottom: '1px solid rgba(67,72,78,0.2)' }}>
-                      <td style={{ padding: '0.75rem', color: '#00ffab', fontFamily: 'monospace', fontSize: '0.8rem' }}>{c.customer_id}</td>
-                      <td style={{ padding: '0.75rem' }}>{c.name}</td>
-                      <td style={{ padding: '0.75rem', color: '#a7abb2' }}>{c.email}</td>
-                      <td style={{ padding: '0.75rem', color: '#a7abb2' }}>{c.mobile_number}</td>
-                      <td style={{ padding: '0.75rem', color: '#a7abb2' }}>{c.city_name}</td>
-                      <td style={{ padding: '0.75rem', color: '#a7abb2' }}>{new Date(c.created_at).toLocaleDateString()}</td>
+                    <tr key={i} className="border-b border-gray-800 hover:bg-white/3 transition">
+                      <td className="p-3 text-green-400 font-mono text-xs">{c.customer_id}</td>
+                      <td className="p-3">{c.name}</td>
+                      <td className="p-3 text-gray-400 text-xs">{c.email}</td>
+                      <td className="p-3 text-gray-400">{c.mobile_number}</td>
+                      <td className="p-3 text-gray-400">{c.city_name}</td>
+                      <td className="p-3 text-gray-400 whitespace-nowrap">{new Date(c.created_at).toLocaleDateString()}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -266,23 +183,6 @@ const fetchAdmins = async () => {
           )}
         </div>
       </div>
-    </div>
-  )
-}
-
-// Helper components
-function SectionTitle({ children }) {
-  return (
-    <div style={{ margin: '1.5rem 0 0.75rem', paddingBottom: '0.5rem', borderBottom: '1px solid rgba(161,250,255,0.1)', color: '#a1faff', fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-      {children}
-    </div>
-  )
-}
-
-function Grid({ children, cols = 2 }) {
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '1rem' }}>
-      {children}
     </div>
   )
 }

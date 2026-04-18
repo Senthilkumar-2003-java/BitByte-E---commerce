@@ -28,33 +28,39 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{minHeight:'100vh',background:'#0a0f14',display:'flex',alignItems:'center',justifyContent:'center'}}>
-      <div style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(161,250,255,0.1)',borderRadius:'1rem',padding:'2.5rem',width:'100%',maxWidth:'420px',backdropFilter:'blur(24px)'}}>
-        <h2 style={{fontFamily:'Space Grotesk',fontSize:'1.75rem',fontWeight:900,color:'#a1faff',marginBottom:'0.5rem',textAlign:'center'}}>Bit Byte Technology</h2>
-        <p style={{color:'#a7abb2',textAlign:'center',marginBottom:'2rem',fontSize:'0.875rem'}}>Access Portal</p>
+    <div className="min-h-screen bg-[#0a0f14] flex items-center justify-center px-4">
+      <div className="w-full max-w-sm bg-white/5 border border-cyan-300/10 rounded-2xl p-6 md:p-10 backdrop-blur-xl">
+        <h2 className="text-2xl md:text-3xl font-black text-cyan-200 text-center mb-1">
+          Bit Byte Technology
+        </h2>
+        <p className="text-gray-400 text-center text-sm mb-6">Access Portal</p>
 
-        {error && <div style={{background:'rgba(255,113,108,0.1)',border:'1px solid rgba(255,113,108,0.3)',borderRadius:'0.5rem',padding:'0.75rem',marginBottom:'1rem',color:'#ff716c',fontSize:'0.875rem',textAlign:'center'}}>{error}</div>}
+        {error && (
+          <div className="bg-red-500/10 border border-red-400/30 text-red-400 text-sm rounded-lg p-3 mb-4 text-center">
+            {error}
+          </div>
+        )}
 
-        <form onSubmit={handleLogin}>
-          <div style={{marginBottom:'1rem'}}>
-            <label style={{display:'block',marginBottom:'0.5rem',color:'#a7abb2',fontSize:'0.875rem'}}>Email</label>
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="block text-gray-400 text-sm mb-1">Email</label>
             <input
               type="email" value={email} onChange={e => setEmail(e.target.value)} required
-              style={{width:'100%',padding:'0.75rem 1rem',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(67,72,78,0.5)',borderRadius:'0.5rem',color:'#eaeef6',fontSize:'1rem',outline:'none'}}
+              className="w-full bg-white/5 border border-gray-600 rounded-lg px-4 py-3 text-white text-sm outline-none focus:border-cyan-400 transition"
               placeholder="Enter your email"
             />
           </div>
-          <div style={{marginBottom:'1.5rem'}}>
-            <label style={{display:'block',marginBottom:'0.5rem',color:'#a7abb2',fontSize:'0.875rem'}}>Password</label>
+          <div>
+            <label className="block text-gray-400 text-sm mb-1">Password</label>
             <input
               type="password" value={password} onChange={e => setPassword(e.target.value)} required
-              style={{width:'100%',padding:'0.75rem 1rem',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(67,72,78,0.5)',borderRadius:'0.5rem',color:'#eaeef6',fontSize:'1rem',outline:'none'}}
+              className="w-full bg-white/5 border border-gray-600 rounded-lg px-4 py-3 text-white text-sm outline-none focus:border-cyan-400 transition"
               placeholder="Enter your password"
             />
           </div>
           <button
             type="submit" disabled={loading}
-            style={{width:'100%',padding:'0.875rem',background:'linear-gradient(to right,#a1faff,#00ffab)',border:'none',borderRadius:'0.5rem',fontWeight:700,fontFamily:'Space Grotesk',textTransform:'uppercase',letterSpacing:'0.1em',cursor:'pointer',color:'#006165',fontSize:'0.875rem'}}
+            className="w-full py-3 bg-gradient-to-r from-cyan-300 to-green-300 rounded-lg font-bold text-[#006165] text-sm uppercase tracking-widest hover:opacity-90 transition disabled:opacity-50"
           >
             {loading ? 'Logging in...' : 'Login'}
           </button>
