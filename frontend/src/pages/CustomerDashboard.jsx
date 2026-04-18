@@ -11,43 +11,43 @@ export default function CustomerDashboard() {
   }, [])
 
   const Row = ({ label, value }) => (
-    <div className="flex flex-col gap-1">
-      <span className="text-gray-500 text-xs uppercase tracking-wider">{label}</span>
-      <span className="text-white text-sm">{value || '—'}</span>
+    <div style={{ display:'flex', flexDirection:'column', gap:'4px' }}>
+      <span style={{ color:'#6b7280', fontSize:'11px', textTransform:'uppercase', letterSpacing:'0.06em' }}>{label}</span>
+      <span style={{ color:'#f1f5f9', fontSize:'14px' }}>{value || '—'}</span>
     </div>
   )
 
   const Section = ({ title, children, cols = 2 }) => (
-    <div className="bg-white/3 border border-cyan-300/10 rounded-2xl p-4 md:p-6 mb-4">
-      <h3 className="text-cyan-200 text-xs font-bold uppercase tracking-wider mb-4 pb-2 border-b border-cyan-300/10">{title}</h3>
-      <div className={`grid grid-cols-1 sm:grid-cols-${cols} gap-4`}>{children}</div>
+    <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(103,232,249,0.1)', borderRadius:'20px', padding:'20px 24px', marginBottom:'16px' }}>
+      <h3 style={{ color:'#a5f3fc', fontSize:'11px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'14px', paddingBottom:'10px', borderBottom:'1px solid rgba(103,232,249,0.1)', margin:'0 0 14px' }}>{title}</h3>
+      <div style={{ display:'grid', gridTemplateColumns:`repeat(${cols}, 1fr)`, gap:'16px' }}>{children}</div>
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-[#0a0f14] text-white">
+    <div style={{ minHeight:'100vh', background:'#0a0f14', color:'#f8fafc', fontFamily:'"Inter",system-ui,sans-serif' }}>
       {/* Navbar */}
-      <div className="bg-white/3 border-b border-cyan-300/10 px-4 md:px-8 py-4 flex justify-between items-center">
-        <h1 className="text-green-400 font-black text-base md:text-xl">👤 My Dashboard</h1>
-        <div className="flex items-center gap-3">
-          <span className="text-gray-400 text-xs hidden sm:block">{localStorage.getItem('email')}</span>
+      <div style={{ background:'rgba(255,255,255,0.03)', borderBottom:'1px solid rgba(103,232,249,0.1)', padding:'16px 24px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+        <h1 style={{ color:'#4ade80', fontWeight:900, fontSize:'16px', margin:0 }}>👤 My Dashboard</h1>
+        <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
+          <span style={{ color:'#6b7280', fontSize:'12px' }}>{localStorage.getItem('email')}</span>
           <button onClick={() => { localStorage.clear(); navigate('/login') }}
-            className="px-3 py-1.5 bg-red-500/10 border border-red-400/30 text-red-400 rounded-lg text-xs hover:bg-red-500/20 transition">
+            style={{ padding:'6px 14px', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', borderRadius:'10px', fontSize:'12px', cursor:'pointer' }}>
             Logout
           </button>
         </div>
       </div>
 
-      <div className="p-4 md:p-8 max-w-4xl mx-auto">
+      <div style={{ padding:'24px', maxWidth:'900px', margin:'0 auto' }}>
         {profile ? (
           <>
             {/* Customer ID Banner */}
-            <div className="bg-green-400/5 border border-green-400/20 rounded-2xl px-5 py-4 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-              <span className="text-gray-400 text-sm">Customer ID</span>
-              <span className="text-green-400 font-mono text-lg font-bold">{profile.customer_id}</span>
+            <div style={{ background:'rgba(74,222,128,0.05)', border:'1px solid rgba(74,222,128,0.2)', borderRadius:'16px', padding:'16px 20px', marginBottom:'20px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <span style={{ color:'#9ca3af', fontSize:'13px' }}>Customer ID</span>
+              <span style={{ color:'#4ade80', fontFamily:'monospace', fontSize:'18px', fontWeight:700 }}>{profile.customer_id}</span>
             </div>
 
-            <Section title="Personal Info" cols={2}>
+            <Section title="Personal Info" cols={3}>
               <Row label="Full Name" value={profile.name} />
               <Row label="Mobile" value={profile.mobile_number} />
               <Row label="Email" value={profile.email} />
@@ -80,7 +80,7 @@ export default function CustomerDashboard() {
             </Section>
           </>
         ) : (
-          <p className="text-gray-500 text-center py-20">Loading profile...</p>
+          <p style={{ color:'#6b7280', textAlign:'center', padding:'80px 0' }}>Loading profile...</p>
         )}
       </div>
     </div>
