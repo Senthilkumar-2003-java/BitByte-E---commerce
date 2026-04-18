@@ -73,12 +73,12 @@ class CreateCustomerView(APIView):
             return Response({'message': 'Customer created successfully'}, status=201)
         return Response(serializer.errors, status=400)
 
-    def get(self, request):
-        if request.user.role != 'admin':
-            return Response({'error': 'Permission denied'}, status=403)
-        customers = CustomerProfile.objects.filter(created_by=request.user)
-        serializer = CustomerListSerializer(customers, many=True)
-        return Response(serializer.data)
+    def get(self, request):                                                    
+        if request.user.role != 'admin':                                      
+            return Response({'error': 'Permission denied'}, status=403)        
+        customers = CustomerProfile.objects.filter(created_by=request.user).order_by('-created_at')
+        serializer = CustomerListSerializer(customers, many=True)              
+        return Response(serializer.data)                                       
 
 class DashboardView(APIView):
     permission_classes = [IsAuthenticated]
@@ -114,3 +114,14 @@ class DashboardView(APIView):
                 pass
 
         return Response(data)
+
+class AdminListForAdminView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # Both admin and super_admin can list admins
+        if request.user.role not in ['admin', 'super_admin']:
+            return Response({'error': 'Permission denied'}, status=403)
+        admins = AdminProfile.objects.all()
+        serializer = AdminListSerializer(admins, many=True)
+        return Response(serializer.data)

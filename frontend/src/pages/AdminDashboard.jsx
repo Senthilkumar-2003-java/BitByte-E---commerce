@@ -43,19 +43,24 @@ const [selectedAdmin, setSelectedAdmin] = useState(null)
   const [msgType, setMsgType] = useState('success') // 'success' | 'error'
   const [form, setForm] = useState(emptyForm)
 
-  const fetchCustomers = async () => {
-    try {
-      const res = await api.get('/customers/')
-      setCustomers(res.data)
-    } catch {}
+const fetchCustomers = async () => {
+  try {
+    const res = await api.get('/customers/')
+    console.log('Customers:', res.data)  // ✅ Debug log
+    setCustomers(res.data)
+  } catch (err) {
+    console.error('fetchCustomers error:', err.response?.status, err.response?.data)
   }
+}
 
-  // ✅ இந்த function புதுசா add பண்ணு:
 const fetchAdmins = async () => {
   try {
-    const res = await api.get('/admins/')
+    const res = await api.get('/admins/list/')
+    console.log('Admins:', res.data)  // ✅ Debug log
     setAdmins(res.data)
-  } catch {}
+  } catch (err) {
+    console.error('fetchAdmins error:', err.response?.status, err.response?.data)
+  }
 }
 
   useEffect(() => { fetchCustomers(); fetchAdmins() }, [])
@@ -192,22 +197,21 @@ const fetchAdmins = async () => {
                 </Field>
               </Grid>
 
-              {/* இருக்கற Occupation section கீழே இதை add பண்ணு */}
 <SectionTitle>Admin Info</SectionTitle>
 <Grid cols={3}>
-  <Field label="Admin Name *">
+  <Field label="Admin ID *">
     <select onChange={handleAdminChange} style={{ ...inputStyle, cursor: 'pointer' }}>
-      <option value="">Select Admin</option>
+      <option value="">Select Admin ID</option>
       {admins.map(a => (
         <option key={a.id} value={a.id} style={{ background: '#1a1f26' }}>
-          {a.name}
+          {a.admin_id}
         </option>
       ))}
     </select>
   </Field>
-  <Field label="Admin ID">
+  <Field label="Admin Name">
     <input
-      value={selectedAdmin?.admin_id || ''}
+      value={selectedAdmin?.name || ''}
       readOnly
       style={{ ...inputStyle, opacity: 0.6, cursor: 'not-allowed' }}
       placeholder="Auto fetch"

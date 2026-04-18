@@ -19,6 +19,14 @@ class AdminProfileSerializer(serializers.ModelSerializer):
             'admin_name', 'admin_id', 'admin_contact_no'
         ]
 
+            # ✅ Add this method
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("A user with this email already exists.")
+        return value
+
+
+
     def create(self, validated_data):
         email = validated_data.pop('email')
         password = validated_data.pop('password')
@@ -26,7 +34,7 @@ class AdminProfileSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(email=email, password=password, role='admin')
         profile = AdminProfile.objects.create(
             user=user,
-            created_by=request.user,
+            created_by=request.user if request.user.is_authenticated else None,
             **validated_data
         )
         return profile
@@ -40,29 +48,8 @@ class AdminListSerializer(serializers.ModelSerializer):
 class CustomerProfileSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(write_only=True)
     password = serializers.CharField(write_only=True)
-
-    class Meta:
-        model = CustomerProfile
-        fields = ['id', 'email', 'password', 'name', 'mobile_number']
-
-    def create(self, validated_data):
-        email = validated_data.pop('email')
-        password = validated_data.pop('password')
-        request = self.context.get('request')
-        user = User.objects.create_user(email=email, password=password, role='customer')
-        profile = CustomerProfile.objects.create(
-            user=user,
-            created_by=request.user,
-            **validated_data
-        )
-        return profile
-
-class CustomerProfileSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(write_only=True)
-    password = serializers.CharField(write_only=True)
     assigned_admin_id = serializers.IntegerField(write_only=True, required=False)
 
-    # Auto-fetch admin details (read-only)
     admin_name = serializers.CharField(source='assigned_admin.admin_name', read_only=True)
     admin_uid = serializers.CharField(source='assigned_admin.admin_id', read_only=True)
     admin_contact = serializers.CharField(source='assigned_admin.admin_contact_no', read_only=True)
@@ -79,6 +66,12 @@ class CustomerProfileSerializer(serializers.ModelSerializer):
             'customer_id', 'created_at'
         ]
         read_only_fields = ['customer_id', 'created_at', 'admin_name', 'admin_uid', 'admin_contact']
+
+    # ✅ OUTSIDE Meta, inside class — correct indentation
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("A user with this email already exists.")
+        return value
 
     def create(self, validated_data):
         email = validated_data.pop('email')
@@ -101,3 +94,18 @@ class CustomerProfileSerializer(serializers.ModelSerializer):
             **validated_data
         )
         return profile
+
+class CustomerListSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source='user.email')
+
+    class Meta:
+        model = CustomerProfile
+        fields = [
+            'id',
+            'customer_id',
+            'name',
+            'email',
+            'mobile_number',
+            'city_name',
+            'created_at'
+        ]        
