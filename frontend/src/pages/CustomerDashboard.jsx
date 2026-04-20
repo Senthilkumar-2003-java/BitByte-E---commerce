@@ -2,14 +2,6 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api'
 
-const OCCUPATIONS = ['employee', 'business', 'others']
-const emptyForm = {
-  initial:'', first_name:'', last_name:'', mobile_number:'', email:'', password:'',
-  door_no:'', street_name:'', town_name:'', city_name:'',
-  district:'', state:'', aadhaar_no:'', pan_no:'',
-  occupation:'', occupation_detail:'', annual_salary:''
-}
-
 const PARTICLES = Array.from({ length: 15 }, (_, i) => ({
   id: i, size: Math.random() * 60 + 10, x: Math.random() * 100,
   delay: Math.random() * 8, duration: Math.random() * 12 + 15, opacity: Math.random() * 0.2 + 0.05,
@@ -18,25 +10,17 @@ const PARTICLES = Array.from({ length: 15 }, (_, i) => ({
 export default function CustomerDashboard() {
   const navigate = useNavigate()
   const [dark, setDark] = useState(true)
-  const [customers, setCustomers] = useState([])
-  const [promotors, setPromotors] = useState([])
-  const [selectedPromotor, setSelectedPromotor] = useState(null)
-  const [showForm, setShowForm] = useState(false)
-  const [msg, setMsg] = useState('')
-  const [msgType, setMsgType] = useState('success')
-  const [form, setForm] = useState(emptyForm)
+  const [profile, setProfile] = useState(null)
   const canvasRef = useRef(null)
 
-  const bg       = dark ? '#020617' : '#f8fafc'
-  const text     = dark ? '#f8fafc' : '#020617'
-  const subtext  = dark ? '#94a3b8' : '#64748b'
-  const accent   = dark ? '#22d3ee' : '#2563eb'
-  const border   = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
-  const glass    = dark ? 'rgba(15, 23, 42, 0.65)' : 'rgba(255, 255, 255, 0.7)'
-  const cardBg   = dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'
+  const bg      = dark ? '#020617' : '#f8fafc'
+  const text    = dark ? '#f8fafc' : '#020617'
+  const subtext = dark ? '#94a3b8' : '#64748b'
+  const accent  = dark ? '#22d3ee' : '#2563eb'
+  const border  = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+  const glass   = dark ? 'rgba(15, 23, 42, 0.65)' : 'rgba(255, 255, 255, 0.7)'
+  const cardBg  = dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'
   const cardBorder = dark ? '1px solid rgba(103,232,249,0.1)' : '1px solid rgba(0,0,0,0.1)'
-  const inpBg    = dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
-  const inpBorder = dark ? '#374151' : '#d1d5db'
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -71,49 +55,38 @@ export default function CustomerDashboard() {
     return () => { window.removeEventListener('resize',handleResize); window.removeEventListener('mousemove',handleMouseMove); cancelAnimationFrame(animationFrameId) }
   }, [dark])
 
-  const fetchCustomers = async () => {
-    try { const res = await api.get('/customers/'); setCustomers(res.data) } catch (err) { console.error(err) }
-  }
-  const fetchPromotors = async () => {
-    try { const res = await api.get('/promotors/list/'); setPromotors(res.data) } catch (err) { console.error(err) }
-  }
-  useEffect(() => { fetchCustomers(); fetchPromotors() }, [])
+  useEffect(() => {
+    api.get('/dashboard/').then(res => setProfile(res.data)).catch(() => {})
+  }, [])
 
-  const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value })
-  const handlePromotorChange = (e) => {
-    const id = parseInt(e.target.value)
-    const pr = promotors.find(p => p.id === id)
-    setSelectedPromotor(pr || null)
-    setForm({ ...form, assigned_promotor_id: id })
-  }
-  const handleSubmit = async e => {
-    e.preventDefault()
-    try {
-      await api.post('/customers/', form)
-      setMsg('✅ Customer created successfully!'); setMsgType('success')
-      setShowForm(false); fetchCustomers(); setForm(emptyForm); setSelectedPromotor(null)
-    } catch (err) {
-      setMsg('❌ Error: ' + JSON.stringify(err.response?.data)); setMsgType('error')
-    }
-  }
+  const card  = { background: cardBg, border: cardBorder, borderRadius:'20px', padding:'32px 36px', marginBottom:'20px' }
+  const sHead = { color:'#34d399', fontSize:'13px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', margin:'0 0 20px', paddingBottom:'14px', borderBottom: cardBorder }
+  const lbl   = { color: subtext, fontSize:'12px', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'6px' }
+  const val   = { color: text, fontSize:'15px' }
+  const g2    = { display:'grid', gridTemplateColumns:'1fr 1fr', gap:'20px' }
+  const g3    = { display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'20px' }
 
-  const card = { background: cardBg, border: cardBorder, borderRadius:'20px', padding:'32px 36px', marginBottom:'24px' }
-  const secHead = (color='#a5f3fc') => ({ color, fontSize:'13px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', margin:'0 0 20px', paddingBottom:'14px', borderBottom: cardBorder })
-  const secLabel = (color='#a5f3fc') => ({ color, fontSize:'12px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', margin:'4px 0 0', paddingBottom:'10px', borderBottom: cardBorder })
-  const inp = { width:'100%', background: inpBg, border:`1px solid ${inpBorder}`, borderRadius:'10px', padding:'12px 16px', color: text, fontSize:'14px', outline:'none', boxSizing:'border-box' }
-  const lbl = { display:'block', color: subtext, fontSize:'12px', marginBottom:'7px', textTransform:'uppercase', letterSpacing:'0.04em' }
+  const Row = ({ label, value, mono }) => (
+    <div style={{ display:'flex', flexDirection:'column', gap:'4px' }}>
+      <span style={lbl}>{label}</span>
+      <span style={{ ...val, ...(mono ? { fontFamily:'monospace', letterSpacing:'0.05em' } : {}) }}>{value || '—'}</span>
+    </div>
+  )
+
+  const Section = ({ title, children, grid }) => (
+    <div style={card}>
+      <p style={sHead}>{title}</p>
+      <div style={grid}>{children}</div>
+    </div>
+  )
 
   return (
     <div style={{ minHeight:'100vh', background: bg, color: text, transition:'background 0.8s ease, color 0.4s ease', fontFamily:'"Inter",system-ui,sans-serif', position:'relative', overflow:'hidden' }}>
       <style>{`
         @keyframes float-orb{0%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-50px) scale(1.1)}66%{transform:translate(-20px,20px) scale(0.9)}100%{transform:translate(0,0) scale(1)}}
         @keyframes antigravity{0%{transform:translateY(110vh) rotate(0deg);opacity:0}10%{opacity:var(--op)}90%{opacity:var(--op)}100%{transform:translateY(-20vh) rotate(360deg);opacity:0}}
-        @keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
-        .cu-inp:focus{border-color:#34d399 !important}
-        .cu-grad-btn{position:relative;overflow:hidden}
-        .cu-grad-btn::after{content:"";position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);transform:translateX(-100%)}
-        .cu-grad-btn:hover::after{animation:shimmer 1s infinite}
-        .cu-tr:hover td{background:rgba(255,255,255,.02)}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+        .cu-fade{animation:fadeIn .45s ease both}
       `}</style>
 
       <canvas ref={canvasRef} style={{ position:'fixed', top:0, left:0, pointerEvents:'none', zIndex:1, opacity:0.45 }} />
@@ -129,7 +102,7 @@ export default function CustomerDashboard() {
         <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
           <div style={{ width:38, height:38, borderRadius:'10px', background:'#34d399', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900, color:'#064e3b', fontSize:'17px' }}>B</div>
           <span style={{ fontWeight:800, fontSize:'18px' }}>BitByte</span>
-          <span style={{ color:'#6ee7b7', fontWeight:700, fontSize:'14px', marginLeft:'6px' }}>🌟 Promotor Dashboard</span>
+          <span style={{ color:'#6ee7b7', fontWeight:700, fontSize:'14px', marginLeft:'6px' }}>👤 Customer Dashboard</span>
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:'14px' }}>
           <span style={{ color: subtext, fontSize:'14px' }}>{localStorage.getItem('email')}</span>
@@ -142,126 +115,51 @@ export default function CustomerDashboard() {
         </div>
       </div>
 
-      <div style={{ position:'relative', zIndex:10, padding:'36px 40px', maxWidth:'1200px', margin:'0 auto' }}>
-        {msg && (
-          <div style={{ background: msgType==='success' ? 'rgba(52,211,153,0.1)' : 'rgba(239,68,68,0.1)', border:`1px solid ${msgType==='success' ? 'rgba(52,211,153,0.25)' : 'rgba(239,68,68,0.3)'}`, color: msgType==='success' ? '#34d399' : '#f87171', borderRadius:'12px', padding:'14px 20px', fontSize:'14px', marginBottom:'20px' }}>
-            {msg}
-          </div>
-        )}
-
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'24px' }}>
-          <h2 style={{ fontSize:'22px', fontWeight:800, margin:0 }}>Customer Management</h2>
-          <button onClick={() => setShowForm(!showForm)} className="cu-grad-btn"
-            style={{ padding:'11px 28px', background:'linear-gradient(90deg,#34d399,#22d3ee)', border:'none', borderRadius:'12px', fontWeight:800, color:'#003b2f', fontSize:'14px', cursor:'pointer' }}>
-            {showForm ? 'Cancel' : '+ Create Customer'}
-          </button>
-        </div>
-
-        {showForm && (
-          <div style={card}>
-            <p style={secHead('#6ee7b7')}>Create New Customer</p>
-            <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
-
-              <p style={secLabel('#6ee7b7')}>Account Info</p>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'14px' }}>
-                <div><label style={lbl}>Initial</label><input name="initial" value={form.initial} onChange={handleChange} maxLength={5} placeholder="Mr/Ms/Mrs" className="cu-inp" style={inp}/></div>
-                <div><label style={lbl}>First Name *</label><input name="first_name" value={form.first_name} onChange={handleChange} required maxLength={100} className="cu-inp" style={inp}/></div>
-                <div><label style={lbl}>Last Name *</label><input name="last_name" value={form.last_name} onChange={handleChange} required maxLength={100} className="cu-inp" style={inp}/></div>
-                <div><label style={lbl}>Mobile *</label><input name="mobile_number" maxLength={10} value={form.mobile_number} onChange={handleChange} required className="cu-inp" style={inp}/></div>
-                <div><label style={lbl}>Email *</label><input type="email" name="email" value={form.email} onChange={handleChange} required className="cu-inp" style={inp}/></div>
-                <div><label style={lbl}>Password *</label><input type="password" name="password" value={form.password} onChange={handleChange} required className="cu-inp" style={inp}/></div>
-              </div>
-
-              <p style={secLabel('#6ee7b7')}>Address</p>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'14px' }}>
-                <div><label style={lbl}>Door No *</label><input name="door_no" value={form.door_no} onChange={handleChange} required maxLength={25} className="cu-inp" style={inp}/></div>
-                <div><label style={lbl}>Street Name *</label><input name="street_name" value={form.street_name} onChange={handleChange} required maxLength={100} className="cu-inp" style={inp}/></div>
-                <div><label style={lbl}>Town *</label><input name="town_name" value={form.town_name} onChange={handleChange} required maxLength={100} className="cu-inp" style={inp}/></div>
-                <div><label style={lbl}>City *</label><input name="city_name" value={form.city_name} onChange={handleChange} required maxLength={25} className="cu-inp" style={inp}/></div>
-                <div><label style={lbl}>District *</label><input name="district" value={form.district} onChange={handleChange} required maxLength={25} className="cu-inp" style={inp}/></div>
-                <div><label style={lbl}>State *</label><input name="state" value={form.state} onChange={handleChange} required maxLength={25} className="cu-inp" style={inp}/></div>
-              </div>
-
-              <p style={secLabel('#6ee7b7')}>Identity</p>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'14px' }}>
-                <div><label style={lbl}>Aadhaar No *</label><input name="aadhaar_no" value={form.aadhaar_no} onChange={handleChange} required maxLength={12} className="cu-inp" style={inp}/></div>
-                <div><label style={lbl}>PAN No *</label><input name="pan_no" value={form.pan_no} onChange={handleChange} required maxLength={10} className="cu-inp" style={inp}/></div>
-              </div>
-
-              <p style={secLabel('#6ee7b7')}>Occupation</p>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'14px' }}>
-                <div><label style={lbl}>Occupation *</label>
-                  <select name="occupation" value={form.occupation} onChange={handleChange} required className="cu-inp" style={{ ...inp, cursor:'pointer' }}>
-                    <option value="" style={{ background:'#1a1f26' }}>Select</option>
-                    {OCCUPATIONS.map(o => <option key={o} value={o} style={{ background:'#1a1f26' }}>{o.charAt(0).toUpperCase()+o.slice(1)}</option>)}
-                  </select>
-                </div>
-                <div><label style={lbl}>Detail</label><input name="occupation_detail" value={form.occupation_detail} onChange={handleChange} maxLength={25} className="cu-inp" style={inp}/></div>
-                <div><label style={lbl}>Annual Salary *</label><input name="annual_salary" value={form.annual_salary} onChange={handleChange} required maxLength={10} className="cu-inp" style={inp}/></div>
-              </div>
-
-              <p style={secLabel('#6ee7b7')}>Promotor Info</p>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'14px' }}>
-                <div><label style={lbl}>Promotor ID *</label>
-                  <select onChange={handlePromotorChange} className="cu-inp" style={{ ...inp, cursor:'pointer' }}>
-                    <option value="" style={{ background:'#1a1f26' }}>Select Promotor ID</option>
-                    {promotors.map(p => <option key={p.id} value={p.id} style={{ background:'#1a1f26' }}>{p.promotor_id}</option>)}
-                  </select>
-                </div>
-                <div><label style={lbl}>Promotor Name</label>
-                  <input value={selectedPromotor ? `${selectedPromotor.first_name} ${selectedPromotor.last_name}` : ''} readOnly placeholder="Auto fetch" style={{ ...inp, opacity:0.5, cursor:'not-allowed' }}/>
-                </div>
-                <div><label style={lbl}>Promotor Contact</label>
-                  <input value={selectedPromotor?.mobile_number || ''} readOnly placeholder="Auto fetch" style={{ ...inp, opacity:0.5, cursor:'not-allowed' }}/>
-                </div>
-              </div>
-
-              <div style={{ display:'flex', gap:'12px', marginTop:'6px' }}>
-                <button type="submit" className="cu-grad-btn"
-                  style={{ padding:'12px 28px', background:'linear-gradient(90deg,#34d399,#22d3ee)', border:'none', borderRadius:'12px', fontWeight:800, color:'#003b2f', fontSize:'14px', cursor:'pointer' }}>
-                  Create Customer
-                </button>
-                <button type="button" onClick={() => setShowForm(false)}
-                  style={{ padding:'12px 24px', background: inpBg, border:`1px solid ${border}`, borderRadius:'12px', color: subtext, fontSize:'14px', cursor:'pointer' }}>
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* Customers Table */}
-        <div style={card}>
-          <p style={secHead('#6ee7b7')}>My Customers ({customers.length})</p>
-          {customers.length === 0 ? (
-            <p style={{ color: subtext, textAlign:'center', padding:'60px 0', fontSize:'15px' }}>No customers yet!</p>
-          ) : (
-            <div style={{ overflowX:'auto' }}>
-              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'15px' }}>
-                <thead>
-                  <tr style={{ borderBottom:`1px solid ${inpBorder}` }}>
-                    {['Customer ID','First Name','Last Name','Email','Mobile','City','Created'].map(h => (
-                      <th key={h} style={{ padding:'14px 16px', textAlign:'left', color: subtext, fontSize:'13px', fontWeight:600, whiteSpace:'nowrap' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {customers.map((c, i) => (
-                    <tr key={i} className="cu-tr" style={{ borderBottom:`1px solid ${border}` }}>
-                      <td style={{ padding:'14px 16px', color:'#34d399', fontFamily:'monospace', fontSize:'13px' }}>{c.customer_id}</td>
-                      <td style={{ padding:'14px 16px', color: text }}>{c.first_name}</td>
-                      <td style={{ padding:'14px 16px', color: text }}>{c.last_name}</td>
-                      <td style={{ padding:'14px 16px', color: subtext }}>{c.email}</td>
-                      <td style={{ padding:'14px 16px', color: subtext }}>{c.mobile_number}</td>
-                      <td style={{ padding:'14px 16px', color: subtext }}>{c.city_name}</td>
-                      <td style={{ padding:'14px 16px', color: subtext, whiteSpace:'nowrap' }}>{new Date(c.created_at).toLocaleDateString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      <div style={{ position:'relative', zIndex:10, padding:'36px 40px', maxWidth:'1000px', margin:'0 auto' }}>
+        {profile ? (
+          <>
+            <div className="cu-fade" style={{ background:'rgba(52,211,153,0.05)', border:'1px solid rgba(52,211,153,0.2)', borderRadius:'16px', padding:'20px 28px', marginBottom:'24px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <span style={{ color: subtext, fontSize:'15px' }}>Customer ID</span>
+              <span style={{ color:'#34d399', fontFamily:'monospace', fontSize:'22px', fontWeight:700 }}>{profile.customer_id}</span>
             </div>
-          )}
-        </div>
+
+            <Section title="Personal Info" grid={g3}>
+              <Row label="Initial"    value={profile.initial} />
+              <Row label="First Name" value={profile.first_name} />
+              <Row label="Last Name"  value={profile.last_name} />
+              <Row label="Mobile"     value={profile.mobile_number} />
+              <Row label="Email"      value={profile.email} />
+            </Section>
+
+            <Section title="Address" grid={g3}>
+              <Row label="Door No"  value={profile.door_no} />
+              <Row label="Street"   value={profile.street_name} />
+              <Row label="Town"     value={profile.town_name} />
+              <Row label="City"     value={profile.city_name} />
+              <Row label="District" value={profile.district} />
+              <Row label="State"    value={profile.state} />
+            </Section>
+
+            <Section title="Identity" grid={g2}>
+              <Row label="Aadhaar No" value={profile.aadhaar_no} mono />
+              <Row label="PAN No"     value={profile.pan_no}     mono />
+            </Section>
+
+            <Section title="Occupation" grid={g3}>
+              <Row label="Occupation"    value={profile.occupation} />
+              <Row label="Detail"        value={profile.occupation_detail} />
+              <Row label="Annual Salary" value={profile.annual_salary} />
+            </Section>
+
+            <Section title="Promotor Info" grid={g3}>
+              <Row label="Promotor Name"    value={profile.promotor_name} />
+              <Row label="Promotor ID"      value={profile.promotor_id} mono />
+              <Row label="Promotor Contact" value={profile.promotor_contact_no} />
+            </Section>
+          </>
+        ) : (
+          <p style={{ color: subtext, textAlign:'center', padding:'80px 0', fontSize:'16px' }}>Loading profile...</p>
+        )}
       </div>
     </div>
   )

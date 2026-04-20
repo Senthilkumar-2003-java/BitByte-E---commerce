@@ -2,6 +2,15 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api'
 
+const OCCUPATIONS = ['employee', 'business', 'others']
+const emptyForm = {
+  initial:'', first_name:'', last_name:'', mobile_number:'', email:'', password:'',
+  door_no:'', street_name:'', town_name:'', city_name:'',
+  district:'', state:'', aadhaar_no:'', pan_no:'',
+  occupation:'', occupation_detail:'', annual_salary:'',
+  promotor_name:'', promotor_contact_no:''
+}
+
 const PARTICLES = Array.from({ length: 15 }, (_, i) => ({
   id: i, size: Math.random() * 60 + 10, x: Math.random() * 100,
   delay: Math.random() * 8, duration: Math.random() * 12 + 15, opacity: Math.random() * 0.2 + 0.05,
@@ -10,18 +19,25 @@ const PARTICLES = Array.from({ length: 15 }, (_, i) => ({
 export default function SubDealerDashboard() {
   const navigate = useNavigate()
   const [dark, setDark] = useState(true)
-  const [profile, setProfile] = useState(null)
+  const [promotors, setPromotors] = useState([])
+  const [subDealers, setSubDealers] = useState([])
+  const [selectedSubDealer, setSelectedSubDealer] = useState(null)
+  const [showForm, setShowForm] = useState(false)
+  const [msg, setMsg] = useState('')
+  const [msgType, setMsgType] = useState('success')
+  const [form, setForm] = useState(emptyForm)
   const canvasRef = useRef(null)
 
-  // Elite Color Palette
-  const bg      = dark ? '#020617' : '#f8fafc'
-  const text    = dark ? '#f8fafc' : '#020617'
-  const subtext = dark ? '#94a3b8' : '#64748b'
-  const accent  = dark ? '#22d3ee' : '#2563eb'
-  const border  = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
-  const glass   = dark ? 'rgba(15, 23, 42, 0.65)' : 'rgba(255, 255, 255, 0.7)'
-  const cardBg  = dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'
+  const bg       = dark ? '#020617' : '#f8fafc'
+  const text     = dark ? '#f8fafc' : '#020617'
+  const subtext  = dark ? '#94a3b8' : '#64748b'
+  const accent   = dark ? '#22d3ee' : '#2563eb'
+  const border   = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+  const glass    = dark ? 'rgba(15, 23, 42, 0.65)' : 'rgba(255, 255, 255, 0.7)'
+  const cardBg   = dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'
   const cardBorder = dark ? '1px solid rgba(103,232,249,0.1)' : '1px solid rgba(0,0,0,0.1)'
+  const inpBg    = dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
+  const inpBorder = dark ? '#374151' : '#d1d5db'
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -39,7 +55,7 @@ export default function SubDealerDashboard() {
         this.x+=this.speedX; this.y+=this.speedY
         if(this.x>canvas.width||this.x<0) this.speedX*=-1
         if(this.y>canvas.height||this.y<0) this.speedY*=-1
-        let dx=mouse.x-this.x, dy=mouse.y-this.y, d=Math.sqrt(dx*dx+dy*dy)
+        let dx=mouse.x-this.x,dy=mouse.y-this.y,d=Math.sqrt(dx*dx+dy*dy)
         if(d<mouse.radius){const fx=dx/d,fy=dy/d,f=(mouse.radius-d)/mouse.radius;this.x-=fx*f*5;this.y-=fy*f*5}
       }
       draw() { ctx.fillStyle= dark ? 'rgba(34,211,238,0.5)' : 'rgba(37,99,235,0.4)'; ctx.beginPath(); ctx.arc(this.x,this.y,this.size,0,Math.PI*2); ctx.fill() }
@@ -56,116 +72,202 @@ export default function SubDealerDashboard() {
     return () => { window.removeEventListener('resize',handleResize); window.removeEventListener('mousemove',handleMouseMove); cancelAnimationFrame(animationFrameId) }
   }, [dark])
 
-  useEffect(() => {
-    api.get('/dashboard/').then(res => setProfile(res.data)).catch(() => {})
-  }, [])
+  const fetchPromotors = async () => {
+    try { const res = await api.get('/promotors/'); setPromotors(res.data) } catch (err) { console.error(err) }
+  }
+  const fetchSubDealers = async () => {
+    try { const res = await api.get('/sub-dealers/list/'); setSubDealers(res.data) } catch (err) { console.error(err) }
+  }
+  useEffect(() => { fetchPromotors(); fetchSubDealers() }, [])
 
-  const card  = { background: cardBg, border: cardBorder, borderRadius:'20px', padding:'32px 36px', marginBottom:'20px' }
-  const sHead = { color:'#86efac', fontSize:'13px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', margin:'0 0 20px', paddingBottom:'14px', borderBottom: cardBorder }
-  const lbl   = { color: subtext, fontSize:'12px', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'6px' }
-  const val   = { color: text, fontSize:'15px' }
-  const g2    = { display:'grid', gridTemplateColumns:'1fr 1fr', gap:'20px' }
-  const g3    = { display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'20px' }
+  const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value })
+  const handleSubDealerChange = (e) => {
+    const id = parseInt(e.target.value)
+    const sd = subDealers.find(s => s.id === id)
+    setSelectedSubDealer(sd || null)
+    setForm({ ...form, assigned_sub_dealer_id: id })
+  }
+  const handleSubmit = async e => {
+    e.preventDefault()
+    try {
+      await api.post('/promotors/', form)
+      setMsg('✅ Promotor created successfully!'); setMsgType('success')
+      setShowForm(false); fetchPromotors(); setForm(emptyForm); setSelectedSubDealer(null)
+    } catch (err) {
+      setMsg('❌ Error: ' + JSON.stringify(err.response?.data)); setMsgType('error')
+    }
+  }
 
-  const Row = ({ label, value, mono }) => (
-    <div style={{ display:'flex', flexDirection:'column', gap:'4px' }}>
-      <span style={lbl}>{label}</span>
-      <span style={{ ...val, ...(mono ? { fontFamily:'monospace', letterSpacing:'0.05em' } : {}) }}>{value || '—'}</span>
-    </div>
-  )
-
-  const Section = ({ title, children, grid }) => (
-    <div style={card}>
-      <p style={sHead}>{title}</p>
-      <div style={grid}>{children}</div>
-    </div>
-  )
+  const card = { background: cardBg, border: cardBorder, borderRadius:'20px', padding:'32px 36px', marginBottom:'24px' }
+  const secHead = (color='#a5f3fc') => ({ color, fontSize:'13px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', margin:'0 0 20px', paddingBottom:'14px', borderBottom: cardBorder })
+  const secLabel = (color='#a5f3fc') => ({ color, fontSize:'12px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', margin:'4px 0 0', paddingBottom:'10px', borderBottom: cardBorder })
+  const inp = { width:'100%', background: inpBg, border:`1px solid ${inpBorder}`, borderRadius:'10px', padding:'12px 16px', color: text, fontSize:'14px', outline:'none', boxSizing:'border-box' }
+  const lbl = { display:'block', color: subtext, fontSize:'12px', marginBottom:'7px', textTransform:'uppercase', letterSpacing:'0.04em' }
 
   return (
     <div style={{ minHeight:'100vh', background: bg, color: text, transition:'background 0.8s ease, color 0.4s ease', fontFamily:'"Inter",system-ui,sans-serif', position:'relative', overflow:'hidden' }}>
       <style>{`
         @keyframes float-orb{0%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-50px) scale(1.1)}66%{transform:translate(-20px,20px) scale(0.9)}100%{transform:translate(0,0) scale(1)}}
         @keyframes antigravity{0%{transform:translateY(110vh) rotate(0deg);opacity:0}10%{opacity:var(--op)}90%{opacity:var(--op)}100%{transform:translateY(-20vh) rotate(360deg);opacity:0}}
-        @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-        .cd-fade{animation:fadeIn .45s ease both}
+        @keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+        .sd-inp:focus{border-color:#a78bfa !important}
+        .sd-grad-btn{position:relative;overflow:hidden}
+        .sd-grad-btn::after{content:"";position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);transform:translateX(-100%)}
+        .sd-grad-btn:hover::after{animation:shimmer 1s infinite}
+        .sd-tr:hover td{background:rgba(255,255,255,.02)}
       `}</style>
 
       <canvas ref={canvasRef} style={{ position:'fixed', top:0, left:0, pointerEvents:'none', zIndex:1, opacity:0.45 }} />
-
-      <div style={{ position:'absolute', borderRadius:'50%', filter:'blur(80px)', animation:'float-orb 20s infinite ease-in-out', zIndex:0, top:'8%', left:'8%', width:'380px', height:'380px', background: dark ? 'rgba(34,211,238,0.08)' : 'rgba(37,99,235,0.08)' }} />
-      <div style={{ position:'absolute', borderRadius:'50%', filter:'blur(80px)', animation:'float-orb 20s infinite ease-in-out', zIndex:0, bottom:'10%', right:'4%', width:'460px', height:'460px', background: dark ? 'rgba(74,222,128,0.06)' : 'rgba(16,185,129,0.06)', animationDelay:'-5s' }} />
+      <div style={{ position:'absolute', borderRadius:'50%', filter:'blur(80px)', animation:'float-orb 20s infinite ease-in-out', zIndex:0, top:'8%', left:'8%', width:'380px', height:'380px', background: dark ? 'rgba(167,139,250,0.08)' : 'rgba(124,58,237,0.08)' }} />
+      <div style={{ position:'absolute', borderRadius:'50%', filter:'blur(80px)', animation:'float-orb 20s infinite ease-in-out', zIndex:0, bottom:'10%', right:'4%', width:'460px', height:'460px', background: dark ? 'rgba(196,181,253,0.06)' : 'rgba(139,92,246,0.06)', animationDelay:'-5s' }} />
 
       {PARTICLES.map(p => (
         <div key={p.id} style={{ position:'absolute', left:`${p.x}%`, bottom:'-100px', width:p.size, height:p.size, borderRadius:'40% 60% 60% 40% / 40% 40% 60% 60%', border:`1px solid ${accent}44`, opacity:p.opacity, animation:`antigravity ${p.duration}s ${p.delay}s infinite linear`, '--op':p.opacity, pointerEvents:'none', zIndex:0 }} />
       ))}
 
       {/* Navbar */}
-      <div style={{ position:'relative', zIndex:10, background: glass, borderBottom:`1px solid ${border}`, padding:'18px 40px', display:'flex', justifyContent:'space-between', alignItems:'center', backdropFilter:'blur(16px)', transition:'background 0.8s ease' }}>
+      <div style={{ position:'relative', zIndex:10, background: glass, borderBottom:`1px solid ${border}`, padding:'18px 40px', display:'flex', justifyContent:'space-between', alignItems:'center', backdropFilter:'blur(16px)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
-          <div style={{ width:38, height:38, borderRadius:'10px', background:'#4ade80', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900, color:'#065f46', fontSize:'17px' }}>B</div>
+          <div style={{ width:38, height:38, borderRadius:'10px', background:'#a78bfa', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900, color:'#fff', fontSize:'17px' }}>B</div>
           <span style={{ fontWeight:800, fontSize:'18px' }}>BitByte</span>
-          <span style={{ color:'#86efac', fontWeight:700, fontSize:'14px', marginLeft:'6px' }}>👤 Sub Dealer Dashboard</span>
+          <span style={{ color:'#c4b5fd', fontWeight:700, fontSize:'14px', marginLeft:'6px' }}>💎 Sub Dealer Dashboard</span>
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:'14px' }}>
           <span style={{ color: subtext, fontSize:'14px' }}>{localStorage.getItem('email')}</span>
-
-          {/* ── DARK / LIGHT TOGGLE ── */}
-          <button onClick={() => setDark(!dark)}
-            style={{ padding:'8px 16px', borderRadius:'16px', border:`1px solid ${border}`, background:'transparent', color: text, cursor:'pointer', fontWeight:600, fontSize:'13px', transition:'all 0.3s ease' }}>
+          <button onClick={() => setDark(!dark)} style={{ padding:'8px 16px', borderRadius:'16px', border:`1px solid ${border}`, background:'transparent', color: text, cursor:'pointer', fontWeight:600, fontSize:'13px' }}>
             {dark ? '☀️ Light' : '🌙 Dark'}
           </button>
-
-          <button onClick={() => { localStorage.clear(); navigate('/login') }}
-            style={{ padding:'8px 18px', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', borderRadius:'10px', fontSize:'13px', cursor:'pointer' }}>
+          <button onClick={() => { localStorage.clear(); navigate('/login') }} style={{ padding:'8px 18px', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', borderRadius:'10px', fontSize:'13px', cursor:'pointer' }}>
             Logout
           </button>
         </div>
       </div>
 
-      <div style={{ position:'relative', zIndex:10, padding:'36px 40px', maxWidth:'1000px', margin:'0 auto' }}>
-        {profile ? (
-          <>
-            {/* Dealer ID Banner */}
-            <div className="cd-fade" style={{ background:'rgba(74,222,128,0.05)', border:'1px solid rgba(74,222,128,0.2)', borderRadius:'16px', padding:'20px 28px', marginBottom:'24px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-              <span style={{ color: subtext, fontSize:'15px' }}>Sub Dealer ID</span>
-              <span style={{ color:'#4ade80', fontFamily:'monospace', fontSize:'22px', fontWeight:700 }}>{profile.sub_dealer_id}</span>
-            </div>
-
-            <Section title="Personal Info" grid={g3}>
-              <Row label="Full Name"  value={profile.name} />
-              <Row label="Mobile"     value={profile.mobile_number} />
-              <Row label="Email"      value={profile.email} />
-            </Section>
-
-            <Section title="Address" grid={g3}>
-              <Row label="Door No"    value={profile.door_no} />
-              <Row label="Street"     value={profile.street_name} />
-              <Row label="Town"       value={profile.town_name} />
-              <Row label="City"       value={profile.city_name} />
-              <Row label="District"   value={profile.district} />
-              <Row label="State"      value={profile.state} />
-            </Section>
-
-            <Section title="Identity" grid={g2}>
-              <Row label="Aadhaar No" value={profile.aadhaar_no} mono />
-              <Row label="PAN No"     value={profile.pan_no}     mono />
-            </Section>
-
-            <Section title="Occupation" grid={g3}>
-              <Row label="Occupation"       value={profile.occupation} />
-              <Row label="Detail"           value={profile.occupation_detail} />
-              <Row label="Annual Salary"    value={profile.annual_salary} />
-            </Section>
-
-            <Section title="Dealer Info" grid={g3}>
-            <Row label="Dealer Name"    value={profile.dealer_name} />
-            <Row label="Dealer ID"      value={profile.dealer_id} mono />
-            <Row label="Dealer Contact" value={profile.dealer_contact_no} />
-            </Section>
-          </>
-        ) : (
-          <p style={{ color: subtext, textAlign:'center', padding:'80px 0', fontSize:'16px' }}>Loading profile...</p>
+      <div style={{ position:'relative', zIndex:10, padding:'36px 40px', maxWidth:'1200px', margin:'0 auto' }}>
+        {msg && (
+          <div style={{ background: msgType==='success' ? 'rgba(167,139,250,0.1)' : 'rgba(239,68,68,0.1)', border:`1px solid ${msgType==='success' ? 'rgba(167,139,250,0.25)' : 'rgba(239,68,68,0.3)'}`, color: msgType==='success' ? '#a78bfa' : '#f87171', borderRadius:'12px', padding:'14px 20px', fontSize:'14px', marginBottom:'20px' }}>
+            {msg}
+          </div>
         )}
+
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'24px' }}>
+          <h2 style={{ fontSize:'22px', fontWeight:800, margin:0 }}>Promotor Management</h2>
+          <button onClick={() => setShowForm(!showForm)} className="sd-grad-btn"
+            style={{ padding:'11px 28px', background:'linear-gradient(90deg,#a78bfa,#22d3ee)', border:'none', borderRadius:'12px', fontWeight:800, color:'#1e003b', fontSize:'14px', cursor:'pointer' }}>
+            {showForm ? 'Cancel' : '+ Create Promotor'}
+          </button>
+        </div>
+
+        {showForm && (
+          <div style={card}>
+            <p style={secHead('#c4b5fd')}>Create New Promotor</p>
+            <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
+
+              <p style={secLabel('#c4b5fd')}>Account Info</p>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'14px' }}>
+                <div><label style={lbl}>Initial</label><input name="initial" value={form.initial} onChange={handleChange} maxLength={5} placeholder="Mr/Ms/Mrs" className="sd-inp" style={inp}/></div>
+                <div><label style={lbl}>First Name *</label><input name="first_name" value={form.first_name} onChange={handleChange} required maxLength={100} className="sd-inp" style={inp}/></div>
+                <div><label style={lbl}>Last Name *</label><input name="last_name" value={form.last_name} onChange={handleChange} required maxLength={100} className="sd-inp" style={inp}/></div>
+                <div><label style={lbl}>Mobile *</label><input name="mobile_number" maxLength={10} value={form.mobile_number} onChange={handleChange} required className="sd-inp" style={inp}/></div>
+                <div><label style={lbl}>Email *</label><input type="email" name="email" value={form.email} onChange={handleChange} required className="sd-inp" style={inp}/></div>
+                <div><label style={lbl}>Password *</label><input type="password" name="password" value={form.password} onChange={handleChange} required className="sd-inp" style={inp}/></div>
+              </div>
+
+              <p style={secLabel('#c4b5fd')}>Address</p>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'14px' }}>
+                <div><label style={lbl}>Door No *</label><input name="door_no" value={form.door_no} onChange={handleChange} required maxLength={25} className="sd-inp" style={inp}/></div>
+                <div><label style={lbl}>Street Name *</label><input name="street_name" value={form.street_name} onChange={handleChange} required maxLength={100} className="sd-inp" style={inp}/></div>
+                <div><label style={lbl}>Town *</label><input name="town_name" value={form.town_name} onChange={handleChange} required maxLength={100} className="sd-inp" style={inp}/></div>
+                <div><label style={lbl}>City *</label><input name="city_name" value={form.city_name} onChange={handleChange} required maxLength={25} className="sd-inp" style={inp}/></div>
+                <div><label style={lbl}>District *</label><input name="district" value={form.district} onChange={handleChange} required maxLength={25} className="sd-inp" style={inp}/></div>
+                <div><label style={lbl}>State *</label><input name="state" value={form.state} onChange={handleChange} required maxLength={25} className="sd-inp" style={inp}/></div>
+              </div>
+
+              <p style={secLabel('#c4b5fd')}>Identity</p>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'14px' }}>
+                <div><label style={lbl}>Aadhaar No *</label><input name="aadhaar_no" value={form.aadhaar_no} onChange={handleChange} required maxLength={12} className="sd-inp" style={inp}/></div>
+                <div><label style={lbl}>PAN No *</label><input name="pan_no" value={form.pan_no} onChange={handleChange} required maxLength={10} className="sd-inp" style={inp}/></div>
+              </div>
+
+              <p style={secLabel('#c4b5fd')}>Occupation</p>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'14px' }}>
+                <div><label style={lbl}>Occupation *</label>
+                  <select name="occupation" value={form.occupation} onChange={handleChange} required className="sd-inp" style={{ ...inp, cursor:'pointer' }}>
+                    <option value="" style={{ background:'#1a1f26' }}>Select</option>
+                    {OCCUPATIONS.map(o => <option key={o} value={o} style={{ background:'#1a1f26' }}>{o.charAt(0).toUpperCase()+o.slice(1)}</option>)}
+                  </select>
+                </div>
+                <div><label style={lbl}>Detail</label><input name="occupation_detail" value={form.occupation_detail} onChange={handleChange} maxLength={25} className="sd-inp" style={inp}/></div>
+                <div><label style={lbl}>Annual Salary *</label><input name="annual_salary" value={form.annual_salary} onChange={handleChange} required maxLength={10} className="sd-inp" style={inp}/></div>
+              </div>
+
+              <p style={secLabel('#c4b5fd')}>Sub Dealer Info</p>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'14px' }}>
+                <div><label style={lbl}>Sub Dealer ID *</label>
+                  <select onChange={handleSubDealerChange} className="sd-inp" style={{ ...inp, cursor:'pointer' }}>
+                    <option value="" style={{ background:'#1a1f26' }}>Select Sub Dealer ID</option>
+                    {subDealers.map(s => <option key={s.id} value={s.id} style={{ background:'#1a1f26' }}>{s.sub_dealer_id}</option>)}
+                  </select>
+                </div>
+                <div><label style={lbl}>Sub Dealer Name</label>
+                  <input value={selectedSubDealer?.name || ''} readOnly placeholder="Auto fetch" style={{ ...inp, opacity:0.5, cursor:'not-allowed' }}/>
+                </div>
+                <div><label style={lbl}>Sub Dealer Contact</label>
+                  <input value={selectedSubDealer?.mobile_number || ''} readOnly placeholder="Auto fetch" style={{ ...inp, opacity:0.5, cursor:'not-allowed' }}/>
+                </div>
+              </div>
+
+              <p style={secLabel('#c4b5fd')}>Promotor Info</p>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'14px' }}>
+                <div><label style={lbl}>Promotor Name *</label><input name="promotor_name" value={form.promotor_name} onChange={handleChange} required maxLength={50} className="sd-inp" style={inp}/></div>
+                <div><label style={lbl}>Promotor Contact *</label><input name="promotor_contact_no" value={form.promotor_contact_no} onChange={handleChange} required maxLength={10} className="sd-inp" style={inp}/></div>
+              </div>
+
+              <div style={{ display:'flex', gap:'12px', marginTop:'6px' }}>
+                <button type="submit" className="sd-grad-btn"
+                  style={{ padding:'12px 28px', background:'linear-gradient(90deg,#a78bfa,#22d3ee)', border:'none', borderRadius:'12px', fontWeight:800, color:'#1e003b', fontSize:'14px', cursor:'pointer' }}>
+                  Create Promotor
+                </button>
+                <button type="button" onClick={() => setShowForm(false)}
+                  style={{ padding:'12px 24px', background: inpBg, border:`1px solid ${border}`, borderRadius:'12px', color: subtext, fontSize:'14px', cursor:'pointer' }}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        <div style={card}>
+          <p style={secHead('#c4b5fd')}>My Promotors ({promotors.length})</p>
+          {promotors.length === 0 ? (
+            <p style={{ color: subtext, textAlign:'center', padding:'60px 0', fontSize:'15px' }}>No promotors yet!</p>
+          ) : (
+            <div style={{ overflowX:'auto' }}>
+              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'15px' }}>
+                <thead>
+                  <tr style={{ borderBottom:`1px solid ${inpBorder}` }}>
+                    {['Promotor ID','First Name','Last Name','Email','Mobile','City','Created'].map(h => (
+                      <th key={h} style={{ padding:'14px 16px', textAlign:'left', color: subtext, fontSize:'13px', fontWeight:600, whiteSpace:'nowrap' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {promotors.map((p, i) => (
+                    <tr key={i} className="sd-tr" style={{ borderBottom:`1px solid ${border}` }}>
+                      <td style={{ padding:'14px 16px', color:'#a78bfa', fontFamily:'monospace', fontSize:'13px' }}>{p.promotor_id}</td>
+                      <td style={{ padding:'14px 16px', color: text }}>{p.first_name}</td>
+                      <td style={{ padding:'14px 16px', color: text }}>{p.last_name}</td>
+                      <td style={{ padding:'14px 16px', color: subtext }}>{p.email}</td>
+                      <td style={{ padding:'14px 16px', color: subtext }}>{p.mobile_number}</td>
+                      <td style={{ padding:'14px 16px', color: subtext }}>{p.city_name}</td>
+                      <td style={{ padding:'14px 16px', color: subtext, whiteSpace:'nowrap' }}>{new Date(p.created_at).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
