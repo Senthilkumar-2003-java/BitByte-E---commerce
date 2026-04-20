@@ -14,6 +14,7 @@ export default function SuperAdminDashboard() {
   const [dark, setDark] = useState(true)
   const [admins, setAdmins] = useState([])
   const [showForm, setShowForm] = useState(false)
+  const [showHierarchy, setShowHierarchy] = useState(false)
   const [msg, setMsg] = useState('')
   const [form, setForm] = useState({
     name:'', mobile_number:'', door_no:'', street_name:'', town_name:'',
@@ -148,12 +149,72 @@ export default function SuperAdminDashboard() {
         )}
 
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'24px' }}>
-          <h2 style={{ fontSize:'22px', fontWeight:800, margin:0 }}>Admin Management</h2>
-          <button onClick={() => setShowForm(!showForm)} className="sa-grad-btn"
-            style={{ padding:'11px 28px', background:'linear-gradient(90deg,#22d3ee,#4ade80)', border:'none', borderRadius:'12px', fontWeight:800, color:'#006165', fontSize:'14px', cursor:'pointer' }}>
-            {showForm ? 'Cancel' : '+ Create Admin'}
-          </button>
+  <h2 style={{ fontSize:'22px', fontWeight:800, margin:0 }}>Admin Management</h2>
+  <div style={{ display:'flex', gap:'12px' }}>
+    <button onClick={() => setShowHierarchy(true)}
+      style={{ padding:'11px 28px', background:'rgba(165,243,252,0.08)', border:'1px solid rgba(103,232,249,0.3)', borderRadius:'12px', fontWeight:700, color:'#a5f3fc', fontSize:'14px', cursor:'pointer' }}>
+      🏢 Admin Hierarchy
+    </button>
+    <button onClick={() => setShowForm(!showForm)} className="sa-grad-btn"
+      style={{ padding:'11px 28px', background:'linear-gradient(90deg,#22d3ee,#4ade80)', border:'none', borderRadius:'12px', fontWeight:800, color:'#006165', fontSize:'14px', cursor:'pointer' }}>
+      {showForm ? 'Cancel' : '+ Create Admin'}
+    </button>
+  </div>
+</div>
+
+{/* ── HIERARCHY MODAL ── */}
+{showHierarchy && (
+  <div onClick={() => setShowHierarchy(false)}
+    style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', backdropFilter:'blur(8px)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center' }}>
+    <div onClick={e => e.stopPropagation()}
+      style={{ background:'#0f172a', border:'1px solid rgba(103,232,249,0.2)', borderRadius:'20px', padding:'32px', maxWidth:'960px', width:'95%', maxHeight:'80vh', overflowY:'auto' }}>
+
+      {/* Modal Header */}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'28px', paddingBottom:'14px', borderBottom:'1px solid rgba(103,232,249,0.1)' }}>
+        <span style={{ color:'#a5f3fc', fontSize:'13px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em' }}>🏢 Admin Hierarchy</span>
+        <button onClick={() => setShowHierarchy(false)}
+          style={{ background:'transparent', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', borderRadius:'8px', padding:'6px 14px', cursor:'pointer', fontSize:'12px' }}>
+          ✕ Close
+        </button>
+      </div>
+
+      {/* Tree */}
+      <div style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
+
+        {/* Super Admin Root */}
+        <div style={{ background:'linear-gradient(135deg,rgba(34,211,238,0.15),rgba(74,222,128,0.1))', border:'1px solid #22d3ee', borderRadius:'14px', padding:'14px 48px', fontWeight:800, fontSize:'15px', color:'#22d3ee' }}>
+          🛡️ Super Admin
         </div>
+
+        {/* Vertical stem */}
+        <div style={{ width:2, height:28, background:'linear-gradient(180deg,#22d3ee,rgba(34,211,238,0.3))' }} />
+
+        {/* Horizontal spine */}
+        <div style={{ position:'relative', width:'100%', display:'flex', justifyContent:'center' }}>
+          <div style={{ position:'absolute', top:0, left:'10%', right:'10%', height:2, background:'linear-gradient(90deg,transparent,rgba(34,211,238,0.5),transparent)' }} />
+
+          {/* Admin Cards */}
+          <div style={{ display:'flex', gap:'20px', flexWrap:'wrap', justifyContent:'center', paddingTop:'0' }}>
+            {admins.map((a, i) => (
+              <div key={i} style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
+                <div style={{ width:2, height:28, background:'rgba(34,211,238,0.5)' }} />
+                <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(165,243,252,0.2)', borderRadius:'12px', padding:'16px 20px', minWidth:'190px' }}>
+                  <div style={{ color:'#22d3ee', fontFamily:'monospace', fontSize:'11px', marginBottom:'6px' }}>{a.admin_id}</div>
+                  <div style={{ color:'#f8fafc', fontWeight:700, fontSize:'14px', marginBottom:'6px' }}>{a.name}</div>
+                  <div style={{ color:'#94a3b8', fontSize:'12px', marginBottom:'3px' }}>📞 {a.admin_contact_no}</div>
+                  <div style={{ color:'#94a3b8', fontSize:'12px' }}>📍 {a.city_name}</div>
+                </div>
+              </div>
+            ))}
+            {admins.length === 0 && (
+              <div style={{ color:'#94a3b8', padding:'40px', textAlign:'center' }}>No admins created yet.</div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 
         {showForm && (
           <div style={s.card}>
