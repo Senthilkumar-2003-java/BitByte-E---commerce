@@ -105,9 +105,11 @@ export default function LoginPage() {
       localStorage.setItem('email', res.data.email)
 
       const role = res.data.role
+      // NEW
       if (role === 'super_admin') navigate('/super-admin', { replace: true })
       else if (role === 'admin') navigate('/admin', { replace: true })
-      else navigate('/customer', { replace: true })
+      else if (role === 'dealer') navigate('/dealer', { replace: true })
+      else navigate('/sub-dealer', { replace: true })
 
     } catch (err) {
       const msg = err.response?.data?.error || err.response?.data?.detail || 'Invalid email or password'

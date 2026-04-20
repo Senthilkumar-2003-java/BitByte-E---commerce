@@ -7,7 +7,7 @@ const PARTICLES = Array.from({ length: 15 }, (_, i) => ({
   delay: Math.random() * 8, duration: Math.random() * 12 + 15, opacity: Math.random() * 0.2 + 0.05,
 }))
 
-export default function CustomerDashboard() {
+export default function SubDealerDashboard() {
   const navigate = useNavigate()
   const [dark, setDark] = useState(true)
   const [profile, setProfile] = useState(null)
@@ -104,7 +104,7 @@ export default function CustomerDashboard() {
         <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
           <div style={{ width:38, height:38, borderRadius:'10px', background:'#4ade80', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900, color:'#065f46', fontSize:'17px' }}>B</div>
           <span style={{ fontWeight:800, fontSize:'18px' }}>BitByte</span>
-          <span style={{ color:'#86efac', fontWeight:700, fontSize:'14px', marginLeft:'6px' }}>👤 My Dashboard</span>
+          <span style={{ color:'#86efac', fontWeight:700, fontSize:'14px', marginLeft:'6px' }}>👤 Sub Dealer Dashboard</span>
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:'14px' }}>
           <span style={{ color: subtext, fontSize:'14px' }}>{localStorage.getItem('email')}</span>
@@ -125,10 +125,10 @@ export default function CustomerDashboard() {
       <div style={{ position:'relative', zIndex:10, padding:'36px 40px', maxWidth:'1000px', margin:'0 auto' }}>
         {profile ? (
           <>
-            {/* Customer ID Banner */}
+            {/* Dealer ID Banner */}
             <div className="cd-fade" style={{ background:'rgba(74,222,128,0.05)', border:'1px solid rgba(74,222,128,0.2)', borderRadius:'16px', padding:'20px 28px', marginBottom:'24px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-              <span style={{ color: subtext, fontSize:'15px' }}>Customer ID</span>
-              <span style={{ color:'#4ade80', fontFamily:'monospace', fontSize:'22px', fontWeight:700 }}>{profile.customer_id}</span>
+              <span style={{ color: subtext, fontSize:'15px' }}>Sub Dealer ID</span>
+              <span style={{ color:'#4ade80', fontFamily:'monospace', fontSize:'22px', fontWeight:700 }}>{profile.sub_dealer_id}</span>
             </div>
 
             <Section title="Personal Info" grid={g3}>
@@ -157,10 +157,10 @@ export default function CustomerDashboard() {
               <Row label="Annual Salary"    value={profile.annual_salary} />
             </Section>
 
-            <Section title="Admin Info" grid={g3}>
-              <Row label="Admin Name"    value={profile.admin_name} />
-              <Row label="Admin ID"      value={profile.admin_id} mono />
-              <Row label="Admin Contact" value={profile.admin_contact_no} />
+            <Section title="Dealer Info" grid={g3}>
+            <Row label="Dealer Name"    value={profile.dealer_name} />
+            <Row label="Dealer ID"      value={profile.dealer_id} mono />
+            <Row label="Dealer Contact" value={profile.dealer_contact_no} />
             </Section>
           </>
         ) : (

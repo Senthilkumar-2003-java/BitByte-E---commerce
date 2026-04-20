@@ -20,7 +20,8 @@ class UserManager(BaseUserManager):
 ROLE_CHOICES = [
     ('super_admin', 'Super Admin'),
     ('admin', 'Admin'),
-    ('customer', 'Customer'),
+    ('dealer', 'Dealer'),         # NEW
+    ('sub_dealer', 'Sub Dealer'), # NEW
 ]
 
 OCCUPATION_CHOICES = [
@@ -31,7 +32,7 @@ OCCUPATION_CHOICES = [
 
 class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='customer')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='dealer')
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -47,11 +48,9 @@ class AdminProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='admin_profile')
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_admins')
 
-    # Personal Info
     name = models.CharField(max_length=100)
     mobile_number = models.CharField(max_length=10)
 
-    # Address
     door_no = models.CharField(max_length=25)
     street_name = models.CharField(max_length=100)
     town_name = models.CharField(max_length=100)
@@ -59,16 +58,13 @@ class AdminProfile(models.Model):
     district = models.CharField(max_length=25)
     state = models.CharField(max_length=25)
 
-    # Identity
     aadhaar_no = models.CharField(max_length=12)
     pan_no = models.CharField(max_length=25)
 
-    # Occupation
     occupation = models.CharField(max_length=20, choices=OCCUPATION_CHOICES)
     occupation_detail = models.CharField(max_length=25, blank=True)
     annual_salary = models.CharField(max_length=10)
 
-    # Admin Info
     admin_name = models.CharField(max_length=50)
     admin_id = models.CharField(max_length=25, unique=True)
     admin_contact_no = models.CharField(max_length=10)
@@ -76,23 +72,22 @@ class AdminProfile(models.Model):
     def __str__(self):
         return self.name
 
-class CustomerProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='customer_profile')
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_customers')
 
-    # ✅ இந்த line புதுசா add பண்ணு — மத்தபடி எல்லாம் same
+# ✅ Dealer (created by Admin) — replaces old CustomerProfile
+class DealerProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='dealer_profile')
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_dealers')
+
     assigned_admin = models.ForeignKey(
         'AdminProfile',
         on_delete=models.SET_NULL,
         null=True, blank=True,
-        related_name='assigned_customers'
+        related_name='assigned_dealers'
     )
 
-    # Personal Info
     name = models.CharField(max_length=100)
     mobile_number = models.CharField(max_length=10)
 
-    # Address
     door_no = models.CharField(max_length=25, blank=True, null=True)
     street_name = models.CharField(max_length=100, blank=True, null=True)
     town_name = models.CharField(max_length=100, blank=True, null=True)
@@ -100,26 +95,69 @@ class CustomerProfile(models.Model):
     district = models.CharField(max_length=25, blank=True, null=True)
     state = models.CharField(max_length=25, blank=True, null=True)
 
-    # Identity
     aadhaar_no = models.CharField(max_length=12, blank=True, null=True)
     pan_no = models.CharField(max_length=10, blank=True, null=True)
 
-    # Occupation
     occupation = models.CharField(max_length=20, choices=OCCUPATION_CHOICES, blank=True, null=True)
     occupation_detail = models.CharField(max_length=25, blank=True, null=True)
     annual_salary = models.CharField(max_length=10, blank=True, null=True)
 
-    # Auto-generated customer ID
-    customer_id = models.CharField(max_length=20, unique=True, blank=True)
+    dealer_name = models.CharField(max_length=50, blank=True)
+    dealer_id = models.CharField(max_length=20, unique=True, blank=True)
+    dealer_contact_no = models.CharField(max_length=10, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
-        if not self.customer_id:
+        if not self.dealer_id:
             from django.utils import timezone
             year = timezone.now().year
-            count = CustomerProfile.objects.count() + 1
-            self.customer_id = f"BBCUS{year}{count:07d}"
+            count = DealerProfile.objects.count() + 1
+            self.dealer_id = f"BBDL{year}{count:07d}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
+# ✅ Sub Dealer (created by Dealer)
+class SubDealerProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='sub_dealer_profile')
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_sub_dealers')
+
+    assigned_dealer = models.ForeignKey(
+        'DealerProfile',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='assigned_sub_dealers'
+    )
+
+    name = models.CharField(max_length=100)
+    mobile_number = models.CharField(max_length=10)
+
+    door_no = models.CharField(max_length=25, blank=True, null=True)
+    street_name = models.CharField(max_length=100, blank=True, null=True)
+    town_name = models.CharField(max_length=100, blank=True, null=True)
+    city_name = models.CharField(max_length=25, blank=True, null=True)
+    district = models.CharField(max_length=25, blank=True, null=True)
+    state = models.CharField(max_length=25, blank=True, null=True)
+
+    aadhaar_no = models.CharField(max_length=12, blank=True, null=True)
+    pan_no = models.CharField(max_length=10, blank=True, null=True)
+
+    occupation = models.CharField(max_length=20, choices=OCCUPATION_CHOICES, blank=True, null=True)
+    occupation_detail = models.CharField(max_length=25, blank=True, null=True)
+    annual_salary = models.CharField(max_length=10, blank=True, null=True)
+
+    sub_dealer_id = models.CharField(max_length=20, unique=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.sub_dealer_id:
+            from django.utils import timezone
+            year = timezone.now().year
+            count = SubDealerProfile.objects.count() + 1
+            self.sub_dealer_id = f"BBSDL{year}{count:07d}"
         super().save(*args, **kwargs)
 
     def __str__(self):

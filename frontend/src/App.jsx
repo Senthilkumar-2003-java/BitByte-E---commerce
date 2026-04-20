@@ -3,7 +3,8 @@ import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
 import SuperAdminDashboard from './pages/SuperAdminDashboard'
 import AdminDashboard from './pages/AdminDashboard'
-import CustomerDashboard from './pages/CustomerDashboard'
+import DealerDashboard from './pages/DealerDashboard'
+import SubDealerDashboard from './pages/SubDealerDashboard'
 
 function ProtectedRoute({ children, role }) {
   const token = localStorage.getItem('token')
@@ -29,8 +30,11 @@ export default function App() {
         <Route path="/admin" element={
           <ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>
         } />
-        <Route path="/customer" element={
-          <ProtectedRoute role="customer"><CustomerDashboard /></ProtectedRoute>
+        <Route path="/dealer" element={
+          <ProtectedRoute role="dealer"><DealerDashboard /></ProtectedRoute>
+        } />
+        <Route path="/sub-dealer" element={
+          <ProtectedRoute role="sub_dealer"><SubDealerDashboard /></ProtectedRoute>
         } />
       </Routes>
     </BrowserRouter>

@@ -15,19 +15,18 @@ const PARTICLES = Array.from({ length: 15 }, (_, i) => ({
   delay: Math.random() * 8, duration: Math.random() * 12 + 15, opacity: Math.random() * 0.2 + 0.05,
 }))
 
-export default function AdminDashboard() {
+export default function DealerDashboard() {
   const navigate = useNavigate()
   const [dark, setDark] = useState(true)
-  const [dealers, setDealers] = useState([])
-  const [admins, setAdmins] = useState([])
-  const [selectedAdmin, setSelectedAdmin] = useState(null)
+  const [subDealers, setSubDealers] = useState([])
+  const [dealers, setDealers] = useState([])         // for dropdown — dealer picks themselves
+  const [selectedDealer, setSelectedDealer] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [msg, setMsg] = useState('')
   const [msgType, setMsgType] = useState('success')
   const [form, setForm] = useState(emptyForm)
   const canvasRef = useRef(null)
 
-  // Elite Color Palette
   const bg      = dark ? '#020617' : '#f8fafc'
   const text     = dark ? '#f8fafc' : '#020617'
   const subtext  = dark ? '#94a3b8' : '#64748b'
@@ -72,27 +71,27 @@ export default function AdminDashboard() {
     return () => { window.removeEventListener('resize',handleResize); window.removeEventListener('mousemove',handleMouseMove); cancelAnimationFrame(animationFrameId) }
   }, [dark])
 
+  const fetchSubDealers = async () => {
+    try { const res = await api.get('/sub-dealers/'); setSubDealers(res.data) } catch (err) { console.error(err) }
+  }
   const fetchDealers = async () => {
-    try { const res = await api.get('/dealers/'); setDealers(res.data) } catch (err) { console.error('dealers error:', err.response?.status) }
+    try { const res = await api.get('/dealers/list/'); setDealers(res.data) } catch (err) { console.error(err) }
   }
-  const fetchAdmins = async () => {
-    try { const res = await api.get('/admins/list/'); setAdmins(res.data) } catch (err) { console.error('admins error:', err.response?.status) }
-  }
-  useEffect(() => { fetchDealers(); fetchAdmins() }, [])
+  useEffect(() => { fetchSubDealers(); fetchDealers() }, [])
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value })
-  const handleAdminChange = (e) => {
+  const handleDealerChange = (e) => {
     const id = parseInt(e.target.value)
-    const admin = admins.find(a => a.id === id)
-    setSelectedAdmin(admin || null)
-    setForm({ ...form, assigned_admin_id: id })
+    const dealer = dealers.find(d => d.id === id)
+    setSelectedDealer(dealer || null)
+    setForm({ ...form, assigned_dealer_id: id })
   }
   const handleSubmit = async e => {
     e.preventDefault()
     try {
-      await api.post('/dealers/', form)
-      setMsg('✅ Dealer created successfully!'); setMsgType('success')
-      setShowForm(false); fetchDealers(); setForm(emptyForm); setSelectedAdmin(null)
+      await api.post('/sub-dealers/', form)
+      setMsg('✅ Sub Dealer created successfully!'); setMsgType('success')
+      setShowForm(false); fetchSubDealers(); setForm(emptyForm); setSelectedDealer(null)
     } catch (err) {
       setMsg('❌ Error: ' + JSON.stringify(err.response?.data)); setMsgType('error')
     }
@@ -110,11 +109,11 @@ export default function AdminDashboard() {
         @keyframes float-orb{0%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-50px) scale(1.1)}66%{transform:translate(-20px,20px) scale(0.9)}100%{transform:translate(0,0) scale(1)}}
         @keyframes antigravity{0%{transform:translateY(110vh) rotate(0deg);opacity:0}10%{opacity:var(--op)}90%{opacity:var(--op)}100%{transform:translateY(-20vh) rotate(360deg);opacity:0}}
         @keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
-        .ad-inp:focus{border-color:#22d3ee !important}
-        .ad-grad-btn{position:relative;overflow:hidden}
-        .ad-grad-btn::after{content:"";position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);transform:translateX(-100%)}
-        .ad-grad-btn:hover::after{animation:shimmer 1s infinite}
-        .ad-tr:hover td{background:rgba(255,255,255,.02)}
+        .dl-inp:focus{border-color:#22d3ee !important}
+        .dl-grad-btn{position:relative;overflow:hidden}
+        .dl-grad-btn::after{content:"";position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);transform:translateX(-100%)}
+        .dl-grad-btn:hover::after{animation:shimmer 1s infinite}
+        .dl-tr:hover td{background:rgba(255,255,255,.02)}
       `}</style>
 
       <canvas ref={canvasRef} style={{ position:'fixed', top:0, left:0, pointerEvents:'none', zIndex:1, opacity:0.45 }} />
@@ -126,23 +125,18 @@ export default function AdminDashboard() {
       ))}
 
       {/* Navbar */}
-      <div style={{ position:'relative', zIndex:10, background: glass, borderBottom:`1px solid ${border}`, padding:'18px 40px', display:'flex', justifyContent:'space-between', alignItems:'center', backdropFilter:'blur(16px)', transition:'background 0.8s ease' }}>
+      <div style={{ position:'relative', zIndex:10, background: glass, borderBottom:`1px solid ${border}`, padding:'18px 40px', display:'flex', justifyContent:'space-between', alignItems:'center', backdropFilter:'blur(16px)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
-          <div style={{ width:38, height:38, borderRadius:'10px', background:'#4ade80', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900, color:'#065f46', fontSize:'17px' }}>B</div>
+          <div style={{ width:38, height:38, borderRadius:'10px', background:'#f59e0b', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900, color:'#fff', fontSize:'17px' }}>B</div>
           <span style={{ fontWeight:800, fontSize:'18px' }}>BitByte</span>
-          <span style={{ color:'#86efac', fontWeight:700, fontSize:'14px', marginLeft:'6px' }}>🛡️ Admin Dashboard</span>
+          <span style={{ color:'#fcd34d', fontWeight:700, fontSize:'14px', marginLeft:'6px' }}>🏪 Dealer Dashboard</span>
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:'14px' }}>
           <span style={{ color: subtext, fontSize:'14px' }}>{localStorage.getItem('email')}</span>
-
-          {/* ── DARK / LIGHT TOGGLE ── */}
-          <button onClick={() => setDark(!dark)}
-            style={{ padding:'8px 16px', borderRadius:'16px', border: `1px solid ${border}`, background:'transparent', color: text, cursor:'pointer', fontWeight:600, fontSize:'13px', transition:'all 0.3s ease' }}>
+          <button onClick={() => setDark(!dark)} style={{ padding:'8px 16px', borderRadius:'16px', border:`1px solid ${border}`, background:'transparent', color: text, cursor:'pointer', fontWeight:600, fontSize:'13px' }}>
             {dark ? '☀️ Light' : '🌙 Dark'}
           </button>
-
-          <button onClick={() => { localStorage.clear(); navigate('/login') }}
-            style={{ padding:'8px 18px', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', borderRadius:'10px', fontSize:'13px', cursor:'pointer' }}>
+          <button onClick={() => { localStorage.clear(); navigate('/login') }} style={{ padding:'8px 18px', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', borderRadius:'10px', fontSize:'13px', cursor:'pointer' }}>
             Logout
           </button>
         </div>
@@ -150,80 +144,80 @@ export default function AdminDashboard() {
 
       <div style={{ position:'relative', zIndex:10, padding:'36px 40px', maxWidth:'1200px', margin:'0 auto' }}>
         {msg && (
-          <div style={{ background: msgType==='success' ? 'rgba(74,222,128,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${msgType==='success' ? 'rgba(74,222,128,0.25)' : 'rgba(239,68,68,0.3)'}`, color: msgType==='success' ? '#4ade80' : '#f87171', borderRadius:'12px', padding:'14px 20px', fontSize:'14px', marginBottom:'20px' }}>
+          <div style={{ background: msgType==='success' ? 'rgba(74,222,128,0.1)' : 'rgba(239,68,68,0.1)', border:`1px solid ${msgType==='success' ? 'rgba(74,222,128,0.25)' : 'rgba(239,68,68,0.3)'}`, color: msgType==='success' ? '#4ade80' : '#f87171', borderRadius:'12px', padding:'14px 20px', fontSize:'14px', marginBottom:'20px' }}>
             {msg}
           </div>
         )}
 
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'24px' }}>
-          <h2 style={{ fontSize:'22px', fontWeight:800, margin:0 }}>Dealer Management</h2>
-          <button onClick={() => setShowForm(!showForm)} className="ad-grad-btn"
-            style={{ padding:'11px 28px', background:'linear-gradient(90deg,#4ade80,#22d3ee)', border:'none', borderRadius:'12px', fontWeight:800, color:'#006165', fontSize:'14px', cursor:'pointer' }}>
-            {showForm ? 'Cancel' : '+ Create Dealer'}
+          <h2 style={{ fontSize:'22px', fontWeight:800, margin:0 }}>Sub Dealer Management</h2>
+          <button onClick={() => setShowForm(!showForm)} className="dl-grad-btn"
+            style={{ padding:'11px 28px', background:'linear-gradient(90deg,#f59e0b,#22d3ee)', border:'none', borderRadius:'12px', fontWeight:800, color:'#003b40', fontSize:'14px', cursor:'pointer' }}>
+            {showForm ? 'Cancel' : '+ Create Sub Dealer'}
           </button>
         </div>
 
         {showForm && (
           <div style={card}>
-            <p style={secHead('#86efac')}>Create New Dealer</p>
+            <p style={secHead('#fcd34d')}>Create New Sub Dealer</p>
             <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
 
-              <p style={secLabel('#86efac')}>Account Info</p>
+              <p style={secLabel('#fcd34d')}>Account Info</p>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'14px' }}>
-                <div><label style={lbl}>Full Name *</label><input name="name" value={form.name} onChange={handleChange} required placeholder="Dealer name" className="ad-inp" style={inp}/></div>
-                <div><label style={lbl}>Mobile *</label><input name="mobile_number" maxLength={10} value={form.mobile_number} onChange={handleChange} required placeholder="10-digit" className="ad-inp" style={inp}/></div>
-                <div><label style={lbl}>Email *</label><input type="email" name="email" value={form.email} onChange={handleChange} required placeholder="email@example.com" className="ad-inp" style={inp}/></div>
-                <div><label style={lbl}>Password *</label><input type="password" name="password" value={form.password} onChange={handleChange} required className="ad-inp" style={inp}/></div>
+                <div><label style={lbl}>Full Name *</label><input name="name" value={form.name} onChange={handleChange} required placeholder="Sub Dealer name" className="dl-inp" style={inp}/></div>
+                <div><label style={lbl}>Mobile *</label><input name="mobile_number" maxLength={10} value={form.mobile_number} onChange={handleChange} required className="dl-inp" style={inp}/></div>
+                <div><label style={lbl}>Email *</label><input type="email" name="email" value={form.email} onChange={handleChange} required className="dl-inp" style={inp}/></div>
+                <div><label style={lbl}>Password *</label><input type="password" name="password" value={form.password} onChange={handleChange} required className="dl-inp" style={inp}/></div>
               </div>
 
-              <p style={secLabel('#86efac')}>Address</p>
+              <p style={secLabel('#fcd34d')}>Address</p>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'14px' }}>
-                <div><label style={lbl}>Door No *</label><input name="door_no" value={form.door_no} onChange={handleChange} required maxLength={25} className="ad-inp" style={inp}/></div>
-                <div><label style={lbl}>Street Name *</label><input name="street_name" value={form.street_name} onChange={handleChange} required maxLength={100} className="ad-inp" style={inp}/></div>
-                <div><label style={lbl}>Town *</label><input name="town_name" value={form.town_name} onChange={handleChange} required maxLength={100} className="ad-inp" style={inp}/></div>
-                <div><label style={lbl}>City *</label><input name="city_name" value={form.city_name} onChange={handleChange} required maxLength={25} className="ad-inp" style={inp}/></div>
-                <div><label style={lbl}>District *</label><input name="district" value={form.district} onChange={handleChange} required maxLength={25} className="ad-inp" style={inp}/></div>
-                <div><label style={lbl}>State *</label><input name="state" value={form.state} onChange={handleChange} required maxLength={25} className="ad-inp" style={inp}/></div>
+                <div><label style={lbl}>Door No *</label><input name="door_no" value={form.door_no} onChange={handleChange} required maxLength={25} className="dl-inp" style={inp}/></div>
+                <div><label style={lbl}>Street Name *</label><input name="street_name" value={form.street_name} onChange={handleChange} required maxLength={100} className="dl-inp" style={inp}/></div>
+                <div><label style={lbl}>Town *</label><input name="town_name" value={form.town_name} onChange={handleChange} required maxLength={100} className="dl-inp" style={inp}/></div>
+                <div><label style={lbl}>City *</label><input name="city_name" value={form.city_name} onChange={handleChange} required maxLength={25} className="dl-inp" style={inp}/></div>
+                <div><label style={lbl}>District *</label><input name="district" value={form.district} onChange={handleChange} required maxLength={25} className="dl-inp" style={inp}/></div>
+                <div><label style={lbl}>State *</label><input name="state" value={form.state} onChange={handleChange} required maxLength={25} className="dl-inp" style={inp}/></div>
               </div>
 
-              <p style={secLabel('#86efac')}>Identity</p>
+              <p style={secLabel('#fcd34d')}>Identity</p>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'14px' }}>
-                <div><label style={lbl}>Aadhaar No *</label><input name="aadhaar_no" value={form.aadhaar_no} onChange={handleChange} required maxLength={12} placeholder="12-digit" className="ad-inp" style={inp}/></div>
-                <div><label style={lbl}>PAN No *</label><input name="pan_no" value={form.pan_no} onChange={handleChange} required maxLength={10} placeholder="ABCDE1234F" className="ad-inp" style={inp}/></div>
+                <div><label style={lbl}>Aadhaar No *</label><input name="aadhaar_no" value={form.aadhaar_no} onChange={handleChange} required maxLength={12} className="dl-inp" style={inp}/></div>
+                <div><label style={lbl}>PAN No *</label><input name="pan_no" value={form.pan_no} onChange={handleChange} required maxLength={10} className="dl-inp" style={inp}/></div>
               </div>
 
-              <p style={secLabel('#86efac')}>Occupation</p>
+              <p style={secLabel('#fcd34d')}>Occupation</p>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'14px' }}>
                 <div><label style={lbl}>Occupation *</label>
-                  <select name="occupation" value={form.occupation} onChange={handleChange} required className="ad-inp" style={{ ...inp, cursor:'pointer' }}>
+                  <select name="occupation" value={form.occupation} onChange={handleChange} required className="dl-inp" style={{ ...inp, cursor:'pointer' }}>
                     <option value="" style={{ background:'#1a1f26' }}>Select</option>
                     {OCCUPATIONS.map(o => <option key={o} value={o} style={{ background:'#1a1f26' }}>{o.charAt(0).toUpperCase()+o.slice(1)}</option>)}
                   </select>
                 </div>
-                <div><label style={lbl}>Detail</label><input name="occupation_detail" value={form.occupation_detail} onChange={handleChange} maxLength={25} className="ad-inp" style={inp}/></div>
-                <div><label style={lbl}>Annual Salary *</label><input name="annual_salary" value={form.annual_salary} onChange={handleChange} required maxLength={10} placeholder="e.g. 500000" className="ad-inp" style={inp}/></div>
+                <div><label style={lbl}>Detail</label><input name="occupation_detail" value={form.occupation_detail} onChange={handleChange} maxLength={25} className="dl-inp" style={inp}/></div>
+                <div><label style={lbl}>Annual Salary *</label><input name="annual_salary" value={form.annual_salary} onChange={handleChange} required maxLength={10} className="dl-inp" style={inp}/></div>
               </div>
 
-              <p style={secLabel('#86efac')}>Admin Info</p>
+              <p style={secLabel('#fcd34d')}>Dealer Info</p>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'14px' }}>
-                <div><label style={lbl}>Admin ID *</label>
-                  <select onChange={handleAdminChange} className="ad-inp" style={{ ...inp, cursor:'pointer' }}>
-                    <option value="" style={{ background:'#1a1f26' }}>Select Admin ID</option>
-                    {admins.map(a => <option key={a.id} value={a.id} style={{ background:'#1a1f26' }}>{a.admin_id}</option>)}
+                <div><label style={lbl}>Dealer ID *</label>
+                  <select onChange={handleDealerChange} className="dl-inp" style={{ ...inp, cursor:'pointer' }}>
+                    <option value="" style={{ background:'#1a1f26' }}>Select Dealer ID</option>
+                    {dealers.map(d => <option key={d.id} value={d.id} style={{ background:'#1a1f26' }}>{d.dealer_id}</option>)}
                   </select>
                 </div>
-                <div><label style={lbl}>Admin Name</label>
-                  <input value={selectedAdmin?.name || ''} readOnly placeholder="Auto fetch" style={{ ...inp, opacity:0.5, cursor:'not-allowed' }}/>
+                <div><label style={lbl}>Dealer Name</label>
+                  <input value={selectedDealer?.name || ''} readOnly placeholder="Auto fetch" style={{ ...inp, opacity:0.5, cursor:'not-allowed' }}/>
                 </div>
-                <div><label style={lbl}>Admin Contact</label>
-                  <input value={selectedAdmin?.admin_contact_no || ''} readOnly placeholder="Auto fetch" style={{ ...inp, opacity:0.5, cursor:'not-allowed' }}/>
+                <div><label style={lbl}>Dealer Contact</label>
+                  <input value={selectedDealer?.mobile_number || ''} readOnly placeholder="Auto fetch" style={{ ...inp, opacity:0.5, cursor:'not-allowed' }}/>
                 </div>
               </div>
 
               <div style={{ display:'flex', gap:'12px', marginTop:'6px' }}>
-                <button type="submit" className="ad-grad-btn"
-                  style={{ padding:'12px 28px', background:'linear-gradient(90deg,#4ade80,#22d3ee)', border:'none', borderRadius:'12px', fontWeight:800, color:'#006165', fontSize:'14px', cursor:'pointer' }}>
-                  Create Dealer
+                <button type="submit" className="dl-grad-btn"
+                  style={{ padding:'12px 28px', background:'linear-gradient(90deg,#f59e0b,#22d3ee)', border:'none', borderRadius:'12px', fontWeight:800, color:'#003b40', fontSize:'14px', cursor:'pointer' }}>
+                  Create Sub Dealer
                 </button>
                 <button type="button" onClick={() => setShowForm(false)}
                   style={{ padding:'12px 24px', background: inpBg, border:`1px solid ${border}`, borderRadius:'12px', color: subtext, fontSize:'14px', cursor:'pointer' }}>
@@ -234,30 +228,30 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Dealers Table */}
+        {/* Sub Dealers Table */}
         <div style={card}>
-          <p style={secHead('#86efac')}>My Dealers ({dealers.length})</p>
-          {dealers.length === 0 ? (
-            <p style={{ color: subtext, textAlign:'center', padding:'60px 0', fontSize:'15px' }}>No dealers yet!</p>
+          <p style={secHead('#fcd34d')}>My Sub Dealers ({subDealers.length})</p>
+          {subDealers.length === 0 ? (
+            <p style={{ color: subtext, textAlign:'center', padding:'60px 0', fontSize:'15px' }}>No sub dealers yet!</p>
           ) : (
             <div style={{ overflowX:'auto' }}>
               <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'15px' }}>
                 <thead>
                   <tr style={{ borderBottom:`1px solid ${inpBorder}` }}>
-                    {['Dealer ID','Name','Email','Mobile','City','Created'].map(h => (
+                    {['Sub Dealer ID','Name','Email','Mobile','City','Created'].map(h => (
                       <th key={h} style={{ padding:'14px 16px', textAlign:'left', color: subtext, fontSize:'13px', fontWeight:600, whiteSpace:'nowrap' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {dealers.map((c, i) => (
-                    <tr key={i} className="ad-tr" style={{ borderBottom:`1px solid ${border}` }}>
-                      <td style={{ padding:'14px 16px', color:'#4ade80', fontFamily:'monospace', fontSize:'13px' }}>{c.dealer_id}</td>
-                      <td style={{ padding:'14px 16px', color: text }}>{c.name}</td>
-                      <td style={{ padding:'14px 16px', color: subtext }}>{c.email}</td>
-                      <td style={{ padding:'14px 16px', color: subtext }}>{c.mobile_number}</td>
-                      <td style={{ padding:'14px 16px', color: subtext }}>{c.city_name}</td>
-                      <td style={{ padding:'14px 16px', color: subtext, whiteSpace:'nowrap' }}>{new Date(c.created_at).toLocaleDateString()}</td>
+                  {subDealers.map((s, i) => (
+                    <tr key={i} className="dl-tr" style={{ borderBottom:`1px solid ${border}` }}>
+                      <td style={{ padding:'14px 16px', color:'#f59e0b', fontFamily:'monospace', fontSize:'13px' }}>{s.sub_dealer_id}</td>
+                      <td style={{ padding:'14px 16px', color: text }}>{s.name}</td>
+                      <td style={{ padding:'14px 16px', color: subtext }}>{s.email}</td>
+                      <td style={{ padding:'14px 16px', color: subtext }}>{s.mobile_number}</td>
+                      <td style={{ padding:'14px 16px', color: subtext }}>{s.city_name}</td>
+                      <td style={{ padding:'14px 16px', color: subtext, whiteSpace:'nowrap' }}>{new Date(s.created_at).toLocaleDateString()}</td>
                     </tr>
                   ))}
                 </tbody>
