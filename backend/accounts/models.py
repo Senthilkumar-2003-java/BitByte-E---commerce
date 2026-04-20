@@ -22,6 +22,9 @@ ROLE_CHOICES = [
     ('admin', 'Admin'),
     ('dealer', 'Dealer'),         # NEW
     ('sub_dealer', 'Sub Dealer'), # NEW
+    ('promotor', 'Promotor'),   # NEW
+    ('customer', 'Customer'),   # NEW
+
 ]
 
 OCCUPATION_CHOICES = [
@@ -162,3 +165,108 @@ class SubDealerProfile(models.Model):
 
     def __str__(self):
         return self.name
+
+# ✅ Promotor (created by Sub Dealer)
+class PromotorProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='promotor_profile')
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_promotors')
+
+    assigned_sub_dealer = models.ForeignKey(
+        'SubDealerProfile',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='assigned_promotors'
+    )
+
+    # Personal Info
+    initial = models.CharField(max_length=5, blank=True)
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    mobile_number = models.CharField(max_length=10)
+
+    # Address
+    door_no = models.CharField(max_length=25, blank=True, null=True)
+    street_name = models.CharField(max_length=100, blank=True, null=True)
+    town_name = models.CharField(max_length=100, blank=True, null=True)
+    city_name = models.CharField(max_length=25, blank=True, null=True)
+    district = models.CharField(max_length=25, blank=True, null=True)
+    state = models.CharField(max_length=25, blank=True, null=True)
+
+    # Identity
+    aadhaar_no = models.CharField(max_length=12, blank=True, null=True)
+    pan_no = models.CharField(max_length=10, blank=True, null=True)
+
+    # Occupation
+    occupation = models.CharField(max_length=20, choices=OCCUPATION_CHOICES, blank=True, null=True)
+    occupation_detail = models.CharField(max_length=25, blank=True, null=True)
+    annual_salary = models.CharField(max_length=10, blank=True, null=True)
+
+    # Promotor Info
+    promotor_name = models.CharField(max_length=50, blank=True)
+    promotor_id = models.CharField(max_length=20, unique=True, blank=True)
+    promotor_contact_no = models.CharField(max_length=10, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.promotor_id:
+            from django.utils import timezone
+            year = timezone.now().year
+            count = PromotorProfile.objects.count() + 1
+            self.promotor_id = f"BBPRO{year}{count:07d}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}"
+
+
+# ✅ Customer (created by Promotor)
+class CustomerProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='customer_profile')
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_customers')
+
+    assigned_promotor = models.ForeignKey(
+        'PromotorProfile',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='assigned_customers'
+    )
+
+    # Personal Info
+    initial = models.CharField(max_length=5, blank=True)
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    mobile_number = models.CharField(max_length=10)
+
+    # Address
+    door_no = models.CharField(max_length=25, blank=True, null=True)
+    street_name = models.CharField(max_length=100, blank=True, null=True)
+    town_name = models.CharField(max_length=100, blank=True, null=True)
+    city_name = models.CharField(max_length=25, blank=True, null=True)
+    district = models.CharField(max_length=25, blank=True, null=True)
+    state = models.CharField(max_length=25, blank=True, null=True)
+
+    # Identity
+    aadhaar_no = models.CharField(max_length=12, blank=True, null=True)
+    pan_no = models.CharField(max_length=10, blank=True, null=True)
+
+    # Occupation
+    occupation = models.CharField(max_length=20, choices=OCCUPATION_CHOICES, blank=True, null=True)
+    occupation_detail = models.CharField(max_length=25, blank=True, null=True)
+    annual_salary = models.CharField(max_length=10, blank=True, null=True)
+
+    # Customer Info
+    customer_id = models.CharField(max_length=20, unique=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.customer_id:
+            from django.utils import timezone
+            year = timezone.now().year
+            count = CustomerProfile.objects.count() + 1
+            self.customer_id = f"BBCUS{year}{count:07d}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}"        

@@ -5,6 +5,8 @@ import SuperAdminDashboard from './pages/SuperAdminDashboard'
 import AdminDashboard from './pages/AdminDashboard'
 import DealerDashboard from './pages/DealerDashboard'
 import SubDealerDashboard from './pages/SubDealerDashboard'
+import PromotorDashboard from './pages/PromotorDashboard'
+import CustomerDashboard from './pages/CustomerDashboard'
 
 function ProtectedRoute({ children, role }) {
   const token = localStorage.getItem('token')
@@ -36,6 +38,12 @@ export default function App() {
         <Route path="/sub-dealer" element={
           <ProtectedRoute role="sub_dealer"><SubDealerDashboard /></ProtectedRoute>
         } />
+        <Route path="/promotor" element={
+       <ProtectedRoute role="promotor"><PromotorDashboard /></ProtectedRoute>
+       } />
+      <Route path="/customer" element={
+      <ProtectedRoute role="customer"><CustomerDashboard /></ProtectedRoute>
+       } />
       </Routes>
     </BrowserRouter>
   )

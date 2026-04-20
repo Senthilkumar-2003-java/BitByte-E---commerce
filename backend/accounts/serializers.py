@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, AdminProfile, DealerProfile, SubDealerProfile
+from .models import User, AdminProfile, DealerProfile, SubDealerProfile, PromotorProfile, CustomerProfile
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -155,3 +155,130 @@ class SubDealerListSerializer(serializers.ModelSerializer):
     class Meta:
         model = SubDealerProfile
         fields = ['id', 'sub_dealer_id', 'name', 'email', 'mobile_number', 'city_name', 'created_at']
+
+
+
+class PromotorProfileSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(write_only=True)
+    password = serializers.CharField(write_only=True)
+    assigned_sub_dealer_id = serializers.IntegerField(write_only=True, required=False)
+
+    sub_dealer_name = serializers.SerializerMethodField(read_only=True)
+    sub_dealer_uid = serializers.CharField(source='assigned_sub_dealer.sub_dealer_id', read_only=True)
+    sub_dealer_contact = serializers.CharField(source='assigned_sub_dealer.user.customer_profile', read_only=True, default='')
+
+    class Meta:
+        model = PromotorProfile
+        fields = [
+            'id', 'email', 'password',
+            'initial', 'first_name', 'last_name', 'mobile_number',
+            'door_no', 'street_name', 'town_name', 'city_name',
+            'district', 'state', 'aadhaar_no', 'pan_no',
+            'occupation', 'occupation_detail', 'annual_salary',
+            'assigned_sub_dealer_id',
+            'sub_dealer_name', 'sub_dealer_uid', 'sub_dealer_contact',
+            'promotor_name', 'promotor_id', 'promotor_contact_no', 'created_at'
+        ]
+        read_only_fields = ['promotor_id', 'created_at']
+
+    def get_sub_dealer_name(self, obj):
+        if obj.assigned_sub_dealer:
+            return f"{obj.assigned_sub_dealer.name}"
+        return None
+
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("A user with this email already exists.")
+        return value
+
+    def create(self, validated_data):
+        email = validated_data.pop('email')
+        password = validated_data.pop('password')
+        sub_dealer_id = validated_data.pop('assigned_sub_dealer_id', None)
+        request = self.context.get('request')
+        user = User.objects.create_user(email=email, password=password, role='promotor')
+
+        assigned_sub_dealer = None
+        if sub_dealer_id:
+            try:
+                assigned_sub_dealer = SubDealerProfile.objects.get(id=sub_dealer_id)
+            except SubDealerProfile.DoesNotExist:
+                pass
+
+        profile = PromotorProfile.objects.create(
+            user=user,
+            created_by=request.user,
+            assigned_sub_dealer=assigned_sub_dealer,
+            **validated_data
+        )
+        return profile
+
+class PromotorListSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source='user.email')
+    class Meta:
+        model = PromotorProfile
+        fields = ['id', 'promotor_id', 'first_name', 'last_name', 'email', 'mobile_number', 'city_name', 'created_at']
+
+
+class CustomerProfileSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(write_only=True)
+    password = serializers.CharField(write_only=True)
+    assigned_promotor_id = serializers.IntegerField(write_only=True, required=False)
+
+    promotor_name = serializers.SerializerMethodField(read_only=True)
+    promotor_uid = serializers.CharField(source='assigned_promotor.promotor_id', read_only=True)
+    promotor_contact = serializers.CharField(source='assigned_promotor.promotor_contact_no', read_only=True)
+
+    class Meta:
+        model = CustomerProfile
+        fields = [
+            'id', 'email', 'password',
+            'initial', 'first_name', 'last_name', 'mobile_number',
+            'door_no', 'street_name', 'town_name', 'city_name',
+            'district', 'state', 'aadhaar_no', 'pan_no',
+            'occupation', 'occupation_detail', 'annual_salary',
+            'assigned_promotor_id',
+            'promotor_name', 'promotor_uid', 'promotor_contact',
+            'customer_id', 'created_at'
+        ]
+        read_only_fields = ['customer_id', 'created_at']
+
+    def get_promotor_name(self, obj):
+        if obj.assigned_promotor:
+            return f"{obj.assigned_promotor.first_name} {obj.assigned_promotor.last_name}"
+        return None
+
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("A user with this email already exists.")
+        return value
+
+    def create(self, validated_data):
+        email = validated_data.pop('email')
+        password = validated_data.pop('password')
+        promotor_id = validated_data.pop('assigned_promotor_id', None)
+        request = self.context.get('request')
+        user = User.objects.create_user(email=email, password=password, role='customer')
+
+        assigned_promotor = None
+        if promotor_id:
+            try:
+                assigned_promotor = PromotorProfile.objects.get(id=promotor_id)
+            except PromotorProfile.DoesNotExist:
+                pass
+
+        profile = CustomerProfile.objects.create(
+            user=user,
+            created_by=request.user,
+            assigned_promotor=assigned_promotor,
+            **validated_data
+        )
+        return profile
+
+class CustomerListSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source='user.email')
+    class Meta:
+        model = CustomerProfile
+        fields = ['id', 'customer_id', 'first_name', 'last_name', 'email', 'mobile_number', 'city_name', 'created_at']        
+
+

@@ -109,7 +109,9 @@ export default function LoginPage() {
       if (role === 'super_admin') navigate('/super-admin', { replace: true })
       else if (role === 'admin') navigate('/admin', { replace: true })
       else if (role === 'dealer') navigate('/dealer', { replace: true })
-      else navigate('/sub-dealer', { replace: true })
+      else if (role === 'sub_dealer') navigate('/sub-dealer', { replace: true })
+      else if (role === 'promotor') navigate('/promotor', { replace: true })
+      else navigate('/customer', { replace: true })
 
     } catch (err) {
       const msg = err.response?.data?.error || err.response?.data?.detail || 'Invalid email or password'

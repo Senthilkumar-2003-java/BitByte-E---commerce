@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from rest_framework.decorators import api_view, permission_classes
-from .models import User, AdminProfile, DealerProfile, SubDealerProfile
+from .models import User, AdminProfile, DealerProfile, SubDealerProfile, PromotorProfile, CustomerProfile
 from .serializers import *
 
 class LoginView(APIView):
@@ -171,7 +171,130 @@ class DashboardView(APIView):
             except SubDealerProfile.DoesNotExist:
                 pass
 
+        elif user.role == 'promotor':
+            try:
+                p = user.promotor_profile
+                data.update({
+                    'initial': p.initial,
+                    'first_name': p.first_name,
+                    'last_name': p.last_name,
+                    'mobile_number': p.mobile_number,
+                    'promotor_id': p.promotor_id,
+                    'promotor_name': p.promotor_name,
+                    'promotor_contact_no': p.promotor_contact_no,
+                    'door_no': p.door_no,
+                    'street_name': p.street_name,
+                    'town_name': p.town_name,
+                    'city_name': p.city_name,
+                    'district': p.district,
+                    'state': p.state,
+                    'aadhaar_no': p.aadhaar_no,
+                    'pan_no': p.pan_no,
+                    'occupation': p.occupation,
+                    'occupation_detail': p.occupation_detail,
+                    'annual_salary': p.annual_salary,
+                    'created_at': p.created_at,
+                    'sub_dealer_name': p.assigned_sub_dealer.name if p.assigned_sub_dealer else None,
+                    'sub_dealer_id': p.assigned_sub_dealer.sub_dealer_id if p.assigned_sub_dealer else None,
+                    'sub_dealer_contact_no': p.assigned_sub_dealer.mobile_number if p.assigned_sub_dealer else None,
+                })
+            except PromotorProfile.DoesNotExist:
+                pass
+
+        elif user.role == 'customer':
+            try:
+                p = user.customer_profile
+                data.update({
+                    'initial': p.initial,
+                    'first_name': p.first_name,
+                    'last_name': p.last_name,
+                    'mobile_number': p.mobile_number,
+                    'customer_id': p.customer_id,
+                    'door_no': p.door_no,
+                    'street_name': p.street_name,
+                    'town_name': p.town_name,
+                    'city_name': p.city_name,
+                    'district': p.district,
+                    'state': p.state,
+                    'aadhaar_no': p.aadhaar_no,
+                    'pan_no': p.pan_no,
+                    'occupation': p.occupation,
+                    'occupation_detail': p.occupation_detail,
+                    'annual_salary': p.annual_salary,
+                    'created_at': p.created_at,
+                    'promotor_name': f"{p.assigned_promotor.first_name} {p.assigned_promotor.last_name}" if p.assigned_promotor else None,
+                    'promotor_id': p.assigned_promotor.promotor_id if p.assigned_promotor else None,
+                    'promotor_contact_no': p.assigned_promotor.promotor_contact_no if p.assigned_promotor else None,
+                })
+            except CustomerProfile.DoesNotExist:
+                pass
+
         return Response(data)
+
+# Sub Dealer creates Promotors
+class CreatePromotorView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if request.user.role != 'sub_dealer':
+            return Response({'error': 'Permission denied'}, status=403)
+        serializer = PromotorProfileSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'Promotor created successfully'}, status=201)
+        return Response(serializer.errors, status=400)
+
+    def get(self, request):
+        if request.user.role != 'sub_dealer':
+            return Response({'error': 'Permission denied'}, status=403)
+        promotors = PromotorProfile.objects.filter(created_by=request.user).order_by('-created_at')
+        serializer = PromotorListSerializer(promotors, many=True)
+        return Response(serializer.data)
+
+
+# Promotor creates Customers
+class CreateCustomerView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if request.user.role != 'promotor':
+            return Response({'error': 'Permission denied'}, status=403)
+        serializer = CustomerProfileSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'Customer created successfully'}, status=201)
+        return Response(serializer.errors, status=400)
+
+    def get(self, request):
+        if request.user.role != 'promotor':
+            return Response({'error': 'Permission denied'}, status=403)
+        customers = CustomerProfile.objects.filter(created_by=request.user).order_by('-created_at')
+        serializer = CustomerListSerializer(customers, many=True)
+        return Response(serializer.data)
+
+
+# Promotor list for Customer creation dropdown
+class PromotorListForView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role not in ['promotor', 'sub_dealer', 'dealer', 'admin', 'super_admin']:
+            return Response({'error': 'Permission denied'}, status=403)
+        promotors = PromotorProfile.objects.all()
+        serializer = PromotorListSerializer(promotors, many=True)
+        return Response(serializer.data)
+
+
+# Sub Dealer list for Promotor creation dropdown
+class SubDealerListForView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role not in ['sub_dealer', 'dealer', 'admin', 'super_admin']:
+            return Response({'error': 'Permission denied'}, status=403)
+        sub_dealers = SubDealerProfile.objects.all()
+        serializer = SubDealerListSerializer(sub_dealers, many=True)
+        return Response(serializer.data)        
 
 
 @api_view(['GET'])
