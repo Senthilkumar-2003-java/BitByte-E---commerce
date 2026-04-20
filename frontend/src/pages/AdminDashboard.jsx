@@ -17,6 +17,7 @@ const PARTICLES = Array.from({ length: 15 }, (_, i) => ({
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
+  const [dark, setDark] = useState(true)
   const [customers, setCustomers] = useState([])
   const [admins, setAdmins] = useState([])
   const [selectedAdmin, setSelectedAdmin] = useState(null)
@@ -25,6 +26,18 @@ export default function AdminDashboard() {
   const [msgType, setMsgType] = useState('success')
   const [form, setForm] = useState(emptyForm)
   const canvasRef = useRef(null)
+
+  // Elite Color Palette
+  const bg      = dark ? '#020617' : '#f8fafc'
+  const text     = dark ? '#f8fafc' : '#020617'
+  const subtext  = dark ? '#94a3b8' : '#64748b'
+  const accent   = dark ? '#22d3ee' : '#2563eb'
+  const border   = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+  const glass    = dark ? 'rgba(15, 23, 42, 0.65)' : 'rgba(255, 255, 255, 0.7)'
+  const cardBg   = dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'
+  const cardBorder = dark ? '1px solid rgba(103,232,249,0.1)' : '1px solid rgba(0,0,0,0.1)'
+  const inpBg    = dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
+  const inpBorder = dark ? '#374151' : '#d1d5db'
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -45,19 +58,19 @@ export default function AdminDashboard() {
         let dx=mouse.x-this.x,dy=mouse.y-this.y,d=Math.sqrt(dx*dx+dy*dy)
         if(d<mouse.radius){const fx=dx/d,fy=dy/d,f=(mouse.radius-d)/mouse.radius;this.x-=fx*f*5;this.y-=fy*f*5}
       }
-      draw() { ctx.fillStyle='rgba(34,211,238,0.5)'; ctx.beginPath(); ctx.arc(this.x,this.y,this.size,0,Math.PI*2); ctx.fill() }
+      draw() { ctx.fillStyle= dark ? 'rgba(34,211,238,0.5)' : 'rgba(37,99,235,0.4)'; ctx.beginPath(); ctx.arc(this.x,this.y,this.size,0,Math.PI*2); ctx.fill() }
     }
     function init(){particlesArray=[];for(let i=0;i<60;i++)particlesArray.push(new Particle())}
     function connect(){
       for(let a=0;a<particlesArray.length;a++) for(let b=a;b<particlesArray.length;b++){
         let dx=particlesArray[a].x-particlesArray[b].x,dy=particlesArray[a].y-particlesArray[b].y,d=Math.sqrt(dx*dx+dy*dy)
-        if(d<150){ctx.strokeStyle=`rgba(34,211,238,${1-d/150})`;ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(particlesArray[a].x,particlesArray[a].y);ctx.lineTo(particlesArray[b].x,particlesArray[b].y);ctx.stroke()}
+        if(d<150){ctx.strokeStyle= dark ? `rgba(34,211,238,${1-d/150})` : `rgba(37,99,235,${0.5-d/300})`;ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(particlesArray[a].x,particlesArray[a].y);ctx.lineTo(particlesArray[b].x,particlesArray[b].y);ctx.stroke()}
       }
     }
     function animate(){ctx.clearRect(0,0,canvas.width,canvas.height);particlesArray.forEach(p=>{p.update();p.draw()});connect();animationFrameId=requestAnimationFrame(animate)}
     init(); animate()
     return () => { window.removeEventListener('resize',handleResize); window.removeEventListener('mousemove',handleMouseMove); cancelAnimationFrame(animationFrameId) }
-  }, [])
+  }, [dark])
 
   const fetchCustomers = async () => {
     try { const res = await api.get('/customers/'); setCustomers(res.data) } catch (err) { console.error('customers error:', err.response?.status) }
@@ -85,14 +98,14 @@ export default function AdminDashboard() {
     }
   }
 
-  const card = { background:'rgba(255,255,255,0.03)', border:'1px solid rgba(103,232,249,0.1)', borderRadius:'20px', padding:'32px 36px', marginBottom:'24px' }
-  const secHead = (color='#a5f3fc') => ({ color, fontSize:'13px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', margin:'0 0 20px', paddingBottom:'14px', borderBottom:'1px solid rgba(103,232,249,0.1)' })
-  const secLabel = (color='#a5f3fc') => ({ color, fontSize:'12px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', margin:'4px 0 0', paddingBottom:'10px', borderBottom:'1px solid rgba(103,232,249,0.1)' })
-  const inp = { width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid #374151', borderRadius:'10px', padding:'12px 16px', color:'#fff', fontSize:'14px', outline:'none', boxSizing:'border-box' }
-  const lbl = { display:'block', color:'#6b7280', fontSize:'12px', marginBottom:'7px', textTransform:'uppercase', letterSpacing:'0.04em' }
+  const card = { background: cardBg, border: cardBorder, borderRadius:'20px', padding:'32px 36px', marginBottom:'24px' }
+  const secHead = (color='#a5f3fc') => ({ color, fontSize:'13px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', margin:'0 0 20px', paddingBottom:'14px', borderBottom: cardBorder })
+  const secLabel = (color='#a5f3fc') => ({ color, fontSize:'12px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', margin:'4px 0 0', paddingBottom:'10px', borderBottom: cardBorder })
+  const inp = { width:'100%', background: inpBg, border:`1px solid ${inpBorder}`, borderRadius:'10px', padding:'12px 16px', color: text, fontSize:'14px', outline:'none', boxSizing:'border-box' }
+  const lbl = { display:'block', color: subtext, fontSize:'12px', marginBottom:'7px', textTransform:'uppercase', letterSpacing:'0.04em' }
 
   return (
-    <div style={{ minHeight:'100vh', background:'#020617', color:'#f8fafc', fontFamily:'"Inter",system-ui,sans-serif', position:'relative', overflow:'hidden' }}>
+    <div style={{ minHeight:'100vh', background: bg, color: text, transition:'background 0.8s ease, color 0.4s ease', fontFamily:'"Inter",system-ui,sans-serif', position:'relative', overflow:'hidden' }}>
       <style>{`
         @keyframes float-orb{0%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-50px) scale(1.1)}66%{transform:translate(-20px,20px) scale(0.9)}100%{transform:translate(0,0) scale(1)}}
         @keyframes antigravity{0%{transform:translateY(110vh) rotate(0deg);opacity:0}10%{opacity:var(--op)}90%{opacity:var(--op)}100%{transform:translateY(-20vh) rotate(360deg);opacity:0}}
@@ -105,22 +118,29 @@ export default function AdminDashboard() {
       `}</style>
 
       <canvas ref={canvasRef} style={{ position:'fixed', top:0, left:0, pointerEvents:'none', zIndex:1, opacity:0.45 }} />
-      <div style={{ position:'absolute', borderRadius:'50%', filter:'blur(80px)', animation:'float-orb 20s infinite ease-in-out', zIndex:0, top:'8%', left:'8%', width:'380px', height:'380px', background:'rgba(34,211,238,0.08)' }} />
-      <div style={{ position:'absolute', borderRadius:'50%', filter:'blur(80px)', animation:'float-orb 20s infinite ease-in-out', zIndex:0, bottom:'10%', right:'4%', width:'460px', height:'460px', background:'rgba(74,222,128,0.06)', animationDelay:'-5s' }} />
+      <div style={{ position:'absolute', borderRadius:'50%', filter:'blur(80px)', animation:'float-orb 20s infinite ease-in-out', zIndex:0, top:'8%', left:'8%', width:'380px', height:'380px', background: dark ? 'rgba(34,211,238,0.08)' : 'rgba(37,99,235,0.08)' }} />
+      <div style={{ position:'absolute', borderRadius:'50%', filter:'blur(80px)', animation:'float-orb 20s infinite ease-in-out', zIndex:0, bottom:'10%', right:'4%', width:'460px', height:'460px', background: dark ? 'rgba(74,222,128,0.06)' : 'rgba(16,185,129,0.06)', animationDelay:'-5s' }} />
 
       {PARTICLES.map(p => (
-        <div key={p.id} style={{ position:'absolute', left:`${p.x}%`, bottom:'-100px', width:p.size, height:p.size, borderRadius:'40% 60% 60% 40% / 40% 40% 60% 60%', border:'1px solid rgba(34,211,238,0.25)', opacity:p.opacity, animation:`antigravity ${p.duration}s ${p.delay}s infinite linear`, '--op':p.opacity, pointerEvents:'none', zIndex:0 }} />
+        <div key={p.id} style={{ position:'absolute', left:`${p.x}%`, bottom:'-100px', width:p.size, height:p.size, borderRadius:'40% 60% 60% 40% / 40% 40% 60% 60%', border:`1px solid ${accent}44`, opacity:p.opacity, animation:`antigravity ${p.duration}s ${p.delay}s infinite linear`, '--op':p.opacity, pointerEvents:'none', zIndex:0 }} />
       ))}
 
       {/* Navbar */}
-      <div style={{ position:'relative', zIndex:10, background:'rgba(15,23,42,0.65)', borderBottom:'1px solid rgba(103,232,249,0.1)', padding:'18px 40px', display:'flex', justifyContent:'space-between', alignItems:'center', backdropFilter:'blur(16px)' }}>
+      <div style={{ position:'relative', zIndex:10, background: glass, borderBottom:`1px solid ${border}`, padding:'18px 40px', display:'flex', justifyContent:'space-between', alignItems:'center', backdropFilter:'blur(16px)', transition:'background 0.8s ease' }}>
         <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
           <div style={{ width:38, height:38, borderRadius:'10px', background:'#4ade80', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900, color:'#065f46', fontSize:'17px' }}>B</div>
           <span style={{ fontWeight:800, fontSize:'18px' }}>BitByte</span>
           <span style={{ color:'#86efac', fontWeight:700, fontSize:'14px', marginLeft:'6px' }}>🛡️ Admin Dashboard</span>
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:'14px' }}>
-          <span style={{ color:'#6b7280', fontSize:'14px' }}>{localStorage.getItem('email')}</span>
+          <span style={{ color: subtext, fontSize:'14px' }}>{localStorage.getItem('email')}</span>
+
+          {/* ── DARK / LIGHT TOGGLE ── */}
+          <button onClick={() => setDark(!dark)}
+            style={{ padding:'8px 16px', borderRadius:'16px', border: `1px solid ${border}`, background:'transparent', color: text, cursor:'pointer', fontWeight:600, fontSize:'13px', transition:'all 0.3s ease' }}>
+            {dark ? '☀️ Light' : '🌙 Dark'}
+          </button>
+
           <button onClick={() => { localStorage.clear(); navigate('/login') }}
             style={{ padding:'8px 18px', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', borderRadius:'10px', fontSize:'13px', cursor:'pointer' }}>
             Logout
@@ -206,7 +226,7 @@ export default function AdminDashboard() {
                   Create Customer
                 </button>
                 <button type="button" onClick={() => setShowForm(false)}
-                  style={{ padding:'12px 24px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'12px', color:'#9ca3af', fontSize:'14px', cursor:'pointer' }}>
+                  style={{ padding:'12px 24px', background: inpBg, border:`1px solid ${border}`, borderRadius:'12px', color: subtext, fontSize:'14px', cursor:'pointer' }}>
                   Cancel
                 </button>
               </div>
@@ -218,26 +238,26 @@ export default function AdminDashboard() {
         <div style={card}>
           <p style={secHead('#86efac')}>My Customers ({customers.length})</p>
           {customers.length === 0 ? (
-            <p style={{ color:'#4b5563', textAlign:'center', padding:'60px 0', fontSize:'15px' }}>No customers yet!</p>
+            <p style={{ color: subtext, textAlign:'center', padding:'60px 0', fontSize:'15px' }}>No customers yet!</p>
           ) : (
             <div style={{ overflowX:'auto' }}>
               <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'15px' }}>
                 <thead>
-                  <tr style={{ borderBottom:'1px solid #1f2937' }}>
+                  <tr style={{ borderBottom:`1px solid ${inpBorder}` }}>
                     {['Customer ID','Name','Email','Mobile','City','Created'].map(h => (
-                      <th key={h} style={{ padding:'14px 16px', textAlign:'left', color:'#6b7280', fontSize:'13px', fontWeight:600, whiteSpace:'nowrap' }}>{h}</th>
+                      <th key={h} style={{ padding:'14px 16px', textAlign:'left', color: subtext, fontSize:'13px', fontWeight:600, whiteSpace:'nowrap' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {customers.map((c, i) => (
-                    <tr key={i} className="ad-tr" style={{ borderBottom:'1px solid rgba(31,41,55,0.6)' }}>
+                    <tr key={i} className="ad-tr" style={{ borderBottom:`1px solid ${border}` }}>
                       <td style={{ padding:'14px 16px', color:'#4ade80', fontFamily:'monospace', fontSize:'13px' }}>{c.customer_id}</td>
-                      <td style={{ padding:'14px 16px' }}>{c.name}</td>
-                      <td style={{ padding:'14px 16px', color:'#6b7280' }}>{c.email}</td>
-                      <td style={{ padding:'14px 16px', color:'#6b7280' }}>{c.mobile_number}</td>
-                      <td style={{ padding:'14px 16px', color:'#6b7280' }}>{c.city_name}</td>
-                      <td style={{ padding:'14px 16px', color:'#6b7280', whiteSpace:'nowrap' }}>{new Date(c.created_at).toLocaleDateString()}</td>
+                      <td style={{ padding:'14px 16px', color: text }}>{c.name}</td>
+                      <td style={{ padding:'14px 16px', color: subtext }}>{c.email}</td>
+                      <td style={{ padding:'14px 16px', color: subtext }}>{c.mobile_number}</td>
+                      <td style={{ padding:'14px 16px', color: subtext }}>{c.city_name}</td>
+                      <td style={{ padding:'14px 16px', color: subtext, whiteSpace:'nowrap' }}>{new Date(c.created_at).toLocaleDateString()}</td>
                     </tr>
                   ))}
                 </tbody>
