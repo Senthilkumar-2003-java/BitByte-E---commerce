@@ -12,12 +12,15 @@ class AdminProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = AdminProfile
         fields = [
-            'id', 'email', 'password', 'name', 'mobile_number',
+            'id', 'email', 'password', 'initial', 'first_name', 'last_name', 'mobile_number',
             'door_no', 'street_name', 'town_name', 'city_name',
             'district', 'state', 'aadhaar_no', 'pan_no',
             'occupation', 'occupation_detail', 'annual_salary',
+            # auto-generated — read only
             'admin_name', 'admin_id', 'admin_contact_no'
         ]
+        read_only_fields = ['admin_name', 'admin_id', 'admin_contact_no']
+
 
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
@@ -38,9 +41,13 @@ class AdminProfileSerializer(serializers.ModelSerializer):
 
 class AdminListSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email')
+
     class Meta:
         model = AdminProfile
-        fields = ['id', 'name', 'email', 'mobile_number', 'admin_id', 'admin_contact_no', 'city_name']
+        fields = [
+            'id', 'first_name', 'last_name', 'admin_name',
+            'email', 'mobile_number', 'admin_id', 'admin_contact_no', 'city_name'
+        ]
 
 
 # ✅ Dealer (Admin creates this)

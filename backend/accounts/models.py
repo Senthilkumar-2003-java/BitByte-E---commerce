@@ -51,9 +51,11 @@ class AdminProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='admin_profile')
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_admins')
 
-    name = models.CharField(max_length=100)
+    # ✅ CHANGED: name → initial + first_name + last_name
+    initial = models.CharField(max_length=5, blank=True)
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
     mobile_number = models.CharField(max_length=10)
-
     door_no = models.CharField(max_length=25)
     street_name = models.CharField(max_length=100)
     town_name = models.CharField(max_length=100)
@@ -68,12 +70,31 @@ class AdminProfile(models.Model):
     occupation_detail = models.CharField(max_length=25, blank=True)
     annual_salary = models.CharField(max_length=10)
 
-    admin_name = models.CharField(max_length=50)
-    admin_id = models.CharField(max_length=25, unique=True)
-    admin_contact_no = models.CharField(max_length=10)
+    # ✅ AUTO-GENERATED fields (not from form)
+    admin_name = models.CharField(max_length=100, blank=True)       # = first_name
+    admin_id = models.CharField(max_length=25, unique=True, blank=True)  # BBADM20261001
+    admin_contact_no = models.CharField(max_length=10, blank=True)  # = mobile_number
+
+    def save(self, *args, **kwargs):
+        # Auto-set admin_name from first_name
+        if not self.admin_name:
+            self.admin_name = self.first_name
+
+        # Auto-set admin_contact_no from mobile_number
+        if not self.admin_contact_no:
+            self.admin_contact_no = self.mobile_number
+
+        # Auto-generate admin_id: BBADM{year}{1001, 1002, ...}
+        if not self.admin_id:
+            from django.utils import timezone
+            year = timezone.now().year
+            count = AdminProfile.objects.count() + 1
+            self.admin_id = f"BBADM{year}{1000 + count:04d}"
+
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.name
+        return f"{self.first_name} {self.last_name}"
 
 
 # ✅ Dealer (created by Admin) — replaces old CustomerProfile
