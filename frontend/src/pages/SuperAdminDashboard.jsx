@@ -10,12 +10,90 @@ const PARTICLES = Array.from({ length: 15 }, (_, i) => ({
   delay: Math.random() * 8, duration: Math.random() * 12 + 15, opacity: Math.random() * 0.2 + 0.05,
 }))
 
+const COLORS = ['#22d3ee','#a78bfa','#34d399','#f472b6']
+
+const HIERARCHY_STYLES = `
+@keyframes pulseGlow {
+  0%,100% { box-shadow: 0 0 8px rgba(34,211,238,0.15); }
+  50%      { box-shadow: 0 0 22px rgba(34,211,238,0.35); }
+}
+@keyframes shimmerSlide {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+@keyframes dotPulse {
+  0%,100% { transform:scale(1); opacity:0.7; }
+  50%      { transform:scale(1.6); opacity:1; }
+}
+.h-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(165,243,252,0.18);
+  border-radius: 14px;
+  padding: 14px 18px;
+  min-width: 150px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition:
+    background 0.35s ease,
+    border-color 0.35s ease,
+    transform 0.4s cubic-bezier(0.34,1.4,0.64,1),
+    box-shadow 0.35s ease;
+}
+.h-card::before {
+  content:'';
+  position:absolute; inset:0; border-radius:14px;
+  background: linear-gradient(120deg,transparent 30%,rgba(34,211,238,0.07) 50%,transparent 70%);
+  background-size:200% 100%;
+  opacity:0;
+  transition:opacity 0.3s;
+  pointer-events:none;
+}
+.h-card.h-active::before {
+  opacity:1;
+  animation: shimmerSlide 2s infinite linear;
+}
+.h-card.h-active {
+  background: rgba(34,211,238,0.07);
+  border-color: rgba(34,211,238,0.65);
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 12px 32px rgba(34,211,238,0.18), 0 0 0 1px rgba(34,211,238,0.08);
+  animation: pulseGlow 2.5s ease-in-out infinite;
+}
+.h-panel {
+  transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.22,1,0.36,1);
+}
+.h-panel.h-visible { opacity:1; transform:translateX(0); pointer-events:auto; }
+.h-panel.h-hidden  { opacity:0; transform:translateX(14px); pointer-events:none; }
+.h-pinner {
+  position:absolute; top:0; left:0; width:100%;
+  transition: opacity 0.28s ease, transform 0.28s cubic-bezier(0.22,1,0.36,1);
+}
+.h-pinner.h-show { opacity:1; transform:translateY(0); }
+.h-pinner.h-hide { opacity:0; transform:translateY(8px); pointer-events:none; }
+.sa-box {
+  border-radius:9px; padding:11px; margin-bottom:10px;
+  background:rgba(255,215,0,0.05);
+  border:1px solid rgba(255,215,0,0.2);
+  transition: background 0.35s ease, border-color 0.35s ease,
+              box-shadow 0.35s ease, transform 0.35s cubic-bezier(0.34,1.4,0.64,1);
+}
+.sa-box:hover {
+  background:rgba(255,215,0,0.12);
+  border-color:rgba(255,215,0,0.55);
+  box-shadow:0 6px 20px rgba(255,215,0,0.15);
+  transform:translateY(-3px) scale(1.02);
+}
+`
+
 export default function SuperAdminDashboard() {
   const navigate = useNavigate()
   const [dark, setDark] = useState(true)
   const [admins, setAdmins] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [showHierarchy, setShowHierarchy] = useState(false)
+  const [activeAdmin, setActiveAdmin] = useState(null)
+  const hideTimer = useRef(null)
   const [msg, setMsg] = useState('')
   const [form, setForm] = useState({
     name:'', mobile_number:'', door_no:'', street_name:'', town_name:'',
@@ -25,7 +103,6 @@ export default function SuperAdminDashboard() {
   })
   const canvasRef = useRef(null)
 
-  // Elite Color Palette
   const bg         = dark ? '#020617' : '#f8fafc'
   const text       = dark ? '#f8fafc' : '#020617'
   const subtext    = dark ? '#94a3b8' : '#64748b'
@@ -89,6 +166,17 @@ export default function SuperAdminDashboard() {
     }
   }
 
+  // Hierarchy hover handlers
+  const handleCardEnter = (a) => {
+    clearTimeout(hideTimer.current)
+    setActiveAdmin(a)
+  }
+  const handleCardLeave = (a) => {
+    hideTimer.current = setTimeout(() => {
+      setActiveAdmin(prev => prev?.id === a.id ? null : prev)
+    }, 90)
+  }
+
   const s = {
     card:    { background: cardBg, border: cardBorder, borderRadius:'20px', padding:'32px 36px', marginBottom:'24px' },
     secHead: { color:'#a5f3fc', fontSize:'13px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', margin:'0 0 20px', paddingBottom:'14px', borderBottom: cardBorder },
@@ -108,6 +196,7 @@ export default function SuperAdminDashboard() {
         .sa-grad-btn::after{content:"";position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);transform:translateX(-100%)}
         .sa-grad-btn:hover::after{animation:shimmer 1s infinite}
         .sa-tr:hover td{background:rgba(255,255,255,.02)}
+        ${HIERARCHY_STYLES}
       `}</style>
 
       <canvas ref={canvasRef} style={{ position:'fixed', top:0, left:0, pointerEvents:'none', zIndex:1, opacity:0.45 }} />
@@ -121,23 +210,16 @@ export default function SuperAdminDashboard() {
 
       {/* Navbar */}
       <div style={{ position:'relative', zIndex:10, background: glass, borderBottom:`1px solid ${border}`, padding:'18px 40px', display:'flex', justifyContent:'space-between', alignItems:'center', backdropFilter:'blur(16px)', transition:'background 0.8s ease' }}>
- <div style={{ display:'flex', alignItems:'center', gap:'12px',marginLeft: '10px' }}>
-  <img 
-    src={logo} 
-    alt="BitByte Logo" 
-    style={{ width: 60, height: 50, borderRadius: '10px', objectFit: 'contain' }} 
-  />
-  <span style={{ color:'#a5f3fc', fontWeight:700, fontSize:'14px' }}>🛡️ Super Admin</span>
-</div>
+        <div style={{ display:'flex', alignItems:'center', gap:'12px', marginLeft:'10px' }}>
+          <img src={logo} alt="BitByte Logo" style={{ width:60, height:50, borderRadius:'10px', objectFit:'contain' }} />
+          <span style={{ color:'#a5f3fc', fontWeight:700, fontSize:'14px' }}>🛡️ Super Admin</span>
+        </div>
         <div style={{ display:'flex', alignItems:'center', gap:'14px' }}>
           <span style={{ color: subtext, fontSize:'14px' }}>{localStorage.getItem('email')}</span>
-
-          {/* ── DARK / LIGHT TOGGLE ── */}
           <button onClick={() => setDark(!dark)}
             style={{ padding:'8px 16px', borderRadius:'16px', border:`1px solid ${border}`, background:'transparent', color: text, cursor:'pointer', fontWeight:600, fontSize:'13px', transition:'all 0.3s ease' }}>
             {dark ? '☀️ Light' : '🌙 Dark'}
           </button>
-
           <button onClick={() => { localStorage.clear(); navigate('/login') }}
             style={{ padding:'8px 18px', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', borderRadius:'10px', fontSize:'13px', cursor:'pointer' }}>
             Logout
@@ -153,78 +235,148 @@ export default function SuperAdminDashboard() {
         )}
 
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'24px' }}>
-  <h2 style={{ fontSize:'22px', fontWeight:800, margin:0 }}>Admin Management</h2>
-  <div style={{ display:'flex', gap:'12px' }}>
-    <button onClick={() => setShowHierarchy(true)}
-      style={{ padding:'11px 28px', background:'rgba(165,243,252,0.08)', border:'1px solid rgba(103,232,249,0.3)', borderRadius:'12px', fontWeight:700, color:'#a5f3fc', fontSize:'14px', cursor:'pointer' }}>
-      🏢 Admin Hierarchy
-    </button>
-    <button onClick={() => setShowForm(!showForm)} className="sa-grad-btn"
-      style={{ padding:'11px 28px', background:'linear-gradient(90deg,#22d3ee,#4ade80)', border:'none', borderRadius:'12px', fontWeight:800, color:'#006165', fontSize:'14px', cursor:'pointer' }}>
-      {showForm ? 'Cancel' : '+ Create Admin'}
-    </button>
-  </div>
-</div>
-
-{/* ── HIERARCHY MODAL ── */}
-{showHierarchy && (
-  <div onClick={() => setShowHierarchy(false)}
-    style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', backdropFilter:'blur(8px)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center' }}>
-    <div onClick={e => e.stopPropagation()}
-      style={{ background:'#0f172a', border:'1px solid rgba(103,232,249,0.2)', borderRadius:'20px', padding:'32px', maxWidth:'960px', width:'95%', maxHeight:'80vh', overflowY:'auto' }}>
-
-      {/* Modal Header */}
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'28px', paddingBottom:'14px', borderBottom:'1px solid rgba(103,232,249,0.1)' }}>
-        <span style={{ color:'#a5f3fc', fontSize:'13px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em' }}>🏢 Admin Hierarchy</span>
-        <button onClick={() => setShowHierarchy(false)}
-          style={{ background:'transparent', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', borderRadius:'8px', padding:'6px 14px', cursor:'pointer', fontSize:'12px' }}>
-          ✕ Close
-        </button>
-      </div>
-
-      {/* Tree */}
-      <div style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
-
-        {/* Super Admin Root */}
-        <div style={{ background:'linear-gradient(135deg,rgba(34,211,238,0.15),rgba(74,222,128,0.1))', border:'1px solid #22d3ee', borderRadius:'14px', padding:'14px 48px', fontWeight:800, fontSize:'15px', color:'#22d3ee' }}>
-          🛡️ Super Admin
-        </div>
-
-        {/* Vertical stem */}
-        <div style={{ width:2, height:28, background:'linear-gradient(180deg,#22d3ee,rgba(34,211,238,0.3))' }} />
-
-        {/* Horizontal spine */}
-        <div style={{ position:'relative', width:'100%', display:'flex', justifyContent:'center' }}>
-          <div style={{ position:'absolute', top:0, left:'10%', right:'10%', height:2, background:'linear-gradient(90deg,transparent,rgba(34,211,238,0.5),transparent)' }} />
-
-          {/* Admin Cards */}
-          <div style={{ display:'flex', gap:'20px', flexWrap:'wrap', justifyContent:'center', paddingTop:'0' }}>
-            {admins.map((a, i) => (
-              <div key={i} style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
-                <div style={{ width:2, height:28, background:'rgba(34,211,238,0.5)' }} />
-                <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(165,243,252,0.2)', borderRadius:'12px', padding:'16px 20px', minWidth:'190px' }}>
-                  <div style={{ color:'#22d3ee', fontFamily:'monospace', fontSize:'11px', marginBottom:'6px' }}>{a.admin_id}</div>
-                  <div style={{ color:'#f8fafc', fontWeight:700, fontSize:'14px', marginBottom:'6px' }}>{a.name}</div>
-                  <div style={{ color:'#94a3b8', fontSize:'12px', marginBottom:'3px' }}>📞 {a.admin_contact_no}</div>
-                  <div style={{ color:'#94a3b8', fontSize:'12px' }}>📍 {a.city_name}</div>
-                </div>
-              </div>
-            ))}
-            {admins.length === 0 && (
-              <div style={{ color:'#94a3b8', padding:'40px', textAlign:'center' }}>No admins created yet.</div>
-            )}
+          <h2 style={{ fontSize:'22px', fontWeight:800, margin:0 }}>Admin Management</h2>
+          <div style={{ display:'flex', gap:'12px' }}>
+            <button onClick={() => setShowHierarchy(true)}
+              style={{ padding:'11px 28px', background:'rgba(165,243,252,0.08)', border:'1px solid rgba(103,232,249,0.3)', borderRadius:'12px', fontWeight:700, color:'#a5f3fc', fontSize:'14px', cursor:'pointer' }}>
+              🏢 Admin Hierarchy
+            </button>
+            <button onClick={() => setShowForm(!showForm)} className="sa-grad-btn"
+              style={{ padding:'11px 28px', background:'linear-gradient(90deg,#22d3ee,#4ade80)', border:'none', borderRadius:'12px', fontWeight:800, color:'#006165', fontSize:'14px', cursor:'pointer' }}>
+              {showForm ? 'Cancel' : '+ Create Admin'}
+            </button>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
-)}
+
+        {/* ── HIERARCHY MODAL ── */}
+        {showHierarchy && (
+          <div
+            onClick={() => { setShowHierarchy(false); setActiveAdmin(null); clearTimeout(hideTimer.current) }}
+            style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', backdropFilter:'blur(8px)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <div onClick={e => e.stopPropagation()}
+              style={{ background:'#0f172a', border:'1px solid rgba(103,232,249,0.2)', borderRadius:'20px', padding:'32px', maxWidth:'980px', width:'95%', maxHeight:'80vh', overflowY:'auto' }}>
+
+              {/* Modal Header */}
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'28px', paddingBottom:'14px', borderBottom:'1px solid rgba(103,232,249,0.1)' }}>
+                <span style={{ color:'#a5f3fc', fontSize:'13px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em' }}>🏢 Admin Hierarchy</span>
+                <button onClick={() => { setShowHierarchy(false); setActiveAdmin(null); }}
+                  style={{ background:'transparent', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', borderRadius:'8px', padding:'6px 14px', cursor:'pointer', fontSize:'12px' }}>
+                  ✕ Close
+                </button>
+              </div>
+
+              {/* Tree + Panel */}
+              <div style={{ display:'flex', gap:'20px', alignItems:'flex-start' }}>
+
+                {/* Tree */}
+                <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center' }}>
+
+                  {/* Super Admin node */}
+                  <div style={{
+                    background:'linear-gradient(135deg,rgba(34,211,238,0.13),rgba(74,222,128,0.08))',
+                    border:'1px solid rgba(34,211,238,0.55)', borderRadius:'14px',
+                    padding:'13px 36px', fontWeight:800, fontSize:'15px', color:'#22d3ee',
+                    whiteSpace:'nowrap', position:'relative', overflow:'hidden',
+                    animation:'pulseGlow 3s ease-in-out infinite'
+                  }}>
+                    🛡️ Super Admin
+                  </div>
+
+                  {/* Vertical stem */}
+                  <div style={{ width:2, height:32, background:'linear-gradient(180deg,#22d3ee,rgba(34,211,238,0.3))', position:'relative' }}>
+                    <div style={{ position:'absolute', bottom:-4, left:'50%', transform:'translateX(-50%)', width:7, height:7, borderRadius:'50%', background:'#22d3ee', animation:'dotPulse 2s ease-in-out infinite' }} />
+                  </div>
+
+                  {/* Horizontal bar */}
+                  <div style={{ height:2, background:'linear-gradient(90deg,transparent,rgba(34,211,238,0.5),transparent)', alignSelf:'stretch', margin:'0 40px' }} />
+
+                  {/* Cards row */}
+                  <div style={{ display:'flex', gap:0, justifyContent:'space-around', alignSelf:'stretch', alignItems:'flex-start' }}>
+                    {admins.length === 0 && (
+                      <div style={{ color:'#94a3b8', padding:'40px', textAlign:'center' }}>No admins created yet.</div>
+                    )}
+                    {admins.map((a, i) => {
+                      const c = COLORS[i % COLORS.length]
+                      const isActive = activeAdmin?.id === a.id
+                      return (
+                        <div key={a.id} style={{ display:'flex', flexDirection:'column', alignItems:'center', flex:1 }}>
+                          {/* Branch line */}
+                          <div style={{ width:2, height:28, background:`linear-gradient(180deg,${c}88,${c}33)`, position:'relative' }}>
+                            <div style={{ position:'absolute', bottom:-3, left:'50%', transform:'translateX(-50%)', width:6, height:6, borderRadius:'50%', background:c, animation:`dotPulse ${1.8+i*0.3}s ease-in-out infinite` }} />
+                          </div>
+                          {/* Card */}
+                          <div
+                            className={`h-card${isActive ? ' h-active' : ''}`}
+                            onMouseEnter={() => handleCardEnter(a)}
+                            onMouseLeave={() => handleCardLeave(a)}
+                          >
+                            <div style={{ fontSize:'9px', color:c, fontFamily:'monospace', marginBottom:4, letterSpacing:'0.5px' }}>{a.admin_id}</div>
+                            <div style={{ color:'#f8fafc', fontWeight:700, fontSize:'13px', marginBottom:6 }}>{a.name}</div>
+                            <div style={{ color:'#94a3b8', fontSize:'11px', marginBottom:2 }}>📞 {a.admin_contact_no}</div>
+                            <div style={{ color:'#94a3b8', fontSize:'11px' }}>📍 {a.city_name}</div>
+                            <div style={{ marginTop:8, width:'100%', height:2, borderRadius:2, background:`linear-gradient(90deg,${c}44,${c}cc)` }} />
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Hover Panel */}
+                <div className={`h-panel ${activeAdmin ? 'h-visible' : 'h-hidden'}`}
+                  style={{ width:215, flexShrink:0, border:'1px solid rgba(34,211,238,0.18)', borderRadius:14, padding:15, background:'linear-gradient(160deg,#091525,#060e1c)', position:'relative', minHeight:190, boxShadow:'0 8px 32px rgba(0,0,0,0.4)' }}>
+
+                  {/* Panel header */}
+                  <div style={{ fontSize:9, color:'#22d3ee', fontWeight:700, letterSpacing:'1.3px', marginBottom:11, paddingBottom:9, borderBottom:'1px solid rgba(34,211,238,0.12)', display:'flex', alignItems:'center', gap:6 }}>
+                    <span style={{ width:5, height:5, borderRadius:'50%', background:'#22d3ee', display:'inline-block', animation:'dotPulse 2s infinite' }} />
+                    CREATED BY
+                  </div>
+
+                  {/* Super Admin box */}
+                  <div className="sa-box">
+                    <div style={{ fontSize:9, color:'#ffd700', fontWeight:700, letterSpacing:'0.9px', marginBottom:5, display:'flex', alignItems:'center', gap:5 }}>
+                      <span style={{ fontSize:13 }}>🛡️</span> SUPER ADMIN
+                    </div>
+                    <div style={{ fontSize:11, color:'#94a3b8', wordBreak:'break-all' }}>{localStorage.getItem('email')}</div>
+                    <div style={{ marginTop:6, fontSize:9, padding:'2px 7px', background:'rgba(255,215,0,0.1)', border:'1px solid rgba(255,215,0,0.2)', borderRadius:20, color:'#ffd700', display:'inline-block', letterSpacing:'0.5px' }}>● ONLINE</div>
+                  </div>
+
+{/* Admin detail panels — cross-fade */}
+<div style={{ position:'relative' }}>
+  {admins.map((a, i) => {
+    const c = COLORS[i % COLORS.length]
+    const isActive = activeAdmin?.id === a.id
+    return (
+      <div key={a.id} style={{
+        position: isActive ? 'relative' : 'absolute',
+        top: 0, left: 0, width: '100%',
+        opacity: isActive ? 1 : 0,
+        transform: isActive ? 'translateY(0)' : 'translateY(8px)',
+        transition: 'opacity 0.28s ease, transform 0.28s cubic-bezier(0.22,1,0.36,1)',
+        pointerEvents: isActive ? 'auto' : 'none',
+      }}>
+                          <div style={{ background:'rgba(34,211,238,0.04)', border:'1px solid rgba(34,211,238,0.12)', borderRadius:10, padding:11 }}>
+                            <div style={{ display:'inline-block', fontSize:9, fontWeight:700, letterSpacing:1, padding:'2px 7px', borderRadius:20, background:'rgba(34,211,238,0.12)', color:'#22d3ee', border:'1px solid rgba(34,211,238,0.25)', marginBottom:5 }}>ADMIN</div>
+                            <div style={{ fontSize:10, color:c, fontFamily:'monospace', marginBottom:3 }}>{a.admin_id}</div>
+                            <div style={{ fontSize:14, fontWeight:700, color:'#f8fafc', marginBottom:7 }}>{a.name}</div>
+                            <div style={{ fontSize:11, color:'#94a3b8', marginBottom:3 }}>📞 {a.admin_contact_no}</div>
+                            <div style={{ fontSize:11, color:'#94a3b8' }}>📍 {a.city_name}</div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {showForm && (
           <div style={s.card}>
             <p style={s.secHead}>Create New Admin</p>
             <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
-
               <p style={s.secSub}>Account Info</p>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'14px' }}>
                 <div><label style={s.lbl}>Name *</label><input name="name" value={form.name} onChange={handleChange} required className="sa-inp" style={s.inp}/></div>
@@ -232,7 +384,6 @@ export default function SuperAdminDashboard() {
                 <div><label style={s.lbl}>Email *</label><input type="email" name="email" value={form.email} onChange={handleChange} required className="sa-inp" style={s.inp}/></div>
                 <div><label style={s.lbl}>Password *</label><input type="password" name="password" value={form.password} onChange={handleChange} required className="sa-inp" style={s.inp}/></div>
               </div>
-
               <p style={s.secSub}>📍 Address</p>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'14px' }}>
                 <div><label style={s.lbl}>Door No</label><input name="door_no" value={form.door_no} onChange={handleChange} required className="sa-inp" style={s.inp}/></div>
@@ -242,13 +393,11 @@ export default function SuperAdminDashboard() {
                 <div><label style={s.lbl}>District</label><input name="district" value={form.district} onChange={handleChange} required className="sa-inp" style={s.inp}/></div>
                 <div><label style={s.lbl}>State</label><input name="state" value={form.state} onChange={handleChange} required className="sa-inp" style={s.inp}/></div>
               </div>
-
               <p style={s.secSub}>🪪 Identity</p>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'14px' }}>
                 <div><label style={s.lbl}>Aadhaar No</label><input name="aadhaar_no" maxLength={12} value={form.aadhaar_no} onChange={handleChange} required className="sa-inp" style={s.inp}/></div>
                 <div><label style={s.lbl}>PAN No</label><input name="pan_no" maxLength={10} value={form.pan_no} onChange={handleChange} required className="sa-inp" style={s.inp}/></div>
               </div>
-
               <p style={s.secSub}>💼 Occupation</p>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'14px' }}>
                 <div><label style={s.lbl}>Occupation</label>
@@ -259,14 +408,12 @@ export default function SuperAdminDashboard() {
                 <div><label style={s.lbl}>Detail</label><input name="occupation_detail" value={form.occupation_detail} onChange={handleChange} className="sa-inp" style={s.inp}/></div>
                 <div><label style={s.lbl}>Annual Salary *</label><input name="annual_salary" value={form.annual_salary} onChange={handleChange} required className="sa-inp" style={s.inp}/></div>
               </div>
-
               <p style={s.secSub}>🛡️ Admin Info</p>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'14px' }}>
                 <div><label style={s.lbl}>Admin Name *</label><input name="admin_name" value={form.admin_name} onChange={handleChange} required className="sa-inp" style={s.inp}/></div>
                 <div><label style={s.lbl}>Admin ID *</label><input name="admin_id" value={form.admin_id} onChange={handleChange} required className="sa-inp" style={s.inp}/></div>
                 <div><label style={s.lbl}>Admin Contact *</label><input name="admin_contact_no" maxLength={10} value={form.admin_contact_no} onChange={handleChange} required className="sa-inp" style={s.inp}/></div>
               </div>
-
               <div style={{ display:'flex', gap:'12px', marginTop:'6px' }}>
                 <button type="submit" className="sa-grad-btn"
                   style={{ padding:'12px 28px', background:'linear-gradient(90deg,#22d3ee,#4ade80)', border:'none', borderRadius:'12px', fontWeight:800, color:'#006165', fontSize:'14px', cursor:'pointer' }}>

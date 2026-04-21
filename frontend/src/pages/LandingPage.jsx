@@ -219,7 +219,7 @@ export default function LandingPage() {
   <img 
     src={logo} 
     alt="BitByte Logo" 
-    style={{ width: 60, height: 60, borderRadius: '10px', objectFit: 'contain' }} 
+    style={{ width: 60, height: 50, borderRadius: '10px', objectFit: 'contain' }} 
   />
 </div>
         
