@@ -22,6 +22,7 @@ export default function AdminDashboard() {
   const [admins, setAdmins] = useState([])
   const [selectedAdmin, setSelectedAdmin] = useState(null)
   const [showForm, setShowForm] = useState(false)
+  const [showHierarchy, setShowHierarchy] = useState(false)
   const [msg, setMsg] = useState('')
   const [msgType, setMsgType] = useState('success')
   const [form, setForm] = useState(emptyForm)
@@ -156,12 +157,71 @@ export default function AdminDashboard() {
         )}
 
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'24px' }}>
-          <h2 style={{ fontSize:'22px', fontWeight:800, margin:0 }}>Dealer Management</h2>
-          <button onClick={() => setShowForm(!showForm)} className="ad-grad-btn"
-            style={{ padding:'11px 28px', background:'linear-gradient(90deg,#4ade80,#22d3ee)', border:'none', borderRadius:'12px', fontWeight:800, color:'#006165', fontSize:'14px', cursor:'pointer' }}>
-            {showForm ? 'Cancel' : '+ Create Dealer'}
-          </button>
+  <h2 style={{ fontSize:'22px', fontWeight:800, margin:0 }}>Dealer Management</h2>
+  <div style={{ display:'flex', gap:'12px' }}>
+    <button onClick={() => setShowHierarchy(true)}
+      style={{ padding:'11px 28px', background:'rgba(134,239,172,0.08)', border:'1px solid rgba(74,222,128,0.3)', borderRadius:'12px', fontWeight:700, color:'#86efac', fontSize:'14px', cursor:'pointer' }}>
+      🏢 Dealer Hierarchy
+    </button>
+    <button onClick={() => setShowForm(!showForm)} className="ad-grad-btn"
+      style={{ padding:'11px 28px', background:'linear-gradient(90deg,#4ade80,#22d3ee)', border:'none', borderRadius:'12px', fontWeight:800, color:'#006165', fontSize:'14px', cursor:'pointer' }}>
+      {showForm ? 'Cancel' : '+ Create Dealer'}
+    </button>
+  </div>
+</div>
+
+{/* ── DEALER HIERARCHY MODAL ── */}
+{showHierarchy && (
+  <div onClick={() => setShowHierarchy(false)}
+    style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', backdropFilter:'blur(8px)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center' }}>
+    <div onClick={e => e.stopPropagation()}
+      style={{ background:'#0f172a', border:'1px solid rgba(74,222,128,0.2)', borderRadius:'20px', padding:'32px', maxWidth:'960px', width:'95%', maxHeight:'80vh', overflowY:'auto' }}>
+
+      {/* Modal Header */}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'28px', paddingBottom:'14px', borderBottom:'1px solid rgba(74,222,128,0.1)' }}>
+        <span style={{ color:'#86efac', fontSize:'13px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em' }}>🏢 Dealer Hierarchy</span>
+        <button onClick={() => setShowHierarchy(false)}
+          style={{ background:'transparent', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', borderRadius:'8px', padding:'6px 14px', cursor:'pointer', fontSize:'12px' }}>
+          ✕ Close
+        </button>
+      </div>
+
+      {/* Tree */}
+      <div style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
+
+        {/* Admin Root Node */}
+        <div style={{ background:'rgba(74,222,128,0.12)', border:'1px solid #4ade80', borderRadius:'14px', padding:'14px 48px', fontWeight:800, fontSize:'15px', color:'#4ade80' }}>
+          🛡️ Admin
         </div>
+
+        {/* Vertical stem */}
+        <div style={{ width:2, height:28, background:'linear-gradient(180deg,#4ade80,rgba(74,222,128,0.3))' }} />
+
+        {/* Horizontal spine + Dealer Cards */}
+        <div style={{ position:'relative', width:'100%', display:'flex', justifyContent:'center' }}>
+          <div style={{ position:'absolute', top:0, left:'10%', right:'10%', height:2, background:'linear-gradient(90deg,transparent,rgba(74,222,128,0.4),transparent)' }} />
+
+          <div style={{ display:'flex', gap:'20px', flexWrap:'wrap', justifyContent:'center' }}>
+            {dealers.map((d, i) => (
+              <div key={i} style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
+                <div style={{ width:2, height:28, background:'rgba(74,222,128,0.5)' }} />
+                <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(74,222,128,0.2)', borderRadius:'12px', padding:'16px 20px', minWidth:'190px' }}>
+                  <div style={{ color:'#4ade80', fontFamily:'monospace', fontSize:'11px', marginBottom:'6px' }}>{d.dealer_id}</div>
+                  <div style={{ color:'#f8fafc', fontWeight:700, fontSize:'14px', marginBottom:'6px' }}>{d.name}</div>
+                  <div style={{ color:'#94a3b8', fontSize:'12px', marginBottom:'3px' }}>📞 {d.mobile_number}</div>
+                  <div style={{ color:'#94a3b8', fontSize:'12px' }}>📍 {d.city_name}</div>
+                </div>
+              </div>
+            ))}
+            {dealers.length === 0 && (
+              <div style={{ color:'#94a3b8', padding:'40px', textAlign:'center' }}>No dealers created yet.</div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 
         {showForm && (
           <div style={card}>
