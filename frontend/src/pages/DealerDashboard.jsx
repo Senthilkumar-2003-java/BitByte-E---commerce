@@ -22,6 +22,7 @@ export default function DealerDashboard() {
   const [dealers, setDealers] = useState([])         // for dropdown — dealer picks themselves
   const [selectedDealer, setSelectedDealer] = useState(null)
   const [showForm, setShowForm] = useState(false)
+  const [showHierarchy, setShowHierarchy] = useState(false)
   const [msg, setMsg] = useState('')
   const [msgType, setMsgType] = useState('success')
   const [form, setForm] = useState(emptyForm)
@@ -149,13 +150,61 @@ export default function DealerDashboard() {
           </div>
         )}
 
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'24px' }}>
-          <h2 style={{ fontSize:'22px', fontWeight:800, margin:0 }}>Sub Dealer Management</h2>
-          <button onClick={() => setShowForm(!showForm)} className="dl-grad-btn"
-            style={{ padding:'11px 28px', background:'linear-gradient(90deg,#f59e0b,#22d3ee)', border:'none', borderRadius:'12px', fontWeight:800, color:'#003b40', fontSize:'14px', cursor:'pointer' }}>
-            {showForm ? 'Cancel' : '+ Create Sub Dealer'}
-          </button>
+<div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'24px' }}>
+  <h2 style={{ fontSize:'22px', fontWeight:800, margin:0 }}>Sub Dealer Management</h2>
+  <div style={{ display:'flex', gap:'12px' }}>
+    <button onClick={() => setShowHierarchy(true)}
+      style={{ padding:'11px 28px', background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.3)', borderRadius:'12px', fontWeight:700, color:'#fcd34d', fontSize:'14px', cursor:'pointer' }}>
+      🏢 Sub Dealer Hierarchy
+    </button>
+    <button onClick={() => setShowForm(!showForm)} className="dl-grad-btn"
+      style={{ padding:'11px 28px', background:'linear-gradient(90deg,#f59e0b,#22d3ee)', border:'none', borderRadius:'12px', fontWeight:800, color:'#003b40', fontSize:'14px', cursor:'pointer' }}>
+      {showForm ? 'Cancel' : '+ Create Sub Dealer'}
+    </button>
+  </div>
+</div>
+
+{/* ── SUB DEALER HIERARCHY MODAL ── */}
+{showHierarchy && (
+  <div onClick={() => setShowHierarchy(false)}
+    style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', backdropFilter:'blur(8px)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center' }}>
+    <div onClick={e => e.stopPropagation()}
+      style={{ background:'#0f172a', border:'1px solid rgba(245,158,11,0.2)', borderRadius:'20px', padding:'32px', maxWidth:'960px', width:'95%', maxHeight:'80vh', overflowY:'auto' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'28px', paddingBottom:'14px', borderBottom:'1px solid rgba(245,158,11,0.1)' }}>
+        <span style={{ color:'#fcd34d', fontSize:'13px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em' }}>🏢 Sub Dealer Hierarchy</span>
+        <button onClick={() => setShowHierarchy(false)}
+          style={{ background:'transparent', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', borderRadius:'8px', padding:'6px 14px', cursor:'pointer', fontSize:'12px' }}>
+          ✕ Close
+        </button>
+      </div>
+      <div style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
+        <div style={{ background:'rgba(245,158,11,0.12)', border:'1px solid #f59e0b', borderRadius:'14px', padding:'14px 48px', fontWeight:800, fontSize:'15px', color:'#f59e0b' }}>
+          🏪 Dealer
         </div>
+        <div style={{ width:2, height:28, background:'linear-gradient(180deg,#f59e0b,rgba(245,158,11,0.3))' }} />
+        <div style={{ position:'relative', width:'100%', display:'flex', justifyContent:'center' }}>
+          <div style={{ position:'absolute', top:0, left:'10%', right:'10%', height:2, background:'linear-gradient(90deg,transparent,rgba(245,158,11,0.4),transparent)' }} />
+          <div style={{ display:'flex', gap:'20px', flexWrap:'wrap', justifyContent:'center' }}>
+            {subDealers.map((d, i) => (
+              <div key={i} style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
+                <div style={{ width:2, height:28, background:'rgba(245,158,11,0.5)' }} />
+                <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(245,158,11,0.2)', borderRadius:'12px', padding:'16px 20px', minWidth:'190px' }}>
+                  <div style={{ color:'#f59e0b', fontFamily:'monospace', fontSize:'11px', marginBottom:'6px' }}>{d.sub_dealer_id}</div>
+                  <div style={{ color:'#f8fafc', fontWeight:700, fontSize:'14px', marginBottom:'6px' }}>{d.name}</div>
+                  <div style={{ color:'#94a3b8', fontSize:'12px', marginBottom:'3px' }}>📞 {d.mobile_number}</div>
+                  <div style={{ color:'#94a3b8', fontSize:'12px' }}>📍 {d.city_name}</div>
+                </div>
+              </div>
+            ))}
+            {subDealers.length === 0 && (
+              <div style={{ color:'#94a3b8', padding:'40px', textAlign:'center' }}>No sub dealers created yet.</div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 
         {showForm && (
           <div style={card}>

@@ -22,6 +22,7 @@ export default function PromotorDashboard() {
   const [promotors, setPromotors] = useState([])
   const [selectedPromotor, setSelectedPromotor] = useState(null)
   const [showForm, setShowForm] = useState(false)
+  const [showHierarchy, setShowHierarchy] = useState(false)
   const [msg, setMsg] = useState('')
   const [msgType, setMsgType] = useState('success')
   const [form, setForm] = useState(emptyForm)
@@ -149,13 +150,61 @@ export default function PromotorDashboard() {
           </div>
         )}
 
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'24px' }}>
-          <h2 style={{ fontSize:'22px', fontWeight:800, margin:0 }}>Customer Management</h2>
-          <button onClick={() => setShowForm(!showForm)} className="pr-grad-btn"
-            style={{ padding:'11px 28px', background:'linear-gradient(90deg,#34d399,#22d3ee)', border:'none', borderRadius:'12px', fontWeight:800, color:'#003b2f', fontSize:'14px', cursor:'pointer' }}>
-            {showForm ? 'Cancel' : '+ Create Customer'}
-          </button>
+<div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'24px' }}>
+  <h2 style={{ fontSize:'22px', fontWeight:800, margin:0 }}>Customer Management</h2>
+  <div style={{ display:'flex', gap:'12px' }}>
+    <button onClick={() => setShowHierarchy(true)}
+      style={{ padding:'11px 28px', background:'rgba(52,211,153,0.08)', border:'1px solid rgba(52,211,153,0.3)', borderRadius:'12px', fontWeight:700, color:'#6ee7b7', fontSize:'14px', cursor:'pointer' }}>
+      🏢 Customer Hierarchy
+    </button>
+    <button onClick={() => setShowForm(!showForm)} className="pr-grad-btn"
+      style={{ padding:'11px 28px', background:'linear-gradient(90deg,#34d399,#22d3ee)', border:'none', borderRadius:'12px', fontWeight:800, color:'#003b2f', fontSize:'14px', cursor:'pointer' }}>
+      {showForm ? 'Cancel' : '+ Create Customer'}
+    </button>
+  </div>
+</div>
+
+{/* ── CUSTOMER HIERARCHY MODAL ── */}
+{showHierarchy && (
+  <div onClick={() => setShowHierarchy(false)}
+    style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', backdropFilter:'blur(8px)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center' }}>
+    <div onClick={e => e.stopPropagation()}
+      style={{ background:'#0f172a', border:'1px solid rgba(52,211,153,0.2)', borderRadius:'20px', padding:'32px', maxWidth:'960px', width:'95%', maxHeight:'80vh', overflowY:'auto' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'28px', paddingBottom:'14px', borderBottom:'1px solid rgba(52,211,153,0.1)' }}>
+        <span style={{ color:'#6ee7b7', fontSize:'13px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em' }}>🏢 Customer Hierarchy</span>
+        <button onClick={() => setShowHierarchy(false)}
+          style={{ background:'transparent', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', borderRadius:'8px', padding:'6px 14px', cursor:'pointer', fontSize:'12px' }}>
+          ✕ Close
+        </button>
+      </div>
+      <div style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
+        <div style={{ background:'rgba(52,211,153,0.12)', border:'1px solid #34d399', borderRadius:'14px', padding:'14px 48px', fontWeight:800, fontSize:'15px', color:'#34d399' }}>
+          🌟 Promotor
         </div>
+        <div style={{ width:2, height:28, background:'linear-gradient(180deg,#34d399,rgba(52,211,153,0.3))' }} />
+        <div style={{ position:'relative', width:'100%', display:'flex', justifyContent:'center' }}>
+          <div style={{ position:'absolute', top:0, left:'10%', right:'10%', height:2, background:'linear-gradient(90deg,transparent,rgba(52,211,153,0.4),transparent)' }} />
+          <div style={{ display:'flex', gap:'20px', flexWrap:'wrap', justifyContent:'center' }}>
+            {customers.map((c, i) => (
+              <div key={i} style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
+                <div style={{ width:2, height:28, background:'rgba(52,211,153,0.5)' }} />
+                <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(52,211,153,0.2)', borderRadius:'12px', padding:'16px 20px', minWidth:'190px' }}>
+                  <div style={{ color:'#34d399', fontFamily:'monospace', fontSize:'11px', marginBottom:'6px' }}>{c.customer_id}</div>
+                  <div style={{ color:'#f8fafc', fontWeight:700, fontSize:'14px', marginBottom:'6px' }}>{c.first_name} {c.last_name}</div>
+                  <div style={{ color:'#94a3b8', fontSize:'12px', marginBottom:'3px' }}>📞 {c.mobile_number}</div>
+                  <div style={{ color:'#94a3b8', fontSize:'12px' }}>📍 {c.city_name}</div>
+                </div>
+              </div>
+            ))}
+            {customers.length === 0 && (
+              <div style={{ color:'#94a3b8', padding:'40px', textAlign:'center' }}>No customers created yet.</div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 
         {showForm && (
           <div style={card}>
