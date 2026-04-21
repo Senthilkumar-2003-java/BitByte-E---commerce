@@ -415,7 +415,7 @@ export default function SuperAdminDashboard() {
               <p style={s.secSub}>👤 Personal Info</p>
               <div style={{ display: 'grid', gridTemplateColumns: '0.4fr 1fr 1fr', gap: '14px' }}>
                 <div><label style={s.lbl}>Initial</label>
-                  <input name="initial" maxLength={5} value={form.initial} onChange={handleChange} placeholder="Mr." className="sa-inp" style={s.inp} />
+<                input name="initial" maxLength={5} value={form.initial} onChange={handleChange} className="sa-inp" style={s.inp} />
                 </div>
                 <div><label style={s.lbl}>First Name *</label>
                   <input name="first_name" maxLength={100} value={form.first_name} onChange={handleChange} required className="sa-inp" style={s.inp} />
