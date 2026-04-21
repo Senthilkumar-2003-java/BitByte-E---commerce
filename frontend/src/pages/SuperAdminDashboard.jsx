@@ -384,8 +384,7 @@ export default function SuperAdminDashboard() {
                           onMouseLeave={() => scheduleHidePopup(setActiveAdmin)}
                         >
                           <div style={{ fontSize: 9, color: c, fontFamily: 'monospace', marginBottom: 4 }}>{a.admin_id}</div>
-                          <div style={{ color: text, fontWeight: 700, fontSize: 13, marginBottom: 6 }}>{a.first_name}</div>                          <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 2 }}>📞 {a.admin_contact_no}</div>
-                          <div style={{ color: '#94a3b8', fontSize: 11 }}>📍 {a.city_name}</div>
+<div style="font-size:14px;font-weight:700;color:${text};margin-bottom:7px;">${a.first_name}</div>                          <div style={{ color: '#94a3b8', fontSize: 11 }}>📍 {a.city_name}</div>
                           <div style={{ marginTop: 8, width: '100%', height: 2, borderRadius: 2, background: `linear-gradient(90deg,${c}44,${c}cc)` }} />
                         </div>
                       </div>
@@ -442,7 +441,7 @@ export default function SuperAdminDashboard() {
                 </div>
               </div>
 
-              
+
               <p style={s.secSub}>📍 Address</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
                 <div><label style={s.lbl}>Door No *</label><input name="door_no" value={form.door_no} onChange={handleChange} required className="sa-inp" style={s.inp} /></div>
