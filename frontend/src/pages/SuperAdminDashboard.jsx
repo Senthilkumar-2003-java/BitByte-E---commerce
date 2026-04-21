@@ -387,7 +387,6 @@ export default function SuperAdminDashboard() {
                           <div style={{ fontSize: 9, color: c, fontFamily: 'monospace', marginBottom: 4 }}>{a.admin_id}</div>
                           <div style={{ color: text, fontWeight: 700, fontSize: 13, marginBottom: 6 }}>{a.first_name}</div>
                           <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 2 }}>📞 {a.mobile_number}</div> 
-                         <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 2 }}>📞 {a.admin_contact_no}</div>
                           <div style={{ color: '#94a3b8', fontSize: 11 }}>📍 {a.city_name}</div>
                           <div style={{ marginTop: 8, width: '100%', height: 2, borderRadius: 2, background: `linear-gradient(90deg,${c}44,${c}cc)` }} />
                         </div>
