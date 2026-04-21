@@ -143,8 +143,7 @@ function createAdminPopup(a, i, anchorEl, dark, subtext, text) {
 
     <div style="background:${adminBoxBg};border:1px solid ${adminBoxBd};border-radius:10px;padding:11px;">      <div style="display:inline-block;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(34,211,238,0.12);color:#22d3ee;border:1px solid rgba(34,211,238,0.25);margin-bottom:6px;">ADMIN</div>
       <div style="font-size:10px;color:${c};font-family:monospace;margin-bottom:3px;">${a.admin_id}</div>
-      <div style="font-size:14px;font-weight:700;color:${text};margin-bottom:7px;">${a.name}</div>
-      <div style="font-size:11px;color:${subtext};margin-bottom:3px;">📞 ${a.admin_contact_no}</div>
+<div style={{ color:text, fontWeight:700, fontSize:13, marginBottom:6 }}>{a.first_name}</div>      <div style="font-size:11px;color:${subtext};margin-bottom:3px;">📞 ${a.admin_contact_no}</div>
       <div style="font-size:11px;color:${subtext};">📍 ${a.city_name}</div>
     </div>
   `
@@ -385,8 +384,7 @@ export default function SuperAdminDashboard() {
                           onMouseLeave={() => scheduleHidePopup(setActiveAdmin)}
                         >
                           <div style={{ fontSize: 9, color: c, fontFamily: 'monospace', marginBottom: 4 }}>{a.admin_id}</div>
-                          <div style={{ color: text, fontWeight: 700, fontSize: 13, marginBottom: 6 }}>{a.name}</div>
-                          <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 2 }}>📞 {a.admin_contact_no}</div>
+                          <div style={{ color: text, fontWeight: 700, fontSize: 13, marginBottom: 6 }}>{a.first_name}</div>                          <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 2 }}>📞 {a.admin_contact_no}</div>
                           <div style={{ color: '#94a3b8', fontSize: 11 }}>📍 {a.city_name}</div>
                           <div style={{ marginTop: 8, width: '100%', height: 2, borderRadius: 2, background: `linear-gradient(90deg,${c}44,${c}cc)` }} />
                         </div>
@@ -399,95 +397,95 @@ export default function SuperAdminDashboard() {
           </div>
         )}
 
-{showForm && (
-  <div style={s.card}>
-    <p style={s.secHead}>Create New Admin</p>
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+        {showForm && (
+          <div style={s.card}>
+            <p style={s.secHead}>Create New Admin</p>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
 
-      <p style={s.secSub}>Account Info</p>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-        <div><label style={s.lbl}>Email *</label>
-          <input type="email" name="email" value={form.email} onChange={handleChange} required className="sa-inp" style={s.inp} />
-        </div>
-        <div><label style={s.lbl}>Password *</label>
-          <input type="password" name="password" value={form.password} onChange={handleChange} required className="sa-inp" style={s.inp} />
-        </div>
-      </div>
+              <p style={s.secSub}>Account Info</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div><label style={s.lbl}>Email *</label>
+                  <input type="email" name="email" value={form.email} onChange={handleChange} required className="sa-inp" style={s.inp} />
+                </div>
+                <div><label style={s.lbl}>Password *</label>
+                  <input type="password" name="password" value={form.password} onChange={handleChange} required className="sa-inp" style={s.inp} />
+                </div>
+              </div>
 
-      <p style={s.secSub}>👤 Personal Info</p>
-      <div style={{ display: 'grid', gridTemplateColumns: '0.4fr 1fr 1fr', gap: '14px' }}>
-        <div><label style={s.lbl}>Initial</label>
-          <input name="initial" maxLength={5} value={form.initial} onChange={handleChange} placeholder="Mr." className="sa-inp" style={s.inp} />
-        </div>
-        <div><label style={s.lbl}>First Name *</label>
-          <input name="first_name" maxLength={100} value={form.first_name} onChange={handleChange} required className="sa-inp" style={s.inp} />
-        </div>
-        <div><label style={s.lbl}>Last Name *</label>
-          <input name="last_name" maxLength={100} value={form.last_name} onChange={handleChange} required className="sa-inp" style={s.inp} />
-        </div>
-      </div>
+              <p style={s.secSub}>👤 Personal Info</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '0.4fr 1fr 1fr', gap: '14px' }}>
+                <div><label style={s.lbl}>Initial</label>
+                  <input name="initial" maxLength={5} value={form.initial} onChange={handleChange} placeholder="Mr." className="sa-inp" style={s.inp} />
+                </div>
+                <div><label style={s.lbl}>First Name *</label>
+                  <input name="first_name" maxLength={100} value={form.first_name} onChange={handleChange} required className="sa-inp" style={s.inp} />
+                </div>
+                <div><label style={s.lbl}>Last Name *</label>
+                  <input name="last_name" maxLength={100} value={form.last_name} onChange={handleChange} required className="sa-inp" style={s.inp} />
+                </div>
+              </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-        <div><label style={s.lbl}>Mobile *</label>
-          <input name="mobile_number" maxLength={10} value={form.mobile_number} onChange={handleChange} required className="sa-inp" style={s.inp} />
-        </div>
-        {/* Admin ID preview — auto-generated badge */}
-        <div>
-          <label style={s.lbl}>Admin ID</label>
-          <div style={{ ...s.inp, opacity: 0.55, cursor: 'not-allowed', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ color: '#22d3ee', fontFamily: 'monospace', fontSize: '13px' }}>
-              BBADM{new Date().getFullYear()}
-            </span>
-            <span style={{ color: '#64748b', fontSize: '12px' }}>
-              &lt;auto-generated&gt;
-            </span>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div><label style={s.lbl}>Mobile *</label>
+                  <input name="mobile_number" maxLength={10} value={form.mobile_number} onChange={handleChange} required className="sa-inp" style={s.inp} />
+                </div>
+                {/* Admin ID preview — auto-generated badge */}
+                <div>
+                  <label style={s.lbl}>Admin ID</label>
+                  <div style={{ ...s.inp, opacity: 0.55, cursor: 'not-allowed', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ color: '#22d3ee', fontFamily: 'monospace', fontSize: '13px' }}>
+                      BBADM{new Date().getFullYear()}
+                    </span>
+                    <span style={{ color: '#64748b', fontSize: '12px' }}>
+                      &lt;auto-generated&gt;
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <p style={s.secSub}>📍 Address</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
+                <div><label style={s.lbl}>Door No *</label><input name="door_no" value={form.door_no} onChange={handleChange} required className="sa-inp" style={s.inp} /></div>
+                <div><label style={s.lbl}>Street Name *</label><input name="street_name" value={form.street_name} onChange={handleChange} required className="sa-inp" style={s.inp} /></div>
+                <div><label style={s.lbl}>Town *</label><input name="town_name" value={form.town_name} onChange={handleChange} required className="sa-inp" style={s.inp} /></div>
+                <div><label style={s.lbl}>City *</label><input name="city_name" value={form.city_name} onChange={handleChange} required className="sa-inp" style={s.inp} /></div>
+                <div><label style={s.lbl}>District *</label><input name="district" value={form.district} onChange={handleChange} required className="sa-inp" style={s.inp} /></div>
+                <div><label style={s.lbl}>State *</label><input name="state" value={form.state} onChange={handleChange} required className="sa-inp" style={s.inp} /></div>
+              </div>
+
+              <p style={s.secSub}>🪪 Identity</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div><label style={s.lbl}>Aadhaar No *</label><input name="aadhaar_no" maxLength={12} value={form.aadhaar_no} onChange={handleChange} required className="sa-inp" style={s.inp} /></div>
+                <div><label style={s.lbl}>PAN No *</label><input name="pan_no" maxLength={10} value={form.pan_no} onChange={handleChange} required className="sa-inp" style={s.inp} /></div>
+              </div>
+
+              <p style={s.secSub}>💼 Occupation</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
+                <div><label style={s.lbl}>Occupation *</label>
+                  <select name="occupation" value={form.occupation} onChange={handleChange} className="sa-inp" style={{ ...s.inp, cursor: 'pointer' }}>
+                    {OCCUPATION_OPTIONS.map(o => <option key={o} value={o} style={{ background: '#1a1f26' }}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>)}
+                  </select>
+                </div>
+                <div><label style={s.lbl}>Detail</label><input name="occupation_detail" value={form.occupation_detail} onChange={handleChange} className="sa-inp" style={s.inp} /></div>
+                <div><label style={s.lbl}>Annual Salary *</label><input name="annual_salary" value={form.annual_salary} onChange={handleChange} required className="sa-inp" style={s.inp} /></div>
+              </div>
+
+              {/* ✅ Admin Info section REMOVED — all auto-generated from above fields */}
+              {/* admin_name = first_name, admin_contact_no = mobile_number, admin_id = BBADM{year}{seq} */}
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '6px' }}>
+                <button type="submit" className="sa-grad-btn"
+                  style={{ padding: '12px 28px', background: 'linear-gradient(90deg,#22d3ee,#4ade80)', border: 'none', borderRadius: '12px', fontWeight: 800, color: '#006165', fontSize: '14px', cursor: 'pointer' }}>
+                  Create Admin
+                </button>
+                <button type="button" onClick={() => setShowForm(false)}
+                  style={{ padding: '12px 24px', background: inpBg, border: `1px solid ${border}`, borderRadius: '12px', color: subtext, fontSize: '14px', cursor: 'pointer' }}>
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
-        </div>
-      </div>
-
-      <p style={s.secSub}>📍 Address</p>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
-        <div><label style={s.lbl}>Door No *</label><input name="door_no" value={form.door_no} onChange={handleChange} required className="sa-inp" style={s.inp} /></div>
-        <div><label style={s.lbl}>Street Name *</label><input name="street_name" value={form.street_name} onChange={handleChange} required className="sa-inp" style={s.inp} /></div>
-        <div><label style={s.lbl}>Town *</label><input name="town_name" value={form.town_name} onChange={handleChange} required className="sa-inp" style={s.inp} /></div>
-        <div><label style={s.lbl}>City *</label><input name="city_name" value={form.city_name} onChange={handleChange} required className="sa-inp" style={s.inp} /></div>
-        <div><label style={s.lbl}>District *</label><input name="district" value={form.district} onChange={handleChange} required className="sa-inp" style={s.inp} /></div>
-        <div><label style={s.lbl}>State *</label><input name="state" value={form.state} onChange={handleChange} required className="sa-inp" style={s.inp} /></div>
-      </div>
-
-      <p style={s.secSub}>🪪 Identity</p>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-        <div><label style={s.lbl}>Aadhaar No *</label><input name="aadhaar_no" maxLength={12} value={form.aadhaar_no} onChange={handleChange} required className="sa-inp" style={s.inp} /></div>
-        <div><label style={s.lbl}>PAN No *</label><input name="pan_no" maxLength={10} value={form.pan_no} onChange={handleChange} required className="sa-inp" style={s.inp} /></div>
-      </div>
-
-      <p style={s.secSub}>💼 Occupation</p>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
-        <div><label style={s.lbl}>Occupation *</label>
-          <select name="occupation" value={form.occupation} onChange={handleChange} className="sa-inp" style={{ ...s.inp, cursor: 'pointer' }}>
-            {OCCUPATION_OPTIONS.map(o => <option key={o} value={o} style={{ background: '#1a1f26' }}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>)}
-          </select>
-        </div>
-        <div><label style={s.lbl}>Detail</label><input name="occupation_detail" value={form.occupation_detail} onChange={handleChange} className="sa-inp" style={s.inp} /></div>
-        <div><label style={s.lbl}>Annual Salary *</label><input name="annual_salary" value={form.annual_salary} onChange={handleChange} required className="sa-inp" style={s.inp} /></div>
-      </div>
-
-      {/* ✅ Admin Info section REMOVED — all auto-generated from above fields */}
-      {/* admin_name = first_name, admin_contact_no = mobile_number, admin_id = BBADM{year}{seq} */}
-
-      <div style={{ display: 'flex', gap: '12px', marginTop: '6px' }}>
-        <button type="submit" className="sa-grad-btn"
-          style={{ padding: '12px 28px', background: 'linear-gradient(90deg,#22d3ee,#4ade80)', border: 'none', borderRadius: '12px', fontWeight: 800, color: '#006165', fontSize: '14px', cursor: 'pointer' }}>
-          Create Admin
-        </button>
-        <button type="button" onClick={() => setShowForm(false)}
-          style={{ padding: '12px 24px', background: inpBg, border: `1px solid ${border}`, borderRadius: '12px', color: subtext, fontSize: '14px', cursor: 'pointer' }}>
-          Cancel
-        </button>
-      </div>
-    </form>
-  </div>
-)}
+        )}
 
         {/* Table */}
         <div style={s.card}>
