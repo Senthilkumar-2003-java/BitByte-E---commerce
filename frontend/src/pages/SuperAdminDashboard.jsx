@@ -401,17 +401,6 @@ export default function SuperAdminDashboard() {
           <div style={s.card}>
             <p style={s.secHead}>Create New Admin</p>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-
-              <p style={s.secSub}>Account Info</p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                <div><label style={s.lbl}>Email *</label>
-                  <input type="email" name="email" value={form.email} onChange={handleChange} required className="sa-inp" style={s.inp} />
-                </div>
-                <div><label style={s.lbl}>Password *</label>
-                  <input type="password" name="password" value={form.password} onChange={handleChange} required className="sa-inp" style={s.inp} />
-                </div>
-              </div>
-
               <p style={s.secSub}>👤 Personal Info</p>
               <div style={{ display: 'grid', gridTemplateColumns: '0.4fr 1fr 1fr', gap: '14px' }}>
                 <div><label style={s.lbl}>Initial</label>
@@ -443,6 +432,17 @@ export default function SuperAdminDashboard() {
                 </div>
               </div>
 
+              <p style={s.secSub}>Account Info</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div><label style={s.lbl}>Email *</label>
+                  <input type="email" name="email" value={form.email} onChange={handleChange} required className="sa-inp" style={s.inp} />
+                </div>
+                <div><label style={s.lbl}>Password *</label>
+                  <input type="password" name="password" value={form.password} onChange={handleChange} required className="sa-inp" style={s.inp} />
+                </div>
+              </div>
+
+              
               <p style={s.secSub}>📍 Address</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
                 <div><label style={s.lbl}>Door No *</label><input name="door_no" value={form.door_no} onChange={handleChange} required className="sa-inp" style={s.inp} /></div>
