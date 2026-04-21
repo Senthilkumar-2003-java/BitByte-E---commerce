@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import logo from '../assets/logo.png'
 
 // Even more organic particles
 const PARTICLES = Array.from({ length: 25 }, (_, i) => ({
@@ -214,10 +215,13 @@ export default function LandingPage() {
         padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ width: 34, height: 34, borderRadius: '10px', background: accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#fff' }}>B</div>
-          <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>BitByte</span>
-        </div>
+<div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: '20px' }}>
+  <img 
+    src={logo} 
+    alt="BitByte Logo" 
+    style={{ width: 60, height: 60, borderRadius: '10px', objectFit: 'contain' }} 
+  />
+</div>
         
         <div style={{ display: 'flex', gap: '10px' }}>
           <button onClick={() => setDark(!dark)} style={{ padding: '8px 16px', borderRadius: '16px', border: 'none', background: 'transparent', color: text, cursor: 'pointer', fontWeight: 600 }}>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api'
+import logo from '../assets/logo.png'
 
 const OCCUPATIONS = ['employee', 'business', 'others']
 const emptyForm = {
@@ -128,11 +129,14 @@ export default function AdminDashboard() {
 
       {/* Navbar */}
       <div style={{ position:'relative', zIndex:10, background: glass, borderBottom:`1px solid ${border}`, padding:'18px 40px', display:'flex', justifyContent:'space-between', alignItems:'center', backdropFilter:'blur(16px)', transition:'background 0.8s ease' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
-          <div style={{ width:38, height:38, borderRadius:'10px', background:'#4ade80', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900, color:'#065f46', fontSize:'17px' }}>B</div>
-          <span style={{ fontWeight:800, fontSize:'18px' }}>BitByte</span>
-          <span style={{ color:'#86efac', fontWeight:700, fontSize:'14px', marginLeft:'6px' }}>🛡️ Admin Dashboard</span>
-        </div>
+ <div style={{ display:'flex', alignItems:'center', gap:'12px',marginLeft: '10px' }}>
+  <img 
+    src={logo} 
+    alt="BitByte Logo" 
+    style={{ width: 60, height: 50, borderRadius: '10px', objectFit: 'contain' }} 
+  />
+  <span style={{ color:'#86efac', fontWeight:700, fontSize:'14px' }}>🛡️ Admin Dashboard</span>
+</div>
         <div style={{ display:'flex', alignItems:'center', gap:'14px' }}>
           <span style={{ color: subtext, fontSize:'14px' }}>{localStorage.getItem('email')}</span>
 

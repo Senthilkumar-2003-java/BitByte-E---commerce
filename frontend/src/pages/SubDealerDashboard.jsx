@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api'
+import logo from '../assets/logo.png'
 
 const OCCUPATIONS = ['employee', 'business', 'others']
 const emptyForm = {
@@ -128,11 +129,14 @@ export default function SubDealerDashboard() {
 
       {/* Navbar */}
       <div style={{ position:'relative', zIndex:10, background: glass, borderBottom:`1px solid ${border}`, padding:'18px 40px', display:'flex', justifyContent:'space-between', alignItems:'center', backdropFilter:'blur(16px)' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
-          <div style={{ width:38, height:38, borderRadius:'10px', background:'#a78bfa', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900, color:'#fff', fontSize:'17px' }}>B</div>
-          <span style={{ fontWeight:800, fontSize:'18px' }}>BitByte</span>
-          <span style={{ color:'#c4b5fd', fontWeight:700, fontSize:'14px', marginLeft:'6px' }}>💎 Sub Dealer Dashboard</span>
-        </div>
+<div style={{ display:'flex', alignItems:'center', gap:'12px', marginLeft: '10px' }}>
+  <img 
+    src={logo} 
+    alt="BitByte Logo" 
+    style={{ width: 60, height: 50, borderRadius: '10px', objectFit: 'contain' }} 
+  />
+  <span style={{ color:'#c4b5fd', fontWeight:700, fontSize:'14px' }}>💎 Sub Dealer Dashboard</span>
+</div>
         <div style={{ display:'flex', alignItems:'center', gap:'14px' }}>
           <span style={{ color: subtext, fontSize:'14px' }}>{localStorage.getItem('email')}</span>
           <button onClick={() => setDark(!dark)} style={{ padding:'8px 16px', borderRadius:'16px', border:`1px solid ${border}`, background:'transparent', color: text, cursor:'pointer', fontWeight:600, fontSize:'13px' }}>
