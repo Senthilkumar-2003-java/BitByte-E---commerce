@@ -109,9 +109,10 @@ class DealerProfile(models.Model):
         related_name='assigned_dealers'
     )
 
-    name = models.CharField(max_length=100)
+    initial = models.CharField(max_length=5, blank=True)
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
     mobile_number = models.CharField(max_length=10)
-
     door_no = models.CharField(max_length=25, blank=True, null=True)
     street_name = models.CharField(max_length=100, blank=True, null=True)
     town_name = models.CharField(max_length=100, blank=True, null=True)
@@ -141,7 +142,7 @@ class DealerProfile(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.name
+        return f"{self.first_name} {self.last_name}"
 
 
 # ✅ Sub Dealer (created by Dealer)

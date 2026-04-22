@@ -63,7 +63,7 @@ class DealerProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = DealerProfile
         fields = [
-            'id', 'email', 'password', 'name', 'mobile_number',
+            'id', 'email', 'password', 'initial', 'first_name', 'last_name', 'mobile_number',
             'door_no', 'street_name', 'town_name', 'city_name',
             'district', 'state', 'aadhaar_no', 'pan_no',
             'occupation', 'occupation_detail', 'annual_salary',
@@ -102,10 +102,20 @@ class DealerProfileSerializer(serializers.ModelSerializer):
 
 class DealerListSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email')
+    assigned_admin_id = serializers.IntegerField(source='assigned_admin.id', read_only=True)
+    admin_name = serializers.CharField(source='assigned_admin.first_name', read_only=True)
+    admin_uid = serializers.CharField(source='assigned_admin.admin_id', read_only=True)
+    admin_contact = serializers.CharField(source='assigned_admin.mobile_number', read_only=True)
+    admin_city = serializers.CharField(source='assigned_admin.city_name', read_only=True)
+
     class Meta:
         model = DealerProfile
-        fields = ['id', 'dealer_id', 'name', 'email', 'mobile_number', 'city_name', 'created_at']
-
+        fields = [
+            'id', 'dealer_id', 'first_name', 'last_name', 'email', 'mobile_number',
+            'city_name', 'created_at',
+            'assigned_admin_id', 'admin_name', 'admin_uid',
+            'admin_contact', 'admin_city'
+        ]
 
 # ✅ Sub Dealer (Dealer creates this)
 class SubDealerProfileSerializer(serializers.ModelSerializer):
