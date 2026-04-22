@@ -3,7 +3,7 @@ from .views import (
     LoginView, CreateAdminView, CreateDealerView,
     CreateSubDealerView, CreatePromotorView, CreateCustomerView,
     DashboardView, AdminListForAdminView, DealerListForDealerView,
-    SubDealerListForView, PromotorListForView, ping
+    SubDealerListForView, PromotorListForView,  FullHierarchyView, ping
 )
 
 urlpatterns = [
@@ -18,6 +18,6 @@ urlpatterns = [
     path('promotors/', CreatePromotorView.as_view()),            # NEW
     path('promotors/list/', PromotorListForView.as_view()),      # NEW
     path('customers/', CreateCustomerView.as_view()),            # NEW
-
+    path('hierarchy/full/', FullHierarchyView.as_view()),  # ✅ correct
     path('dashboard/', DashboardView.as_view()),
 ]

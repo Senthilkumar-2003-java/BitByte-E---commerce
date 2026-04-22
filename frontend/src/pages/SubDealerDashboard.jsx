@@ -17,28 +17,183 @@ const PARTICLES = Array.from({ length: 15 }, (_, i) => ({
   delay: Math.random() * 8, duration: Math.random() * 12 + 15, opacity: Math.random() * 0.2 + 0.05,
 }))
 
+const PROMOTOR_COLORS = ['#a78bfa', '#22d3ee', '#4ade80', '#f472b6', '#fb923c']
+
+// ── Popup helpers (exact same pattern as AdminDashboard) ──
+let _ppopupEl = null
+let _phideTimer = null
+
+function removePromotorPopup() {
+  document.querySelectorAll('#promotor-sd-popup').forEach(el => el.remove())
+  _ppopupEl = null
+}
+
+function schedulePromotorHide(setActivePromotor) {
+  clearTimeout(_phideTimer)
+  _phideTimer = setTimeout(() => {
+    removePromotorPopup()
+    setActivePromotor(null)
+  }, 120)
+}
+
+function createPromotorPopup(p, i, anchorEl, dark, subtextColor, textColor, hierarchy) {
+  removePromotorPopup()
+
+  const c = PROMOTOR_COLORS[i % PROMOTOR_COLORS.length]
+  const popupBg     = dark ? 'linear-gradient(160deg,#091525,#060e1c)' : 'linear-gradient(160deg,#ffffff,#f1f5f9)'
+  const popupBorder = dark ? 'rgba(167,139,250,0.25)' : 'rgba(124,58,237,0.25)'
+  const divider     = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'
+  const accentColor = dark ? '#a78bfa' : '#7c3aed'
+  const text2       = dark ? '#f8fafc' : '#020617'
+  const subtext2    = dark ? '#94a3b8' : '#64748b'
+
+  const { superAdminEmail, admin, dealer, subDealer } = hierarchy
+
+  const el = document.createElement('div')
+  el.id = 'promotor-sd-popup'
+  el.style.cssText = `
+    position:fixed; z-index:9999;
+    background:${popupBg}; border:1px solid ${popupBorder};
+    border-radius:14px; padding:14px;
+    box-shadow:0 16px 48px rgba(0,0,0,0.5);
+    animation:proSDPopupIn 0.25s cubic-bezier(0.22,1,0.36,1) both;
+    min-width:220px; max-width:260px;
+    display:flex; flex-direction:column; align-items:stretch;
+  `
+
+  function tierBox(badge, badgeColor, boxBg, boxBorder, id, name, contact, city) {
+    return `
+      <div style="border-radius:9px;padding:10px;margin-bottom:6px;background:${boxBg};border:1px solid ${boxBorder};">
+        <div style="display:inline-block;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;
+          background:${boxBg};color:${badgeColor};border:1px solid ${boxBorder};margin-bottom:6px;">${badge}</div>
+        <div style="font-size:10px;color:${badgeColor};font-family:monospace;margin-bottom:3px;">${id || '—'}</div>
+        <div style="font-size:13px;font-weight:700;color:${text2};margin-bottom:5px;">${name || '—'}</div>
+        <div style="font-size:11px;color:${subtext2};margin-bottom:2px;">📞 ${contact || '—'}</div>
+        <div style="font-size:11px;color:${subtext2};">📍 ${city || '—'}</div>
+      </div>`
+  }
+
+  function arrow(fromColor) {
+    return `
+      <div style="display:flex;justify-content:center;padding:3px 0;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+          <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:10px solid ${fromColor};"></div>
+          <div style="width:2px;height:7px;background:linear-gradient(180deg,${fromColor},${fromColor}44);"></div>
+        </div>
+      </div>`
+  }
+
+  el.innerHTML = `
+    <div style="font-size:9px;color:${accentColor};font-weight:700;letter-spacing:1.3px;margin-bottom:11px;
+      padding-bottom:9px;border-bottom:1px solid ${divider};display:flex;align-items:center;gap:6px;">
+      <span style="width:5px;height:5px;border-radius:50%;background:${accentColor};display:inline-block;"></span>
+      CREATED BY
+    </div>
+
+    <!-- Super Admin -->
+    <div style="border-radius:9px;padding:10px;margin-bottom:2px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.22);">
+      <div style="display:inline-block;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;
+        background:rgba(255,215,0,0.12);color:#ffd700;border:1px solid rgba(255,215,0,0.3);margin-bottom:6px;">🛡️ SUPER ADMIN</div>
+      <div style="font-size:11px;color:${subtext2};word-break:break-all;">${superAdminEmail}</div>
+      <div style="margin-top:5px;font-size:9px;padding:2px 7px;background:rgba(255,215,0,0.1);
+        border:1px solid rgba(255,215,0,0.25);border-radius:20px;color:#ffd700;display:inline-block;">● ONLINE</div>
+    </div>
+
+    ${arrow('#ffd700')}
+
+    <!-- Admin -->
+    ${tierBox(
+      '🛡️ ADMIN',
+      '#4ade80', 'rgba(74,222,128,0.05)', 'rgba(74,222,128,0.2)',
+      admin?.admin_id || '—',
+      admin?.first_name || admin?.admin_name || '—',
+      admin?.mobile_number || admin?.admin_contact_no || '—',
+      admin?.city_name || '—'
+    )}
+
+    ${arrow('#4ade80')}
+
+    <!-- Dealer -->
+    ${tierBox(
+      '🏪 DEALER',
+      '#22d3ee', 'rgba(34,211,238,0.04)', 'rgba(34,211,238,0.18)',
+      dealer?.dealer_id || '—',
+      dealer?.first_name || '—',
+      dealer?.mobile_number || '—',
+      dealer?.city_name || '—'
+    )}
+
+    ${arrow('#22d3ee')}
+
+    <!-- Sub Dealer -->
+    ${tierBox(
+      '💎 SUB DEALER',
+      '#a78bfa', 'rgba(167,139,250,0.05)', 'rgba(167,139,250,0.2)',
+      subDealer?.sub_dealer_id || subDealer?.dealer_id || '—',
+      (subDealer?.first_name || '') + ' ' + (subDealer?.last_name || ''),
+      subDealer?.mobile_number || '—',
+      subDealer?.city_name || '—'
+    )}
+
+    ${arrow(c)}
+
+    <!-- Promotor -->
+    <div style="background:rgba(167,139,250,0.05);border:1px solid rgba(167,139,250,0.2);border-radius:10px;padding:10px;">
+      <div style="display:inline-block;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;
+        background:rgba(167,139,250,0.12);color:${c};border:1px solid rgba(167,139,250,0.25);margin-bottom:6px;">
+        🌟 PROMOTOR
+      </div>
+      <div style="font-size:10px;color:${c};font-family:monospace;margin-bottom:3px;">${p.promotor_id || '—'}</div>
+      <div style="font-size:14px;font-weight:700;color:${text2};margin-bottom:6px;">${p.first_name || ''} ${p.last_name || ''}</div>
+      <div style="font-size:11px;color:${subtext2};margin-bottom:2px;">📞 ${p.mobile_number || '—'}</div>
+      <div style="font-size:11px;color:${subtext2};">📍 ${p.city_name || '—'}</div>
+    </div>
+  `
+
+  document.body.appendChild(el)
+
+  const rect = anchorEl.getBoundingClientRect()
+  const popW = el.offsetWidth  || 260
+  const popH = el.offsetHeight || 500
+  let left   = rect.right + 14
+  let top    = rect.top + (rect.height / 2) - (popH / 2)
+  if (left + popW > window.innerWidth  - 10) left = rect.left - popW - 14
+  if (top < 8)                               top  = 8
+  if (top + popH > window.innerHeight  - 8) top  = window.innerHeight - popH - 8
+  el.style.left = left + 'px'
+  el.style.top  = top  + 'px'
+
+  el.addEventListener('mouseenter', () => clearTimeout(_phideTimer))
+  el.addEventListener('mouseleave', () => schedulePromotorHide(() => {}))
+  _ppopupEl = el
+}
+
+// ─────────────────────────────────────────────
 export default function SubDealerDashboard() {
   const navigate = useNavigate()
   const [dark, setDark] = useState(true)
-  const [promotors, setPromotors] = useState([])
-  const [subDealers, setSubDealers] = useState([])
+  const [promotors,      setPromotors]      = useState([])
+  const [subDealers,     setSubDealers]     = useState([])
+  const [dealers,        setDealers]        = useState([])
+  const [admins,         setAdmins]         = useState([])
   const [selectedSubDealer, setSelectedSubDealer] = useState(null)
-  const [showForm, setShowForm] = useState(false)
-  const [showHierarchy, setShowHierarchy] = useState(false)
-  const [msg, setMsg] = useState('')
+  const [showForm,       setShowForm]       = useState(false)
+  const [showHierarchy,  setShowHierarchy]  = useState(false)
+  const [activePromotor, setActivePromotor] = useState(null)
+  const [msg,     setMsg]     = useState('')
   const [msgType, setMsgType] = useState('success')
-  const [form, setForm] = useState(emptyForm)
+  const [form,    setForm]    = useState(emptyForm)
   const canvasRef = useRef(null)
 
-  const bg       = dark ? '#020617' : '#f8fafc'
-  const text     = dark ? '#f8fafc' : '#020617'
-  const subtext  = dark ? '#94a3b8' : '#64748b'
-  const accent   = dark ? '#22d3ee' : '#2563eb'
-  const border   = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
-  const glass    = dark ? 'rgba(15, 23, 42, 0.65)' : 'rgba(255, 255, 255, 0.7)'
-  const cardBg   = dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'
-  const cardBorder = dark ? '1px solid rgba(103,232,249,0.1)' : '1px solid rgba(0,0,0,0.1)'
-  const inpBg    = dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
+  const bg        = dark ? '#020617' : '#f8fafc'
+  const text      = dark ? '#f8fafc' : '#020617'
+  const subtext   = dark ? '#94a3b8' : '#64748b'
+  const accent    = dark ? '#22d3ee' : '#2563eb'
+  const border    = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+  const glass     = dark ? 'rgba(15, 23, 42, 0.65)' : 'rgba(255, 255, 255, 0.7)'
+  const cardBg    = dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'
+  const cardBorder= dark ? '1px solid rgba(103,232,249,0.1)' : '1px solid rgba(0,0,0,0.1)'
+  const inpBg     = dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
   const inpBorder = dark ? '#374151' : '#d1d5db'
 
   useEffect(() => {
@@ -74,13 +229,54 @@ export default function SubDealerDashboard() {
     return () => { window.removeEventListener('resize',handleResize); window.removeEventListener('mousemove',handleMouseMove); cancelAnimationFrame(animationFrameId) }
   }, [dark])
 
-  const fetchPromotors = async () => {
-    try { const res = await api.get('/promotors/'); setPromotors(res.data) } catch (err) { console.error(err) }
+  // ── fetchAll: same as original but enriches each promotor with chain ──
+  const fetchAll = async () => {
+    try {
+      const [prRes, sdRes, dlRes, adRes] = await Promise.all([
+        api.get('/promotors/'),
+        api.get('/sub-dealers/list/'),
+        api.get('/dealers/'),
+        api.get('/admins/list/'),
+      ])
+      const sdList = sdRes.data
+      const dlList = dlRes.data
+      const adList = adRes.data
+
+      const enriched = prRes.data.map(p => {
+        const subDealer = sdList.find(s =>
+          String(s.id) === String(p.assigned_sub_dealer_id) ||
+          String(s.sub_dealer_id) === String(p.sub_dealer_id) ||
+          String(s.id) === String(p.sub_dealer) ||
+          String(s.id) === String(p.created_by)
+        ) || null
+
+        const dealer = dlList.find(d =>
+          String(d.id) === String(p.assigned_dealer_id) ||
+          String(d.dealer_id) === String(p.dealer_id) ||
+          String(d.id) === String(subDealer?.assigned_dealer_id) ||
+          String(d.id) === String(subDealer?.dealer_id) ||
+          String(d.id) === String(subDealer?.dealer)
+        ) || null
+
+        const admin = adList.find(a =>
+          String(a.id) === String(p.assigned_admin_id) ||
+          String(a.id) === String(dealer?.assigned_admin_id) ||
+          String(a.id) === String(dealer?.admin_id) ||
+          String(a.admin_id) === String(dealer?.admin_id) ||
+          String(a.id) === String(dealer?.admin)
+        ) || null
+
+        return { ...p, _subDealer: subDealer, _dealer: dealer, _admin: admin }
+      })
+
+      setPromotors(enriched)
+      setSubDealers(sdList)
+      setDealers(dlList)
+      setAdmins(adList)
+    } catch (err) { console.error(err) }
   }
-  const fetchSubDealers = async () => {
-    try { const res = await api.get('/sub-dealers/list/'); setSubDealers(res.data) } catch (err) { console.error(err) }
-  }
-  useEffect(() => { fetchPromotors(); fetchSubDealers() }, [])
+
+  useEffect(() => { fetchAll() }, [])
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value })
   const handleSubDealerChange = (e) => {
@@ -94,17 +290,17 @@ export default function SubDealerDashboard() {
     try {
       await api.post('/promotors/', form)
       setMsg('✅ Promotor created successfully!'); setMsgType('success')
-      setShowForm(false); fetchPromotors(); setForm(emptyForm); setSelectedSubDealer(null)
+      setShowForm(false); fetchAll(); setForm(emptyForm); setSelectedSubDealer(null)
     } catch (err) {
       setMsg('❌ Error: ' + JSON.stringify(err.response?.data)); setMsgType('error')
     }
   }
 
-  const card = { background: cardBg, border: cardBorder, borderRadius:'20px', padding:'32px 36px', marginBottom:'24px' }
-  const secHead = (color='#a5f3fc') => ({ color, fontSize:'13px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', margin:'0 0 20px', paddingBottom:'14px', borderBottom: cardBorder })
+  const card     = { background: cardBg, border: cardBorder, borderRadius:'20px', padding:'32px 36px', marginBottom:'24px' }
+  const secHead  = (color='#a5f3fc') => ({ color, fontSize:'13px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', margin:'0 0 20px', paddingBottom:'14px', borderBottom: cardBorder })
   const secLabel = (color='#a5f3fc') => ({ color, fontSize:'12px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', margin:'4px 0 0', paddingBottom:'10px', borderBottom: cardBorder })
-  const inp = { width:'100%', background: inpBg, border:`1px solid ${inpBorder}`, borderRadius:'10px', padding:'12px 16px', color: text, fontSize:'14px', outline:'none', boxSizing:'border-box' }
-  const lbl = { display:'block', color: subtext, fontSize:'12px', marginBottom:'7px', textTransform:'uppercase', letterSpacing:'0.04em' }
+  const inp      = { width:'100%', background: inpBg, border:`1px solid ${inpBorder}`, borderRadius:'10px', padding:'12px 16px', color: text, fontSize:'14px', outline:'none', boxSizing:'border-box' }
+  const lbl      = { display:'block', color: subtext, fontSize:'12px', marginBottom:'7px', textTransform:'uppercase', letterSpacing:'0.04em' }
 
   return (
     <div style={{ minHeight:'100vh', background: bg, color: text, transition:'background 0.8s ease, color 0.4s ease', fontFamily:'"Inter",system-ui,sans-serif', position:'relative', overflow:'hidden' }}>
@@ -112,11 +308,16 @@ export default function SubDealerDashboard() {
         @keyframes float-orb{0%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-50px) scale(1.1)}66%{transform:translate(-20px,20px) scale(0.9)}100%{transform:translate(0,0) scale(1)}}
         @keyframes antigravity{0%{transform:translateY(110vh) rotate(0deg);opacity:0}10%{opacity:var(--op)}90%{opacity:var(--op)}100%{transform:translateY(-20vh) rotate(360deg);opacity:0}}
         @keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+        @keyframes proSDPopupIn{from{opacity:0;transform:translateY(8px) scale(0.97);}to{opacity:1;transform:translateY(0) scale(1);}}
+        @keyframes proSDPulseGlow{0%,100%{box-shadow:0 0 8px rgba(167,139,250,0.15);}50%{box-shadow:0 0 22px rgba(167,139,250,0.35);}}
+        @keyframes proSDDotPulse{0%,100%{transform:scale(1);opacity:0.7;}50%{transform:scale(1.6);opacity:1;}}
         .sd-inp:focus{border-color:#a78bfa !important}
         .sd-grad-btn{position:relative;overflow:hidden}
         .sd-grad-btn::after{content:"";position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);transform:translateX(-100%)}
         .sd-grad-btn:hover::after{animation:shimmer 1s infinite}
         .sd-tr:hover td{background:rgba(255,255,255,.02)}
+        .p-card{background:rgba(255,255,255,0.03);border:1px solid rgba(167,139,250,0.18);border-radius:14px;padding:14px 18px;min-width:140px;cursor:pointer;position:relative;overflow:hidden;transition:background 0.35s ease,border-color 0.35s ease,transform 0.4s cubic-bezier(0.34,1.4,0.64,1),box-shadow 0.35s ease;}
+        .p-card.p-active{background:rgba(167,139,250,0.07);border-color:rgba(167,139,250,0.65);transform:translateY(-6px) scale(1.02);box-shadow:0 12px 32px rgba(167,139,250,0.18);animation:proSDPulseGlow 2.5s ease-in-out infinite;}
       `}</style>
 
       <canvas ref={canvasRef} style={{ position:'fixed', top:0, left:0, pointerEvents:'none', zIndex:1, opacity:0.45 }} />
@@ -127,16 +328,12 @@ export default function SubDealerDashboard() {
         <div key={p.id} style={{ position:'absolute', left:`${p.x}%`, bottom:'-100px', width:p.size, height:p.size, borderRadius:'40% 60% 60% 40% / 40% 40% 60% 60%', border:`1px solid ${accent}44`, opacity:p.opacity, animation:`antigravity ${p.duration}s ${p.delay}s infinite linear`, '--op':p.opacity, pointerEvents:'none', zIndex:0 }} />
       ))}
 
-      {/* Navbar */}
+      {/* Navbar — unchanged */}
       <div style={{ position:'relative', zIndex:10, background: glass, borderBottom:`1px solid ${border}`, padding:'18px 40px', display:'flex', justifyContent:'space-between', alignItems:'center', backdropFilter:'blur(16px)' }}>
-<div style={{ display:'flex', alignItems:'center', gap:'12px', marginLeft: '10px' }}>
-  <img 
-    src={logo} 
-    alt="BitByte Logo" 
-    style={{ width: 60, height: 50, borderRadius: '10px', objectFit: 'contain' }} 
-  />
-  <span style={{ color:'#c4b5fd', fontWeight:700, fontSize:'14px' }}>💎 Sub Dealer Dashboard</span>
-</div>
+        <div style={{ display:'flex', alignItems:'center', gap:'12px', marginLeft: '10px' }}>
+          <img src={logo} alt="BitByte Logo" style={{ width: 60, height: 50, borderRadius: '10px', objectFit: 'contain' }} />
+          <span style={{ color:'#c4b5fd', fontWeight:700, fontSize:'14px' }}>💎 Sub Dealer Dashboard</span>
+        </div>
         <div style={{ display:'flex', alignItems:'center', gap:'14px' }}>
           <span style={{ color: subtext, fontSize:'14px' }}>{localStorage.getItem('email')}</span>
           <button onClick={() => setDark(!dark)} style={{ padding:'8px 16px', borderRadius:'16px', border:`1px solid ${border}`, background:'transparent', color: text, cursor:'pointer', fontWeight:600, fontSize:'13px' }}>
@@ -155,62 +352,97 @@ export default function SubDealerDashboard() {
           </div>
         )}
 
-<div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'24px' }}>
-  <h2 style={{ fontSize:'22px', fontWeight:800, margin:0 }}>Promotor Management</h2>
-  <div style={{ display:'flex', gap:'12px' }}>
-    <button onClick={() => setShowHierarchy(true)}
-      style={{ padding:'11px 28px', background:'rgba(167,139,250,0.08)', border:'1px solid rgba(167,139,250,0.3)', borderRadius:'12px', fontWeight:700, color:'#c4b5fd', fontSize:'14px', cursor:'pointer' }}>
-      🏢 Promotor Hierarchy
-    </button>
-    <button onClick={() => setShowForm(!showForm)} className="sd-grad-btn"
-      style={{ padding:'11px 28px', background:'linear-gradient(90deg,#a78bfa,#22d3ee)', border:'none', borderRadius:'12px', fontWeight:800, color:'#1e003b', fontSize:'14px', cursor:'pointer' }}>
-      {showForm ? 'Cancel' : '+ Create Promotor'}
-    </button>
-  </div>
-</div>
-
-{/* ── PROMOTOR HIERARCHY MODAL ── */}
-{showHierarchy && (
-  <div onClick={() => setShowHierarchy(false)}
-    style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', backdropFilter:'blur(8px)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center' }}>
-    <div onClick={e => e.stopPropagation()}
-      style={{ background:'#0f172a', border:'1px solid rgba(167,139,250,0.2)', borderRadius:'20px', padding:'32px', maxWidth:'960px', width:'95%', maxHeight:'80vh', overflowY:'auto' }}>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'28px', paddingBottom:'14px', borderBottom:'1px solid rgba(167,139,250,0.1)' }}>
-        <span style={{ color:'#c4b5fd', fontSize:'13px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em' }}>🏢 Promotor Hierarchy</span>
-        <button onClick={() => setShowHierarchy(false)}
-          style={{ background:'transparent', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', borderRadius:'8px', padding:'6px 14px', cursor:'pointer', fontSize:'12px' }}>
-          ✕ Close
-        </button>
-      </div>
-      <div style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
-        <div style={{ background:'rgba(167,139,250,0.12)', border:'1px solid #a78bfa', borderRadius:'14px', padding:'14px 48px', fontWeight:800, fontSize:'15px', color:'#a78bfa' }}>
-          💎 Sub Dealer
-        </div>
-        <div style={{ width:2, height:28, background:'linear-gradient(180deg,#a78bfa,rgba(167,139,250,0.3))' }} />
-        <div style={{ position:'relative', width:'100%', display:'flex', justifyContent:'center' }}>
-          <div style={{ position:'absolute', top:0, left:'10%', right:'10%', height:2, background:'linear-gradient(90deg,transparent,rgba(167,139,250,0.4),transparent)' }} />
-          <div style={{ display:'flex', gap:'20px', flexWrap:'wrap', justifyContent:'center' }}>
-            {promotors.map((p, i) => (
-              <div key={i} style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
-                <div style={{ width:2, height:28, background:'rgba(167,139,250,0.5)' }} />
-                <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(167,139,250,0.2)', borderRadius:'12px', padding:'16px 20px', minWidth:'190px' }}>
-                  <div style={{ color:'#a78bfa', fontFamily:'monospace', fontSize:'11px', marginBottom:'6px' }}>{p.promotor_id}</div>
-                  <div style={{ color:'#f8fafc', fontWeight:700, fontSize:'14px', marginBottom:'6px' }}>{p.first_name} {p.last_name}</div>
-                  <div style={{ color:'#94a3b8', fontSize:'12px', marginBottom:'3px' }}>📞 {p.mobile_number}</div>
-                  <div style={{ color:'#94a3b8', fontSize:'12px' }}>📍 {p.city_name}</div>
-                </div>
-              </div>
-            ))}
-            {promotors.length === 0 && (
-              <div style={{ color:'#94a3b8', padding:'40px', textAlign:'center' }}>No promotors created yet.</div>
-            )}
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'24px' }}>
+          <h2 style={{ fontSize:'22px', fontWeight:800, margin:0 }}>Promotor Management</h2>
+          <div style={{ display:'flex', gap:'12px' }}>
+            <button onClick={() => setShowHierarchy(true)}
+              style={{ padding:'11px 28px', background:'rgba(167,139,250,0.08)', border:'1px solid rgba(167,139,250,0.3)', borderRadius:'12px', fontWeight:700, color:'#c4b5fd', fontSize:'14px', cursor:'pointer' }}>
+              🏢 Promotor Hierarchy
+            </button>
+            <button onClick={() => setShowForm(!showForm)} className="sd-grad-btn"
+              style={{ padding:'11px 28px', background:'linear-gradient(90deg,#a78bfa,#22d3ee)', border:'none', borderRadius:'12px', fontWeight:800, color:'#1e003b', fontSize:'14px', cursor:'pointer' }}>
+              {showForm ? 'Cancel' : '+ Create Promotor'}
+            </button>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
-)}
 
+        {/* ── PROMOTOR HIERARCHY MODAL ── */}
+        {showHierarchy && (
+          <div onClick={() => { setShowHierarchy(false); setActivePromotor(null); removePromotorPopup() }}
+            style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', backdropFilter:'blur(8px)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <div onClick={e => e.stopPropagation()}
+              style={{ background: dark ? '#0f172a' : '#f8fafc', border:'1px solid rgba(167,139,250,0.2)', borderRadius:'20px', padding:'32px', maxWidth:'960px', width:'95%', maxHeight:'80vh', overflowY:'auto' }}>
+
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'28px', paddingBottom:'14px', borderBottom:'1px solid rgba(167,139,250,0.1)' }}>
+                <span style={{ color:'#c4b5fd', fontSize:'13px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em' }}>🏢 Promotor Hierarchy</span>
+                <button onClick={() => { setShowHierarchy(false); setActivePromotor(null); removePromotorPopup() }}
+                  style={{ background:'transparent', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', borderRadius:'8px', padding:'6px 14px', cursor:'pointer', fontSize:'12px' }}>
+                  ✕ Close
+                </button>
+              </div>
+
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
+
+                {/* Sub Dealer node — top */}
+                <div style={{
+                  background:'linear-gradient(135deg,rgba(167,139,250,0.13),rgba(34,211,238,0.08))',
+                  border:'1px solid rgba(167,139,250,0.55)',
+                  borderRadius:'14px', padding:'13px 36px',
+                  fontWeight:800, fontSize:'15px', color:'#a78bfa',
+                  whiteSpace:'nowrap', animation:'proSDPulseGlow 3s ease-in-out infinite'
+                }}>
+                  💎 Sub Dealer
+                </div>
+
+                {/* Stem */}
+                <div style={{ width:2, height:28, background:'linear-gradient(180deg,#a78bfa,rgba(167,139,250,0.3))', position:'relative' }}>
+                  <div style={{ position:'absolute', bottom:-4, left:'50%', transform:'translateX(-50%)', width:7, height:7, borderRadius:'50%', background:'#a78bfa', animation:'proSDDotPulse 2s ease-in-out infinite' }} />
+                </div>
+
+                {/* Horizontal bar */}
+                <div style={{ height:2, background:'linear-gradient(90deg,transparent,rgba(167,139,250,0.5),transparent)', alignSelf:'stretch', margin:'0 40px' }} />
+
+                {/* Promotor cards */}
+                <div style={{ display:'flex', gap:0, justifyContent:'space-around', alignSelf:'stretch', alignItems:'flex-start' }}>
+                  {promotors.length === 0 && <div style={{ color:'#94a3b8', padding:'40px' }}>No promotors yet.</div>}
+                  {promotors.map((p, i) => {
+                    const c = PROMOTOR_COLORS[i % PROMOTOR_COLORS.length]
+                    const isActive = activePromotor?.id === p.id
+                    return (
+                      <div key={p.id || i} style={{ display:'flex', flexDirection:'column', alignItems:'center', flex:1 }}>
+                        <div style={{ width:2, height:28, background:`linear-gradient(180deg,${c}88,${c}33)`, position:'relative' }}>
+                          <div style={{ position:'absolute', bottom:-3, left:'50%', transform:'translateX(-50%)', width:6, height:6, borderRadius:'50%', background:c, animation:`proSDDotPulse ${1.8+i*0.3}s ease-in-out infinite` }} />
+                        </div>
+                        <div
+                          className={`p-card${isActive ? ' p-active' : ''}`}
+                          onMouseEnter={e => {
+                            clearTimeout(_phideTimer)
+                            setActivePromotor(p)
+                            createPromotorPopup(p, i, e.currentTarget, dark, subtext, text, {
+                              superAdminEmail: localStorage.getItem('superAdminEmail') || localStorage.getItem('email') || '—',
+                              admin:     p._admin,
+                              dealer:    p._dealer,
+                              subDealer: p._subDealer,
+                            })
+                          }}
+                          onMouseLeave={() => schedulePromotorHide(setActivePromotor)}
+                        >
+                          <div style={{ fontSize:9, color:c, fontFamily:'monospace', marginBottom:4 }}>{p.promotor_id || '—'}</div>
+                          <div style={{ color:text, fontWeight:700, fontSize:13, marginBottom:6 }}>{p.first_name || ''} {p.last_name || ''}</div>
+                          <div style={{ color:'#94a3b8', fontSize:11, marginBottom:2 }}>📞 {p.mobile_number}</div>
+                          <div style={{ color:'#94a3b8', fontSize:11 }}>📍 {p.city_name}</div>
+                          <div style={{ marginTop:8, width:'100%', height:2, borderRadius:2, background:`linear-gradient(90deg,${c}44,${c}cc)` }} />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Create Form — unchanged ── */}
         {showForm && (
           <div style={card}>
             <p style={secHead('#c4b5fd')}>Create New Promotor</p>
@@ -263,13 +495,12 @@ export default function SubDealerDashboard() {
                   </select>
                 </div>
                 <div><label style={lbl}>Sub Dealer Name</label>
-<input value={selectedSubDealer?.first_name || ''} readOnly placeholder="Auto fetch" style={{ ...inp, opacity:0.5, cursor:'not-allowed' }}/>                </div>
+                  <input value={selectedSubDealer?.first_name || ''} readOnly placeholder="Auto fetch" style={{ ...inp, opacity:0.5, cursor:'not-allowed' }}/>
+                </div>
                 <div><label style={lbl}>Sub Dealer Contact</label>
                   <input value={selectedSubDealer?.mobile_number || ''} readOnly placeholder="Auto fetch" style={{ ...inp, opacity:0.5, cursor:'not-allowed' }}/>
                 </div>
               </div>
-
-         
 
               <div style={{ display:'flex', gap:'12px', marginTop:'6px' }}>
                 <button type="submit" className="sd-grad-btn"
@@ -285,6 +516,7 @@ export default function SubDealerDashboard() {
           </div>
         )}
 
+        {/* ── Promotors Table — unchanged ── */}
         <div style={card}>
           <p style={secHead('#c4b5fd')}>My Promotors ({promotors.length})</p>
           {promotors.length === 0 ? (

@@ -5,88 +5,188 @@ import logo from '../assets/logo.png'
 
 const OCCUPATION_OPTIONS = ['employee', 'business', 'others']
 
-
 const PARTICLES = Array.from({ length: 15 }, (_, i) => ({
   id: i, size: Math.random() * 60 + 10, x: Math.random() * 100,
   delay: Math.random() * 8, duration: Math.random() * 12 + 15, opacity: Math.random() * 0.2 + 0.05,
 }))
 
+const COLORS = ['#22d3ee', '#a78bfa', '#34d399', '#f472b6', '#f59e0b', '#60a5fa']
 
-const COLORS = ['#22d3ee', '#a78bfa', '#34d399', '#f472b6']
+// ─── ROLE CONFIG ───────────────────────────────────────────────────────────────
+const ROLE_CFG = {
+  admin:      { color: '#22d3ee',  label: '🛡️ ADMIN',      idKey: 'admin_id' },
+  dealer:     { color: '#4ade80',  label: '🏪 DEALER',     idKey: 'dealer_id' },
+  sub_dealer: { color: '#f59e0b',  label: '🔗 SUB DEALER', idKey: 'sub_dealer_id' },
+  promotor:   { color: '#a78bfa',  label: '🌟 PROMOTOR',   idKey: 'promotor_id' },
+  customer:   { color: '#f472b6',  label: '👤 CUSTOMER',   idKey: 'customer_id' },
+}
 
-const HIERARCHY_STYLES = `
-@keyframes pulseGlow {
-  0%,100% { box-shadow: 0 0 8px rgba(34,211,238,0.15); }
-  50%      { box-shadow: 0 0 22px rgba(34,211,238,0.35); }
+// ─── TREE NODE COMPONENT ───────────────────────────────────────────────────────
+function TreeNode({ node, role, depth = 0, dark, text, subtext, colorIdx = 0 }) {
+  const [expanded, setExpanded] = useState(depth < 2)
+  const cfg = ROLE_CFG[role]
+  const c = COLORS[colorIdx % COLORS.length]
+
+  const childRole = {
+    admin: 'dealer',
+    dealer: 'sub_dealer',
+    sub_dealer: 'promotor',
+    promotor: 'customer',
+  }[role]
+
+  const children = {
+    admin: node.dealers,
+    dealer: node.sub_dealers,
+    sub_dealer: node.promotors,
+    promotor: node.customers,
+  }[role] || []
+
+  const hasChildren = children.length > 0
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 0 }}>
+      {/* Node Card */}
+      <div
+        onClick={() => hasChildren && setExpanded(!expanded)}
+        style={{
+          background: dark ? `rgba(${hexToRgb(c)},0.06)` : `rgba(${hexToRgb(c)},0.08)`,
+          border: `1px solid rgba(${hexToRgb(c)},0.35)`,
+          borderRadius: '12px',
+          padding: '12px 16px',
+          minWidth: '160px',
+          maxWidth: '200px',
+          cursor: hasChildren ? 'pointer' : 'default',
+          transition: 'all 0.3s ease',
+          position: 'relative',
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.transform = 'translateY(-3px)'
+          e.currentTarget.style.boxShadow = `0 8px 24px rgba(${hexToRgb(c)},0.25)`
+          e.currentTarget.style.borderColor = `rgba(${hexToRgb(c)},0.7)`
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.transform = 'translateY(0)'
+          e.currentTarget.style.boxShadow = 'none'
+          e.currentTarget.style.borderColor = `rgba(${hexToRgb(c)},0.35)`
+        }}
+      >
+        {/* Role Badge */}
+        <div style={{
+          display: 'inline-block', fontSize: '9px', fontWeight: 700,
+          padding: '2px 8px', borderRadius: '20px', marginBottom: '8px',
+          background: `rgba(${hexToRgb(c)},0.15)`,
+          color: c, border: `1px solid rgba(${hexToRgb(c)},0.35)`,
+        }}>
+          {cfg.label}
+        </div>
+
+        {/* ID */}
+        <div style={{ color: c, fontFamily: 'monospace', fontSize: '10px', marginBottom: '4px', wordBreak: 'break-all' }}>
+          {node[cfg.idKey]}
+        </div>
+
+        {/* Name */}
+        <div style={{ color: text, fontWeight: 700, fontSize: '13px', marginBottom: '6px' }}>
+          {node.first_name} {node.last_name || ''}
+        </div>
+
+        {/* Phone */}
+        <div style={{ color: subtext, fontSize: '11px', marginBottom: '2px' }}>
+          📞 {node.mobile_number}
+        </div>
+
+        {/* City */}
+        {node.city_name && (
+          <div style={{ color: subtext, fontSize: '11px' }}>📍 {node.city_name}</div>
+        )}
+
+        {/* Gradient bar */}
+        <div style={{
+          marginTop: '8px', width: '100%', height: 2, borderRadius: 2,
+          background: `linear-gradient(90deg,rgba(${hexToRgb(c)},0.2),${c})`,
+        }} />
+
+        {/* Expand indicator */}
+        {hasChildren && (
+          <div style={{
+            position: 'absolute', top: '8px', right: '10px',
+            color: c, fontSize: '10px', fontWeight: 700,
+            transition: 'transform 0.3s ease',
+            transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+          }}>
+            ▼
+          </div>
+        )}
+
+        {/* Children count badge */}
+        {hasChildren && (
+          <div style={{
+            position: 'absolute', bottom: '-10px', left: '50%', transform: 'translateX(-50%)',
+            background: c, color: '#000', fontSize: '9px', fontWeight: 800,
+            padding: '1px 7px', borderRadius: '20px', whiteSpace: 'nowrap',
+          }}>
+            {children.length} {childRole?.replace('_', ' ')}
+          </div>
+        )}
+      </div>
+
+      {/* Children */}
+      {hasChildren && expanded && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+          {/* Vertical stem */}
+          <div style={{
+            width: 2, height: 28,
+            background: `linear-gradient(180deg,${c},rgba(${hexToRgb(c)},0.3))`,
+            marginTop: '10px',
+          }} />
+
+          {/* Horizontal bar */}
+          {children.length > 1 && (
+            <div style={{
+              height: 2,
+              background: `linear-gradient(90deg,transparent,rgba(${hexToRgb(c)},0.5),transparent)`,
+              alignSelf: 'stretch', margin: '0 20px',
+            }} />
+          )}
+
+          {/* Child nodes row */}
+          <div style={{
+            display: 'flex', gap: '16px', justifyContent: 'center',
+            flexWrap: 'wrap', alignItems: 'flex-start', paddingTop: '0',
+          }}>
+            {children.map((child, ci) => (
+              <div key={child.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                {/* Vertical stem to child */}
+                <div style={{
+                  width: 2, height: children.length > 1 ? 20 : 0,
+                  background: `rgba(${hexToRgb(c)},0.5)`,
+                }} />
+                <TreeNode
+                  node={child}
+                  role={childRole}
+                  depth={depth + 1}
+                  dark={dark}
+                  text={text}
+                  subtext={subtext}
+                  colorIdx={colorIdx + ci + 1}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
-@keyframes shimmerSlide {
-  0%   { background-position: -200% center; }
-  100% { background-position:  200% center; }
+
+// hex to rgb helper
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return `${r},${g},${b}`
 }
-@keyframes dotPulse {
-  0%,100% { transform:scale(1); opacity:0.7; }
-  50%      { transform:scale(1.6); opacity:1; }
-}
-.h-card {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(165,243,252,0.18);
-  border-radius: 14px;
-  padding: 14px 18px;
-  min-width: 150px;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  transition:
-    background 0.35s ease,
-    border-color 0.35s ease,
-    transform 0.4s cubic-bezier(0.34,1.4,0.64,1),
-    box-shadow 0.35s ease;
-}
-.h-card::before {
-  content:'';
-  position:absolute; inset:0; border-radius:14px;
-  background: linear-gradient(120deg,transparent 30%,rgba(34,211,238,0.07) 50%,transparent 70%);
-  background-size:200% 100%;
-  opacity:0;
-  transition:opacity 0.3s;
-  pointer-events:none;
-}
-.h-card.h-active::before {
-  opacity:1;
-  animation: shimmerSlide 2s infinite linear;
-}
-.h-card.h-active {
-  background: rgba(34,211,238,0.07);
-  border-color: rgba(34,211,238,0.65);
-  transform: translateY(-6px) scale(1.02);
-  box-shadow: 0 12px 32px rgba(34,211,238,0.18), 0 0 0 1px rgba(34,211,238,0.08);
-  animation: pulseGlow 2.5s ease-in-out infinite;
-}
-.h-panel {
-  transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.22,1,0.36,1);
-}
-.h-panel.h-visible { opacity:1; transform:translateX(0); pointer-events:auto; }
-.h-panel.h-hidden  { opacity:0; transform:translateX(14px); pointer-events:none; }
-.h-pinner {
-  position:absolute; top:0; left:0; width:100%;
-  transition: opacity 0.28s ease, transform 0.28s cubic-bezier(0.22,1,0.36,1);
-}
-.h-pinner.h-show { opacity:1; transform:translateY(0); }
-.h-pinner.h-hide { opacity:0; transform:translateY(8px); pointer-events:none; }
-.sa-box {
-  border-radius:9px; padding:11px; margin-bottom:10px;
-  background:rgba(255,215,0,0.05);
-  border:1px solid rgba(255,215,0,0.2);
-  transition: background 0.35s ease, border-color 0.35s ease,
-              box-shadow 0.35s ease, transform 0.35s cubic-bezier(0.34,1.4,0.64,1);
-}
-.sa-box:hover {
-  background:rgba(255,215,0,0.12);
-  border-color:rgba(255,215,0,0.55);
-  box-shadow:0 6px 20px rgba(255,215,0,0.15);
-  transform:translateY(-3px) scale(1.02);
-}
-`
+
 let _popupEl = null
 let _hideTimer = null
 
@@ -134,17 +234,17 @@ function createAdminPopup(a, i, anchorEl, dark, subtext, text) {
       <div style="font-size:11px;color:${subtext};word-break:break-all;">${localStorage.getItem('email')}</div>
       <div style="margin-top:6px;font-size:9px;padding:2px 8px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.25);border-radius:20px;color:#ffd700;display:inline-block;">● ONLINE</div>
     </div>
-<div style="display:flex;justify-content:center;align-items:center;padding:4px 0;">
+    <div style="display:flex;justify-content:center;align-items:center;padding:4px 0;">
       <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
         <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:10px solid ${accentColor};"></div>
         <div style="width:2px;height:7px;background:linear-gradient(180deg,${accentColor},${accentColor}44);"></div>
       </div>
     </div>
-
-    <div style="background:${adminBoxBg};border:1px solid ${adminBoxBd};border-radius:10px;padding:11px;">      <div style="display:inline-block;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(34,211,238,0.12);color:#22d3ee;border:1px solid rgba(34,211,238,0.25);margin-bottom:6px;">ADMIN</div>
+    <div style="background:${adminBoxBg};border:1px solid ${adminBoxBd};border-radius:10px;padding:11px;">
+      <div style="display:inline-block;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(34,211,238,0.12);color:#22d3ee;border:1px solid rgba(34,211,238,0.25);margin-bottom:6px;">ADMIN</div>
       <div style="font-size:10px;color:${c};font-family:monospace;margin-bottom:3px;">${a.admin_id}</div>
-<div style="font-size:13px;color:${text};font-weight:700;margin-bottom:6px;">${a.first_name}</div>
-<div style="font-size:11px;color:${subtext};margin-bottom:3px;">📞 ${a.mobile_number}</div>   
+      <div style="font-size:13px;color:${text};font-weight:700;margin-bottom:6px;">${a.first_name}</div>
+      <div style="font-size:11px;color:${subtext};margin-bottom:3px;">📞 ${a.mobile_number}</div>
       <div style="font-size:11px;color:${subtext};">📍 ${a.city_name}</div>
     </div>
   `
@@ -170,11 +270,12 @@ export default function SuperAdminDashboard() {
   const navigate = useNavigate()
   const [dark, setDark] = useState(true)
   const [admins, setAdmins] = useState([])
+  const [hierarchyData, setHierarchyData] = useState(null)
+  const [hierarchyLoading, setHierarchyLoading] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [showHierarchy, setShowHierarchy] = useState(false)
   const [activeAdmin, setActiveAdmin] = useState(null)
   const hideTimer = useRef(null)
-  const popupRef = useRef(null)
   const [msg, setMsg] = useState('')
   const [form, setForm] = useState({
     initial: '', first_name: '', last_name: '', mobile_number: '', door_no: '', street_name: '', town_name: '',
@@ -195,6 +296,7 @@ export default function SuperAdminDashboard() {
   const inpBg = dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
   const inpBorder = dark ? '#374151' : '#d1d5db'
 
+  // Particle canvas
   useEffect(() => {
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
@@ -216,7 +318,7 @@ export default function SuperAdminDashboard() {
       }
       draw() { ctx.fillStyle = dark ? 'rgba(34,211,238,0.5)' : 'rgba(37,99,235,0.4)'; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill() }
     }
-    function init() { particlesArray = []; for (let i = 0; i < 60; i++)particlesArray.push(new Particle()) }
+    function init() { particlesArray = []; for (let i = 0; i < 60; i++) particlesArray.push(new Particle()) }
     function connect() {
       for (let a = 0; a < particlesArray.length; a++) for (let b = a; b < particlesArray.length; b++) {
         let dx = particlesArray[a].x - particlesArray[b].x, dy = particlesArray[a].y - particlesArray[b].y, d = Math.sqrt(dx * dx + dy * dy)
@@ -231,7 +333,24 @@ export default function SuperAdminDashboard() {
   const fetchAdmins = async () => {
     try { const res = await api.get('/admins/'); setAdmins(res.data) } catch { }
   }
+
+  const fetchHierarchy = async () => {
+    setHierarchyLoading(true)
+    try {
+      const res = await api.get('/hierarchy/full/')
+      setHierarchyData(res.data)
+    } catch (err) {
+      console.error('Hierarchy fetch error:', err)
+    }
+    setHierarchyLoading(false)
+  }
+
   useEffect(() => { fetchAdmins() }, [])
+
+  const handleOpenHierarchy = () => {
+    setShowHierarchy(true)
+    fetchHierarchy()
+  }
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value })
 
@@ -247,17 +366,6 @@ export default function SuperAdminDashboard() {
     }
   }
 
-  // Hierarchy hover handlers
-  const handleCardEnter = (a) => {
-    clearTimeout(hideTimer.current)
-    setActiveAdmin(a)
-  }
-  const handleCardLeave = (a) => {
-    hideTimer.current = setTimeout(() => {
-      setActiveAdmin(prev => prev?.id === a.id ? null : prev)
-    }, 90)
-  }
-
   const s = {
     card: { background: cardBg, border: cardBorder, borderRadius: '20px', padding: '32px 36px', marginBottom: '24px' },
     secHead: { color: '#a5f3fc', fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 20px', paddingBottom: '14px', borderBottom: cardBorder },
@@ -266,23 +374,35 @@ export default function SuperAdminDashboard() {
     inp: { width: '100%', background: inpBg, border: `1px solid ${inpBorder}`, borderRadius: '10px', padding: '12px 16px', color: text, fontSize: '14px', outline: 'none', boxSizing: 'border-box' },
   }
 
+  // Count total members
+  const totalStats = hierarchyData ? {
+    admins: hierarchyData.admins.length,
+    dealers: hierarchyData.admins.reduce((a, ad) => a + ad.dealers.length, 0),
+    subDealers: hierarchyData.admins.reduce((a, ad) => a + ad.dealers.reduce((b, d) => b + d.sub_dealers.length, 0), 0),
+    promotors: hierarchyData.admins.reduce((a, ad) => a + ad.dealers.reduce((b, d) => b + d.sub_dealers.reduce((c, sd) => c + sd.promotors.length, 0), 0), 0),
+    customers: hierarchyData.admins.reduce((a, ad) => a + ad.dealers.reduce((b, d) => b + d.sub_dealers.reduce((c, sd) => c + sd.promotors.reduce((e, pr) => e + pr.customers.length, 0), 0), 0), 0),
+  } : null
+
   return (
     <div style={{ minHeight: '100vh', background: bg, color: text, transition: 'background 0.8s ease, color 0.4s ease', fontFamily: '"Inter",system-ui,sans-serif', position: 'relative', overflow: 'hidden' }}>
       <style>{`
-  @keyframes float-orb{0%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-50px) scale(1.1)}66%{transform:translate(-20px,20px) scale(0.9)}100%{transform:translate(0,0) scale(1)}}
-  @keyframes antigravity{0%{transform:translateY(110vh) rotate(0deg);opacity:0}10%{opacity:var(--op)}90%{opacity:var(--op)}100%{transform:translateY(-20vh) rotate(360deg);opacity:0}}
-  @keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
-  .sa-inp:focus{border-color:#22d3ee !important}
-  .sa-grad-btn{position:relative;overflow:hidden}
-  .sa-grad-btn::after{content:"";position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);transform:translateX(-100%)}
-  .sa-grad-btn:hover::after{animation:shimmer 1s infinite}
-  .sa-tr:hover td{background:rgba(255,255,255,.02)}
-  @keyframes pulseGlow{0%,100%{box-shadow:0 0 8px rgba(34,211,238,0.15);}50%{box-shadow:0 0 22px rgba(34,211,238,0.35);}}
-  @keyframes dotPulse{0%,100%{transform:scale(1);opacity:0.7;}50%{transform:scale(1.6);opacity:1;}}
-  @keyframes popupIn{from{opacity:0;transform:translateY(8px) scale(0.97);}to{opacity:1;transform:translateY(0) scale(1);}}
-  .h-card{background:rgba(255,255,255,0.03);border:1px solid rgba(165,243,252,0.18);border-radius:14px;padding:14px 18px;min-width:140px;cursor:pointer;position:relative;overflow:hidden;transition:background 0.35s ease,border-color 0.35s ease,transform 0.4s cubic-bezier(0.34,1.4,0.64,1),box-shadow 0.35s ease;}
-  .h-card.h-active{background:rgba(34,211,238,0.07);border-color:rgba(34,211,238,0.65);transform:translateY(-6px) scale(1.02);box-shadow:0 12px 32px rgba(34,211,238,0.18);animation:pulseGlow 2.5s ease-in-out infinite;}
-`}</style>
+        @keyframes float-orb{0%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-50px) scale(1.1)}66%{transform:translate(-20px,20px) scale(0.9)}100%{transform:translate(0,0) scale(1)}}
+        @keyframes antigravity{0%{transform:translateY(110vh) rotate(0deg);opacity:0}10%{opacity:var(--op)}90%{opacity:var(--op)}100%{transform:translateY(-20vh) rotate(360deg);opacity:0}}
+        @keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+        @keyframes pulseGlow{0%,100%{box-shadow:0 0 8px rgba(34,211,238,0.15);}50%{box-shadow:0 0 22px rgba(34,211,238,0.35);}}
+        @keyframes dotPulse{0%,100%{transform:scale(1);opacity:0.7;}50%{transform:scale(1.6);opacity:1;}}
+        @keyframes popupIn{from{opacity:0;transform:translateY(8px) scale(0.97);}to{opacity:1;transform:translateY(0) scale(1);}}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+        .sa-inp:focus{border-color:#22d3ee !important}
+        .sa-grad-btn{position:relative;overflow:hidden}
+        .sa-grad-btn::after{content:"";position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);transform:translateX(-100%)}
+        .sa-grad-btn:hover::after{animation:shimmer 1s infinite}
+        .sa-tr:hover td{background:rgba(255,255,255,.02)}
+        .h-card{background:rgba(255,255,255,0.03);border:1px solid rgba(165,243,252,0.18);border-radius:14px;padding:14px 18px;min-width:140px;cursor:pointer;position:relative;overflow:hidden;transition:background 0.35s ease,border-color 0.35s ease,transform 0.4s cubic-bezier(0.34,1.4,0.64,1),box-shadow 0.35s ease;}
+        .h-card.h-active{background:rgba(34,211,238,0.07);border-color:rgba(34,211,238,0.65);transform:translateY(-6px) scale(1.02);box-shadow:0 12px 32px rgba(34,211,238,0.18);animation:pulseGlow 2.5s ease-in-out infinite;}
+        .tree-node-enter{animation:fadeIn 0.4s ease both;}
+      `}</style>
 
       <canvas ref={canvasRef} style={{ position: 'fixed', top: 0, left: 0, pointerEvents: 'none', zIndex: 1, opacity: 0.45 }} />
 
@@ -322,7 +442,7 @@ export default function SuperAdminDashboard() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <h2 style={{ fontSize: '22px', fontWeight: 800, margin: 0 }}>Admin Management</h2>
           <div style={{ display: 'flex', gap: '12px' }}>
-            <button onClick={() => setShowHierarchy(true)}
+            <button onClick={handleOpenHierarchy}
               style={{ padding: '11px 28px', background: 'rgba(165,243,252,0.08)', border: '1px solid rgba(103,232,249,0.3)', borderRadius: '12px', fontWeight: 700, color: '#a5f3fc', fontSize: '14px', cursor: 'pointer' }}>
               🏢 Admin Hierarchy
             </button>
@@ -333,72 +453,139 @@ export default function SuperAdminDashboard() {
           </div>
         </div>
 
-        {/* ── HIERARCHY MODAL ── */}
+        {/* ── FULL HIERARCHY MODAL ── */}
         {showHierarchy && (
           <div
             onClick={() => { setShowHierarchy(false); setActiveAdmin(null); removeAdminPopup() }}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.80)', backdropFilter: 'blur(10px)', zIndex: 1000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '40px', overflowY: 'auto' }}>
             <div onClick={e => e.stopPropagation()}
-              style={{ background: dark ? '#0f172a' : '#f8fafc', border: '1px solid rgba(103,232,249,0.2)', borderRadius: '20px', padding: '32px', maxWidth: '980px', width: '95%', maxHeight: '80vh', overflowY: 'auto' }}>
+              style={{ background: dark ? '#0a1628' : '#f8fafc', border: '1px solid rgba(103,232,249,0.2)', borderRadius: '24px', padding: '36px', width: '95%', maxWidth: '1100px', marginBottom: '40px' }}>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', paddingBottom: '14px', borderBottom: '1px solid rgba(103,232,249,0.1)' }}>
-                <span style={{ color: '#a5f3fc', fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>🏢 Admin Hierarchy</span>
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', paddingBottom: '18px', borderBottom: '1px solid rgba(103,232,249,0.1)' }}>
+                <div>
+                  <span style={{ color: '#a5f3fc', fontSize: '14px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>🏢 Full Organization Hierarchy</span>
+                  {totalStats && (
+                    <div style={{ display: 'flex', gap: '16px', marginTop: '10px', flexWrap: 'wrap' }}>
+                      {[
+                        { label: 'Admins', count: totalStats.admins, color: '#22d3ee' },
+                        { label: 'Dealers', count: totalStats.dealers, color: '#4ade80' },
+                        { label: 'Sub Dealers', count: totalStats.subDealers, color: '#f59e0b' },
+                        { label: 'Promotors', count: totalStats.promotors, color: '#a78bfa' },
+                        { label: 'Customers', count: totalStats.customers, color: '#f472b6' },
+                      ].map(s => (
+                        <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: `rgba(${hexToRgb(s.color)},0.08)`, border: `1px solid rgba(${hexToRgb(s.color)},0.25)`, borderRadius: '20px', padding: '3px 12px' }}>
+                          <span style={{ color: s.color, fontWeight: 800, fontSize: '13px' }}>{s.count}</span>
+                          <span style={{ color: subtext, fontSize: '11px' }}>{s.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <button onClick={() => { setShowHierarchy(false); setActiveAdmin(null); removeAdminPopup() }}
-                  style={{ background: 'transparent', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', borderRadius: '8px', padding: '6px 14px', cursor: 'pointer', fontSize: '12px' }}>
+                  style={{ background: 'transparent', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', borderRadius: '8px', padding: '6px 14px', cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}>
                   ✕ Close
                 </button>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-
-                {/* Super Admin node */}
-                <div style={{ background: 'linear-gradient(135deg,rgba(34,211,238,0.13),rgba(74,222,128,0.08))', border: '1px solid rgba(34,211,238,0.55)', borderRadius: '14px', padding: '13px 36px', fontWeight: 800, fontSize: '15px', color: '#22d3ee', whiteSpace: 'nowrap', animation: 'pulseGlow 3s ease-in-out infinite' }}>
-                  🛡️ Super Admin
+              {/* Loading */}
+              {hierarchyLoading && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: '16px' }}>
+                  <div style={{ width: 32, height: 32, border: '3px solid rgba(34,211,238,0.2)', borderTop: '3px solid #22d3ee', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                  <span style={{ color: subtext, fontSize: '14px' }}>Loading hierarchy...</span>
                 </div>
+              )}
 
-                {/* Vertical stem */}
-                <div style={{ width: 2, height: 32, background: 'linear-gradient(180deg,#22d3ee,rgba(34,211,238,0.3))', position: 'relative' }}>
-                  <div style={{ position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)', width: 7, height: 7, borderRadius: '50%', background: '#22d3ee', animation: 'dotPulse 2s ease-in-out infinite' }} />
-                </div>
+              {/* Tree */}
+              {!hierarchyLoading && hierarchyData && (
+                <div style={{ overflowX: 'auto', overflowY: 'visible', paddingBottom: '20px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 'max-content', margin: '0 auto' }}>
 
-                {/* Horizontal bar */}
-                <div style={{ height: 2, background: 'linear-gradient(90deg,transparent,rgba(34,211,238,0.5),transparent)', alignSelf: 'stretch', margin: '0 40px' }} />
-
-                {/* Admin cards */}
-                <div style={{ display: 'flex', gap: 0, justifyContent: 'space-around', alignSelf: 'stretch', alignItems: 'flex-start' }}>
-                  {admins.length === 0 && <div style={{ color: '#94a3b8', padding: '40px' }}>No admins yet.</div>}
-                  {admins.map((a, i) => {
-                    const c = COLORS[i % COLORS.length]
-                    const isActive = activeAdmin?.id === a.id
-                    return (
-                      <div key={a.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
-                        <div style={{ width: 2, height: 28, background: `linear-gradient(180deg,${c}88,${c}33)`, position: 'relative' }}>
-                          <div style={{ position: 'absolute', bottom: -3, left: '50%', transform: 'translateX(-50%)', width: 6, height: 6, borderRadius: '50%', background: c, animation: `dotPulse ${1.8 + i * 0.3}s ease-in-out infinite` }} />
-                        </div>
-                        <div
-                          className={`h-card${isActive ? ' h-active' : ''}`}
-                          onMouseEnter={e => {
-                            clearTimeout(_hideTimer)
-                            setActiveAdmin(a)
-                            createAdminPopup(a, i, e.currentTarget, dark, subtext, text)
-                          }}
-                          onMouseLeave={() => scheduleHidePopup(setActiveAdmin)}
-                        >
-                          <div style={{ fontSize: 9, color: c, fontFamily: 'monospace', marginBottom: 4 }}>{a.admin_id}</div>
-                          <div style={{ color: text, fontWeight: 700, fontSize: 13, marginBottom: 6 }}>{a.first_name}</div>
-                          <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 2 }}>📞 {a.mobile_number}</div> 
-                          <div style={{ color: '#94a3b8', fontSize: 11 }}>📍 {a.city_name}</div>
-                          <div style={{ marginTop: 8, width: '100%', height: 2, borderRadius: 2, background: `linear-gradient(90deg,${c}44,${c}cc)` }} />
-                        </div>
+                    {/* Super Admin Root Node */}
+                    <div style={{
+                      background: 'linear-gradient(135deg,rgba(255,215,0,0.12),rgba(255,215,0,0.05))',
+                      border: '1px solid rgba(255,215,0,0.5)',
+                      borderRadius: '16px', padding: '16px 48px',
+                      fontWeight: 800, fontSize: '16px', color: '#ffd700',
+                      animation: 'pulseGlow 3s ease-in-out infinite',
+                      boxShadow: '0 0 24px rgba(255,215,0,0.1)',
+                    }}>
+                      🛡️ Super Admin
+                      <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 400, marginTop: '4px', textAlign: 'center' }}>
+                        {localStorage.getItem('email')}
                       </div>
-                    )
-                  })}
+                    </div>
+
+                    {/* Stem from Super Admin */}
+                    <div style={{ width: 2, height: 32, background: 'linear-gradient(180deg,#ffd700,rgba(255,215,0,0.3))' }}>
+                      <div style={{ position: 'relative' }}>
+                        <div style={{ position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)', width: 7, height: 7, borderRadius: '50%', background: '#ffd700', animation: 'dotPulse 2s ease-in-out infinite' }} />
+                      </div>
+                    </div>
+
+                    {/* Horizontal bar */}
+                    {hierarchyData.admins.length > 0 && (
+                      <>
+                        <div style={{ height: 2, background: 'linear-gradient(90deg,transparent,rgba(255,215,0,0.5),transparent)', width: '80%', marginBottom: 0 }} />
+
+                        {/* Admins row */}
+                        <div style={{ display: 'flex', gap: '32px', justifyContent: 'center', alignItems: 'flex-start', flexWrap: 'wrap', paddingTop: 0 }}>
+                          {hierarchyData.admins.map((admin, ai) => (
+                            <div key={admin.id} className="tree-node-enter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                              {/* Stem to admin */}
+                              <div style={{ width: 2, height: 24, background: `rgba(255,215,0,0.5)`, position: 'relative' }}>
+                                <div style={{ position: 'absolute', bottom: -3, left: '50%', transform: 'translateX(-50%)', width: 6, height: 6, borderRadius: '50%', background: COLORS[ai % COLORS.length], animation: `dotPulse ${1.8 + ai * 0.2}s ease-in-out infinite` }} />
+                              </div>
+                              <TreeNode
+                                node={admin}
+                                role="admin"
+                                depth={0}
+                                dark={dark}
+                                text={text}
+                                subtext={subtext}
+                                colorIdx={ai}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {hierarchyData.admins.length === 0 && (
+                      <div style={{ color: subtext, padding: '60px', textAlign: 'center', fontSize: '15px' }}>
+                        No admins created yet.
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Legend */}
+              {!hierarchyLoading && (
+                <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '28px', paddingTop: '20px', borderTop: '1px solid rgba(103,232,249,0.1)' }}>
+                  {[
+                    { role: 'Super Admin', color: '#ffd700', emoji: '🛡️' },
+                    { role: 'Admin', color: '#22d3ee', emoji: '🛡️' },
+                    { role: 'Dealer', color: '#4ade80', emoji: '🏪' },
+                    { role: 'Sub Dealer', color: '#f59e0b', emoji: '🔗' },
+                    { role: 'Promotor', color: '#a78bfa', emoji: '🌟' },
+                    { role: 'Customer', color: '#f472b6', emoji: '👤' },
+                  ].map(l => (
+                    <div key={l.role} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div style={{ width: 10, height: 10, borderRadius: '50%', background: l.color }} />
+                      <span style={{ color: subtext, fontSize: '12px' }}>{l.emoji} {l.role}</span>
+                    </div>
+                  ))}
+                  <div style={{ color: subtext, fontSize: '12px', width: '100%', textAlign: 'center', marginTop: '4px' }}>
+                    💡 Click any node to expand/collapse its children
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
 
+        {/* Create Admin Form - unchanged */}
         {showForm && (
           <div style={s.card}>
             <p style={s.secHead}>Create New Admin</p>
@@ -406,7 +593,7 @@ export default function SuperAdminDashboard() {
               <p style={s.secSub}>👤 Personal Info</p>
               <div style={{ display: 'grid', gridTemplateColumns: '0.4fr 1fr 1fr', gap: '14px' }}>
                 <div><label style={s.lbl}>Initial</label>
-<                input name="initial" maxLength={5} value={form.initial} onChange={handleChange} className="sa-inp" style={s.inp} />
+                  <input name="initial" maxLength={5} value={form.initial} onChange={handleChange} className="sa-inp" style={s.inp} />
                 </div>
                 <div><label style={s.lbl}>First Name *</label>
                   <input name="first_name" maxLength={100} value={form.first_name} onChange={handleChange} required className="sa-inp" style={s.inp} />
@@ -415,25 +602,18 @@ export default function SuperAdminDashboard() {
                   <input name="last_name" maxLength={100} value={form.last_name} onChange={handleChange} required className="sa-inp" style={s.inp} />
                 </div>
               </div>
-
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <div><label style={s.lbl}>Mobile *</label>
                   <input name="mobile_number" maxLength={10} value={form.mobile_number} onChange={handleChange} required className="sa-inp" style={s.inp} />
                 </div>
-                {/* Admin ID preview — auto-generated badge */}
                 <div>
                   <label style={s.lbl}>Admin ID</label>
                   <div style={{ ...s.inp, opacity: 0.55, cursor: 'not-allowed', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ color: '#22d3ee', fontFamily: 'monospace', fontSize: '13px' }}>
-                      BBADM{new Date().getFullYear()}
-                    </span>
-                    <span style={{ color: '#64748b', fontSize: '12px' }}>
-                      &lt;auto-generated&gt;
-                    </span>
+                    <span style={{ color: '#22d3ee', fontFamily: 'monospace', fontSize: '13px' }}>BBADM{new Date().getFullYear()}</span>
+                    <span style={{ color: '#64748b', fontSize: '12px' }}>&lt;auto-generated&gt;</span>
                   </div>
                 </div>
               </div>
-
               <p style={s.secSub}>Account Info</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <div><label style={s.lbl}>Email *</label>
@@ -443,8 +623,6 @@ export default function SuperAdminDashboard() {
                   <input type="password" name="password" value={form.password} onChange={handleChange} required className="sa-inp" style={s.inp} />
                 </div>
               </div>
-
-              
               <p style={s.secSub}>📍 Address</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
                 <div><label style={s.lbl}>Door No *</label><input name="door_no" value={form.door_no} onChange={handleChange} required className="sa-inp" style={s.inp} /></div>
@@ -454,13 +632,11 @@ export default function SuperAdminDashboard() {
                 <div><label style={s.lbl}>District *</label><input name="district" value={form.district} onChange={handleChange} required className="sa-inp" style={s.inp} /></div>
                 <div><label style={s.lbl}>State *</label><input name="state" value={form.state} onChange={handleChange} required className="sa-inp" style={s.inp} /></div>
               </div>
-
               <p style={s.secSub}>🪪 Identity</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <div><label style={s.lbl}>Aadhaar No *</label><input name="aadhaar_no" maxLength={12} value={form.aadhaar_no} onChange={handleChange} required className="sa-inp" style={s.inp} /></div>
                 <div><label style={s.lbl}>PAN No *</label><input name="pan_no" maxLength={10} value={form.pan_no} onChange={handleChange} required className="sa-inp" style={s.inp} /></div>
               </div>
-
               <p style={s.secSub}>💼 Occupation</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
                 <div><label style={s.lbl}>Occupation *</label>
@@ -471,10 +647,6 @@ export default function SuperAdminDashboard() {
                 <div><label style={s.lbl}>Detail</label><input name="occupation_detail" value={form.occupation_detail} onChange={handleChange} className="sa-inp" style={s.inp} /></div>
                 <div><label style={s.lbl}>Annual Salary *</label><input name="annual_salary" value={form.annual_salary} onChange={handleChange} required className="sa-inp" style={s.inp} /></div>
               </div>
-
-              {/* ✅ Admin Info section REMOVED — all auto-generated from above fields */}
-              {/* admin_name = first_name, admin_contact_no = mobile_number, admin_id = BBADM{year}{seq} */}
-
               <div style={{ display: 'flex', gap: '12px', marginTop: '6px' }}>
                 <button type="submit" className="sa-grad-btn"
                   style={{ padding: '12px 28px', background: 'linear-gradient(90deg,#22d3ee,#4ade80)', border: 'none', borderRadius: '12px', fontWeight: 800, color: '#006165', fontSize: '14px', cursor: 'pointer' }}>
@@ -489,7 +661,7 @@ export default function SuperAdminDashboard() {
           </div>
         )}
 
-        {/* Table */}
+        {/* Admins Table */}
         <div style={s.card}>
           <p style={s.secHead}>All Admins ({admins.length})</p>
           {admins.length === 0 ? (
