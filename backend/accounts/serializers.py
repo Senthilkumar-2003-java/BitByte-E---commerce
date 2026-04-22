@@ -167,12 +167,21 @@ class SubDealerProfileSerializer(serializers.ModelSerializer):
         )
         return profile
 
+# In serializers.py, replace SubDealerListSerializer with:
 class SubDealerListSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email')
+    assigned_dealer_id = serializers.IntegerField(source='assigned_dealer.id', read_only=True)
+    dealer_name = serializers.CharField(source='assigned_dealer.dealer_name', read_only=True)
+    dealer_contact = serializers.CharField(source='assigned_dealer.mobile_number', read_only=True)
+    dealer_city = serializers.CharField(source='assigned_dealer.city_name', read_only=True)
+    
     class Meta:
         model = SubDealerProfile
-        fields = ['id', 'sub_dealer_id', 'first_name', 'last_name', 'email', 'mobile_number', 'city_name', 'created_at']
-
+        fields = [
+            'id', 'sub_dealer_id', 'first_name', 'last_name', 
+            'email', 'mobile_number', 'city_name', 'created_at',
+            'assigned_dealer_id', 'dealer_name', 'dealer_contact', 'dealer_city'
+        ]
 
 
 class PromotorProfileSerializer(serializers.ModelSerializer):

@@ -45,7 +45,6 @@ class CreateAdminView(APIView):
         return Response(serializer.data)
 
 
-# ✅ Admin creates Dealers
 class CreateDealerView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -66,7 +65,6 @@ class CreateDealerView(APIView):
         return Response(serializer.data)
 
 
-# ✅ Dealer creates Sub Dealers
 class CreateSubDealerView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -87,7 +85,6 @@ class CreateSubDealerView(APIView):
         return Response(serializer.data)
 
 
-# ✅ Admins can see dealers list (for dropdown in sub dealer creation, etc.)
 class DealerListForDealerView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -121,7 +118,8 @@ class DashboardView(APIView):
             try:
                 p = user.dealer_profile
                 data.update({
-                    'name': p.name,
+                    'first_name': p.first_name,
+                    'last_name': p.last_name,
                     'mobile_number': p.mobile_number,
                     'dealer_id': p.dealer_id,
                     'dealer_name': p.dealer_name,
@@ -149,7 +147,8 @@ class DashboardView(APIView):
             try:
                 p = user.sub_dealer_profile
                 data.update({
-                    'name': p.name,
+                    'first_name': p.first_name,
+                    'last_name': p.last_name,
                     'mobile_number': p.mobile_number,
                     'sub_dealer_id': p.sub_dealer_id,
                     'door_no': p.door_no,
@@ -194,7 +193,7 @@ class DashboardView(APIView):
                     'occupation_detail': p.occupation_detail,
                     'annual_salary': p.annual_salary,
                     'created_at': p.created_at,
-                    'sub_dealer_name': p.assigned_sub_dealer.name if p.assigned_sub_dealer else None,
+                    'sub_dealer_name': f"{p.assigned_sub_dealer.first_name} {p.assigned_sub_dealer.last_name}" if p.assigned_sub_dealer else None,
                     'sub_dealer_id': p.assigned_sub_dealer.sub_dealer_id if p.assigned_sub_dealer else None,
                     'sub_dealer_contact_no': p.assigned_sub_dealer.mobile_number if p.assigned_sub_dealer else None,
                 })
@@ -231,7 +230,7 @@ class DashboardView(APIView):
 
         return Response(data)
 
-# Sub Dealer creates Promotors
+
 class CreatePromotorView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -252,7 +251,6 @@ class CreatePromotorView(APIView):
         return Response(serializer.data)
 
 
-# Promotor creates Customers
 class CreateCustomerView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -273,7 +271,6 @@ class CreateCustomerView(APIView):
         return Response(serializer.data)
 
 
-# Promotor list for Customer creation dropdown
 class PromotorListForView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -285,7 +282,6 @@ class PromotorListForView(APIView):
         return Response(serializer.data)
 
 
-# Sub Dealer list for Promotor creation dropdown
 class SubDealerListForView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -294,7 +290,8 @@ class SubDealerListForView(APIView):
             return Response({'error': 'Permission denied'}, status=403)
         sub_dealers = SubDealerProfile.objects.all()
         serializer = SubDealerListSerializer(sub_dealers, many=True)
-        return Response(serializer.data)        
+        return Response(serializer.data)
+
 
 class FullHierarchyView(APIView):
     permission_classes = [IsAuthenticated]
@@ -371,9 +368,10 @@ class FullHierarchyView(APIView):
                 'dealers': dealer_list,
             })
 
-        return Response({'super_admin_email': request.user.email, 'admins': tree})    
+        return Response({'super_admin_email': request.user.email, 'admins': tree})
+
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def ping(request):
-    return Response({'status': 'ok'})        
+    return Response({'status': 'ok'})

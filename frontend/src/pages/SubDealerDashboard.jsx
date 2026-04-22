@@ -19,7 +19,6 @@ const PARTICLES = Array.from({ length: 15 }, (_, i) => ({
 
 const PROMOTOR_COLORS = ['#a78bfa', '#22d3ee', '#4ade80', '#f472b6', '#fb923c']
 
-// ── Popup helpers (exact same pattern as AdminDashboard) ──
 let _ppopupEl = null
 let _phideTimer = null
 
@@ -90,7 +89,6 @@ function createPromotorPopup(p, i, anchorEl, dark, subtextColor, textColor, hier
       CREATED BY
     </div>
 
-    <!-- Super Admin -->
     <div style="border-radius:9px;padding:10px;margin-bottom:2px;background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.22);">
       <div style="display:inline-block;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;
         background:rgba(255,215,0,0.12);color:#ffd700;border:1px solid rgba(255,215,0,0.3);margin-bottom:6px;">🛡️ SUPER ADMIN</div>
@@ -101,7 +99,6 @@ function createPromotorPopup(p, i, anchorEl, dark, subtextColor, textColor, hier
 
     ${arrow('#ffd700')}
 
-    <!-- Admin -->
     ${tierBox(
       '🛡️ ADMIN',
       '#4ade80', 'rgba(74,222,128,0.05)', 'rgba(74,222,128,0.2)',
@@ -113,7 +110,6 @@ function createPromotorPopup(p, i, anchorEl, dark, subtextColor, textColor, hier
 
     ${arrow('#4ade80')}
 
-    <!-- Dealer -->
     ${tierBox(
       '🏪 DEALER',
       '#22d3ee', 'rgba(34,211,238,0.04)', 'rgba(34,211,238,0.18)',
@@ -125,26 +121,22 @@ function createPromotorPopup(p, i, anchorEl, dark, subtextColor, textColor, hier
 
     ${arrow('#22d3ee')}
 
-    <!-- Sub Dealer -->
     ${tierBox(
       '💎 SUB DEALER',
-      '#a78bfa', 'rgba(167,139,250,0.05)', 'rgba(167,139,250,0.2)',
-      subDealer?.sub_dealer_id || subDealer?.dealer_id || '—',
-      (subDealer?.first_name || '') + ' ' + (subDealer?.last_name || ''),
+      '#f59e0b', 'rgba(245,158,11,0.05)', 'rgba(245,158,11,0.2)',
+      subDealer?.sub_dealer_id || '—',
+      subDealer?.first_name || '—',
       subDealer?.mobile_number || '—',
       subDealer?.city_name || '—'
     )}
 
     ${arrow(c)}
 
-    <!-- Promotor -->
     <div style="background:rgba(167,139,250,0.05);border:1px solid rgba(167,139,250,0.2);border-radius:10px;padding:10px;">
       <div style="display:inline-block;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;
-        background:rgba(167,139,250,0.12);color:${c};border:1px solid rgba(167,139,250,0.25);margin-bottom:6px;">
-        🌟 PROMOTOR
-      </div>
+        background:rgba(167,139,250,0.12);color:${c};border:1px solid rgba(167,139,250,0.25);margin-bottom:6px;">🌟 PROMOTOR</div>
       <div style="font-size:10px;color:${c};font-family:monospace;margin-bottom:3px;">${p.promotor_id || '—'}</div>
-      <div style="font-size:14px;font-weight:700;color:${text2};margin-bottom:6px;">${p.first_name || ''} ${p.last_name || ''}</div>
+      <div style="font-size:14px;font-weight:700;color:${text2};margin-bottom:6px;">${p.first_name || ''}</div>
       <div style="font-size:11px;color:${subtext2};margin-bottom:2px;">📞 ${p.mobile_number || '—'}</div>
       <div style="font-size:11px;color:${subtext2};">📍 ${p.city_name || '—'}</div>
     </div>
@@ -168,40 +160,39 @@ function createPromotorPopup(p, i, anchorEl, dark, subtextColor, textColor, hier
   _ppopupEl = el
 }
 
-// ─────────────────────────────────────────────
 export default function SubDealerDashboard() {
   const navigate = useNavigate()
   const [dark, setDark] = useState(true)
-  const [promotors,      setPromotors]      = useState([])
-  const [subDealers,     setSubDealers]     = useState([])
-  const [dealers,        setDealers]        = useState([])
-  const [admins,         setAdmins]         = useState([])
-  const [selectedSubDealer, setSelectedSubDealer] = useState(null)
-  const [showForm,       setShowForm]       = useState(false)
-  const [showHierarchy,  setShowHierarchy]  = useState(false)
-  const [activePromotor, setActivePromotor] = useState(null)
+  const [promotors,         setPromotors]         = useState([])
+  const [subDealers,        setSubDealers]         = useState([])
+  const [dealers,           setDealers]            = useState([])
+  const [admins,            setAdmins]             = useState([])
+  const [selectedSubDealer, setSelectedSubDealer]  = useState(null)
+  const [showForm,          setShowForm]           = useState(false)
+  const [showHierarchy,     setShowHierarchy]      = useState(false)
+  const [activePromotor,    setActivePromotor]     = useState(null)
   const [msg,     setMsg]     = useState('')
   const [msgType, setMsgType] = useState('success')
   const [form,    setForm]    = useState(emptyForm)
   const canvasRef = useRef(null)
 
-  const bg        = dark ? '#020617' : '#f8fafc'
-  const text      = dark ? '#f8fafc' : '#020617'
-  const subtext   = dark ? '#94a3b8' : '#64748b'
-  const accent    = dark ? '#22d3ee' : '#2563eb'
-  const border    = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
-  const glass     = dark ? 'rgba(15, 23, 42, 0.65)' : 'rgba(255, 255, 255, 0.7)'
-  const cardBg    = dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'
-  const cardBorder= dark ? '1px solid rgba(103,232,249,0.1)' : '1px solid rgba(0,0,0,0.1)'
-  const inpBg     = dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
-  const inpBorder = dark ? '#374151' : '#d1d5db'
+  const bg         = dark ? '#020617' : '#f8fafc'
+  const text       = dark ? '#f8fafc' : '#020617'
+  const subtext    = dark ? '#94a3b8' : '#64748b'
+  const accent     = dark ? '#22d3ee' : '#2563eb'
+  const border     = dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+  const glass      = dark ? 'rgba(15, 23, 42, 0.65)' : 'rgba(255, 255, 255, 0.7)'
+  const cardBg     = dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'
+  const cardBorder = dark ? '1px solid rgba(103,232,249,0.1)' : '1px solid rgba(0,0,0,0.1)'
+  const inpBg      = dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
+  const inpBorder  = dark ? '#374151' : '#d1d5db'
 
   useEffect(() => {
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
     let animationFrameId, particlesArray = []
     const mouse = { x: null, y: null, radius: 150 }
-    const handleResize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight }
+    const handleResize    = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight }
     const handleMouseMove = (e) => { mouse.x = e.x; mouse.y = e.y }
     window.addEventListener('resize', handleResize)
     window.addEventListener('mousemove', handleMouseMove)
@@ -215,13 +206,13 @@ export default function SubDealerDashboard() {
         let dx=mouse.x-this.x,dy=mouse.y-this.y,d=Math.sqrt(dx*dx+dy*dy)
         if(d<mouse.radius){const fx=dx/d,fy=dy/d,f=(mouse.radius-d)/mouse.radius;this.x-=fx*f*5;this.y-=fy*f*5}
       }
-      draw() { ctx.fillStyle= dark ? 'rgba(34,211,238,0.5)' : 'rgba(37,99,235,0.4)'; ctx.beginPath(); ctx.arc(this.x,this.y,this.size,0,Math.PI*2); ctx.fill() }
+      draw() { ctx.fillStyle= dark ? 'rgba(167,139,250,0.5)' : 'rgba(124,58,237,0.4)'; ctx.beginPath(); ctx.arc(this.x,this.y,this.size,0,Math.PI*2); ctx.fill() }
     }
     function init(){particlesArray=[];for(let i=0;i<60;i++)particlesArray.push(new Particle())}
     function connect(){
       for(let a=0;a<particlesArray.length;a++) for(let b=a;b<particlesArray.length;b++){
         let dx=particlesArray[a].x-particlesArray[b].x,dy=particlesArray[a].y-particlesArray[b].y,d=Math.sqrt(dx*dx+dy*dy)
-        if(d<150){ctx.strokeStyle= dark ? `rgba(34,211,238,${1-d/150})` : `rgba(37,99,235,${0.5-d/300})`;ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(particlesArray[a].x,particlesArray[a].y);ctx.lineTo(particlesArray[b].x,particlesArray[b].y);ctx.stroke()}
+        if(d<150){ctx.strokeStyle= dark ? `rgba(167,139,250,${1-d/150})` : `rgba(124,58,237,${0.5-d/300})`;ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(particlesArray[a].x,particlesArray[a].y);ctx.lineTo(particlesArray[b].x,particlesArray[b].y);ctx.stroke()}
       }
     }
     function animate(){ctx.clearRect(0,0,canvas.width,canvas.height);particlesArray.forEach(p=>{p.update();p.draw()});connect();animationFrameId=requestAnimationFrame(animate)}
@@ -229,13 +220,12 @@ export default function SubDealerDashboard() {
     return () => { window.removeEventListener('resize',handleResize); window.removeEventListener('mousemove',handleMouseMove); cancelAnimationFrame(animationFrameId) }
   }, [dark])
 
-  // ── fetchAll: same as original but enriches each promotor with chain ──
   const fetchAll = async () => {
     try {
       const [prRes, sdRes, dlRes, adRes] = await Promise.all([
         api.get('/promotors/'),
         api.get('/sub-dealers/list/'),
-        api.get('/dealers/'),
+        api.get('/dealers/list/'),
         api.get('/admins/list/'),
       ])
       const sdList = sdRes.data
@@ -297,8 +287,8 @@ export default function SubDealerDashboard() {
   }
 
   const card     = { background: cardBg, border: cardBorder, borderRadius:'20px', padding:'32px 36px', marginBottom:'24px' }
-  const secHead  = (color='#a5f3fc') => ({ color, fontSize:'13px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', margin:'0 0 20px', paddingBottom:'14px', borderBottom: cardBorder })
-  const secLabel = (color='#a5f3fc') => ({ color, fontSize:'12px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', margin:'4px 0 0', paddingBottom:'10px', borderBottom: cardBorder })
+  const secHead  = (color='#c4b5fd') => ({ color, fontSize:'13px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', margin:'0 0 20px', paddingBottom:'14px', borderBottom: cardBorder })
+  const secLabel = (color='#c4b5fd') => ({ color, fontSize:'12px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', margin:'4px 0 0', paddingBottom:'10px', borderBottom: cardBorder })
   const inp      = { width:'100%', background: inpBg, border:`1px solid ${inpBorder}`, borderRadius:'10px', padding:'12px 16px', color: text, fontSize:'14px', outline:'none', boxSizing:'border-box' }
   const lbl      = { display:'block', color: subtext, fontSize:'12px', marginBottom:'7px', textTransform:'uppercase', letterSpacing:'0.04em' }
 
@@ -328,7 +318,7 @@ export default function SubDealerDashboard() {
         <div key={p.id} style={{ position:'absolute', left:`${p.x}%`, bottom:'-100px', width:p.size, height:p.size, borderRadius:'40% 60% 60% 40% / 40% 40% 60% 60%', border:`1px solid ${accent}44`, opacity:p.opacity, animation:`antigravity ${p.duration}s ${p.delay}s infinite linear`, '--op':p.opacity, pointerEvents:'none', zIndex:0 }} />
       ))}
 
-      {/* Navbar — unchanged */}
+      {/* Navbar */}
       <div style={{ position:'relative', zIndex:10, background: glass, borderBottom:`1px solid ${border}`, padding:'18px 40px', display:'flex', justifyContent:'space-between', alignItems:'center', backdropFilter:'blur(16px)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:'12px', marginLeft: '10px' }}>
           <img src={logo} alt="BitByte Logo" style={{ width: 60, height: 50, borderRadius: '10px', objectFit: 'contain' }} />
@@ -366,7 +356,7 @@ export default function SubDealerDashboard() {
           </div>
         </div>
 
-        {/* ── PROMOTOR HIERARCHY MODAL ── */}
+        {/* PROMOTOR HIERARCHY MODAL */}
         {showHierarchy && (
           <div onClick={() => { setShowHierarchy(false); setActivePromotor(null); removePromotorPopup() }}
             style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', backdropFilter:'blur(8px)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -394,12 +384,10 @@ export default function SubDealerDashboard() {
                   💎 Sub Dealer
                 </div>
 
-                {/* Stem */}
                 <div style={{ width:2, height:28, background:'linear-gradient(180deg,#a78bfa,rgba(167,139,250,0.3))', position:'relative' }}>
                   <div style={{ position:'absolute', bottom:-4, left:'50%', transform:'translateX(-50%)', width:7, height:7, borderRadius:'50%', background:'#a78bfa', animation:'proSDDotPulse 2s ease-in-out infinite' }} />
                 </div>
 
-                {/* Horizontal bar */}
                 <div style={{ height:2, background:'linear-gradient(90deg,transparent,rgba(167,139,250,0.5),transparent)', alignSelf:'stretch', margin:'0 40px' }} />
 
                 {/* Promotor cards */}
@@ -428,7 +416,7 @@ export default function SubDealerDashboard() {
                           onMouseLeave={() => schedulePromotorHide(setActivePromotor)}
                         >
                           <div style={{ fontSize:9, color:c, fontFamily:'monospace', marginBottom:4 }}>{p.promotor_id || '—'}</div>
-                          <div style={{ color:text, fontWeight:700, fontSize:13, marginBottom:6 }}>{p.first_name || ''} {p.last_name || ''}</div>
+                          <div style={{ color:text, fontWeight:700, fontSize:13, marginBottom:6 }}>{p.first_name || ''}</div>
                           <div style={{ color:'#94a3b8', fontSize:11, marginBottom:2 }}>📞 {p.mobile_number}</div>
                           <div style={{ color:'#94a3b8', fontSize:11 }}>📍 {p.city_name}</div>
                           <div style={{ marginTop:8, width:'100%', height:2, borderRadius:2, background:`linear-gradient(90deg,${c}44,${c}cc)` }} />
@@ -442,7 +430,7 @@ export default function SubDealerDashboard() {
           </div>
         )}
 
-        {/* ── Create Form — unchanged ── */}
+        {/* Create Form */}
         {showForm && (
           <div style={card}>
             <p style={secHead('#c4b5fd')}>Create New Promotor</p>
@@ -516,7 +504,7 @@ export default function SubDealerDashboard() {
           </div>
         )}
 
-        {/* ── Promotors Table — unchanged ── */}
+        {/* Promotors Table */}
         <div style={card}>
           <p style={secHead('#c4b5fd')}>My Promotors ({promotors.length})</p>
           {promotors.length === 0 ? (

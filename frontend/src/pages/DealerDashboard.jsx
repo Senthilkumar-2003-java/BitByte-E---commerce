@@ -94,9 +94,9 @@ function createSubDealerPopup(sd, i, anchorEl, dark, subtext, text, currentDeale
     <!-- Admin -->
     <div style="border-radius:9px;padding:10px;margin-bottom:6px;background:${adminBoxBg};border:1px solid ${adminBoxBd};">
       <div style="display:inline-block;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(74,222,128,0.12);color:#4ade80;border:1px solid rgba(74,222,128,0.3);margin-bottom:6px;">🛡️ ADMIN</div>
-      <div style="font-size:10px;color:#4ade80;font-family:monospace;margin-bottom:3px;">${currentDealer?.admin_id || '—'}</div>
-      <div style="font-size:13px;font-weight:700;color:${text};margin-bottom:5px;">${currentDealer?.admin_name || '—'}</div>
-      <div style="font-size:11px;color:${subtext};margin-bottom:2px;">📞 ${currentDealer?.admin_contact_no || '—'}</div>
+      <div style="font-size:10px;color:#4ade80;font-family:monospace;margin-bottom:3px;">${currentDealer?.admin_id}</div>
+     <div style="font-size:13px;font-weight:700;color:${text};margin-bottom:5px;">${currentDealer?.admin_name}</div>
+     <div style="font-size:11px;color:${subtext};margin-bottom:2px;">📞 ${currentDealer?.admin_contact_no}</div>
     </div>
 
     <!-- Arrow Admin → Dealer -->
@@ -110,10 +110,10 @@ function createSubDealerPopup(sd, i, anchorEl, dark, subtext, text, currentDeale
     <!-- Dealer -->
     <div style="border-radius:9px;padding:10px;margin-bottom:6px;background:${dealerBoxBg};border:1px solid ${dealerBoxBd};">
       <div style="display:inline-block;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(245,158,11,0.12);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);margin-bottom:6px;">🏪 DEALER</div>
-      <div style="font-size:10px;color:#f59e0b;font-family:monospace;margin-bottom:3px;">${currentDealer?.dealer_id || '—'}</div>
-      <div style="font-size:13px;font-weight:700;color:${text};margin-bottom:5px;">${currentDealer?.name || currentDealer?.first_name || '—'}</div>
-      <div style="font-size:11px;color:${subtext};margin-bottom:2px;">📞 ${currentDealer?.mobile_number || currentDealer?.dealer_contact_no || '—'}</div>
-      <div style="font-size:11px;color:${subtext};">📍 ${currentDealer?.city_name || '—'}</div>
+      <div style="font-size:10px;color:#f59e0b;font-family:monospace;margin-bottom:3px;">${currentDealer?.dealer_id}</div>
+<div style="font-size:13px;font-weight:700;color:${text};margin-bottom:5px;">${currentDealer?.dealer_name}</div>
+<div style="font-size:11px;color:${subtext};margin-bottom:2px;">📞 ${currentDealer?.mobile_number}</div>
+<div style="font-size:11px;color:${subtext};">📍 ${currentDealer?.city_name}</div>
     </div>
 
     <!-- Arrow Dealer → Sub Dealer -->
@@ -128,7 +128,7 @@ function createSubDealerPopup(sd, i, anchorEl, dark, subtext, text, currentDeale
     <div style="background:${sdBoxBg};border:1px solid ${sdBoxBd};border-radius:10px;padding:10px;">
       <div style="display:inline-block;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(34,211,238,0.12);color:#22d3ee;border:1px solid rgba(34,211,238,0.25);margin-bottom:6px;">SUB DEALER</div>
       <div style="font-size:10px;color:${c};font-family:monospace;margin-bottom:3px;">${sd.sub_dealer_id}</div>
-      <div style="font-size:14px;font-weight:700;color:${text};margin-bottom:6px;">${sd.first_name || ''}</div>
+      <div style="font-size:14px;font-weight:700;color:${text};margin-bottom:6px;">${sd.first_name || sd.name}</div>
       <div style="font-size:11px;color:${subtext};margin-bottom:2px;">📞 ${sd.mobile_number}</div>
       <div style="font-size:11px;color:${subtext};">📍 ${sd.city_name}</div>
     </div>

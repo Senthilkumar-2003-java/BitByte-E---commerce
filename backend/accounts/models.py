@@ -133,7 +133,12 @@ class DealerProfile(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # ✅ FIX 1: indentation correct + __str__ separate பண்ணினோம்
     def save(self, *args, **kwargs):
+        if not self.dealer_name:
+            self.dealer_name = self.first_name
+        if not self.dealer_contact_no:
+            self.dealer_contact_no = self.mobile_number
         if not self.dealer_id:
             from django.utils import timezone
             year = timezone.now().year
@@ -179,6 +184,7 @@ class SubDealerProfile(models.Model):
     sub_dealer_id = models.CharField(max_length=20, unique=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # ✅ FIX 2: sub_dealer_id மட்டும் - dealer fields இல்ல இங்க!
     def save(self, *args, **kwargs):
         if not self.sub_dealer_id:
             from django.utils import timezone
@@ -293,4 +299,4 @@ class CustomerProfile(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name}"        
+        return f"{self.first_name} {self.last_name}"
