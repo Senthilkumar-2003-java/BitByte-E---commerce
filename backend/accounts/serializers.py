@@ -191,8 +191,11 @@ class PromotorProfileSerializer(serializers.ModelSerializer):
 
     sub_dealer_name = serializers.SerializerMethodField(read_only=True)
     sub_dealer_uid = serializers.CharField(source='assigned_sub_dealer.sub_dealer_id', read_only=True)
-    sub_dealer_contact = serializers.CharField(source='assigned_sub_dealer.user.customer_profile', read_only=True, default='')
-
+    sub_dealer_contact = serializers.CharField(
+    source='assigned_sub_dealer.mobile_number',
+    read_only=True,
+    default=''
+)
     class Meta:
         model = PromotorProfile
         fields = [
@@ -209,7 +212,7 @@ class PromotorProfileSerializer(serializers.ModelSerializer):
 
     def get_sub_dealer_name(self, obj):
         if obj.assigned_sub_dealer:
-            return f"{obj.assigned_sub_dealer.name}"
+            return obj.assigned_sub_dealer.first_name
         return None
 
     def validate_email(self, value):
@@ -241,10 +244,33 @@ class PromotorProfileSerializer(serializers.ModelSerializer):
 
 class PromotorListSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email')
+
+    # ✅ ADD THESE 3 LINES
+    assigned_sub_dealer_id = serializers.IntegerField(
+        source='assigned_sub_dealer.id', read_only=True
+    )
+
+    dealer_id = serializers.IntegerField(
+        source='assigned_sub_dealer.assigned_dealer.id',
+        read_only=True
+    )
+
+    admin_id = serializers.IntegerField(
+        source='assigned_sub_dealer.assigned_dealer.assigned_admin.id',
+        read_only=True
+    )
+
     class Meta:
         model = PromotorProfile
-        fields = ['id', 'promotor_id', 'first_name', 'last_name', 'email', 'mobile_number', 'city_name', 'created_at']
+        fields = [
+            'id', 'promotor_id', 'first_name', 'last_name',
+            'email', 'mobile_number', 'city_name', 'created_at',
 
+            # ✅ ADD THESE
+            'assigned_sub_dealer_id',
+            'dealer_id',
+            'admin_id',
+        ]
 
 class CustomerProfileSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(write_only=True)

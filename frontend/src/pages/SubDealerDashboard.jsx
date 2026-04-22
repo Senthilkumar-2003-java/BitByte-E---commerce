@@ -232,32 +232,27 @@ export default function SubDealerDashboard() {
       const dlList = dlRes.data
       const adList = adRes.data
 
-      const enriched = prRes.data.map(p => {
-        const subDealer = sdList.find(s =>
-          String(s.id) === String(p.assigned_sub_dealer_id) ||
-          String(s.sub_dealer_id) === String(p.sub_dealer_id) ||
-          String(s.id) === String(p.sub_dealer) ||
-          String(s.id) === String(p.created_by)
-        ) || null
+  const enriched = prRes.data.map(p => {
 
-        const dealer = dlList.find(d =>
-          String(d.id) === String(p.assigned_dealer_id) ||
-          String(d.dealer_id) === String(p.dealer_id) ||
-          String(d.id) === String(subDealer?.assigned_dealer_id) ||
-          String(d.id) === String(subDealer?.dealer_id) ||
-          String(d.id) === String(subDealer?.dealer)
-        ) || null
+  const subDealer = sdList.find(
+    s => s.id === p.assigned_sub_dealer_id
+  ) || null
 
-        const admin = adList.find(a =>
-          String(a.id) === String(p.assigned_admin_id) ||
-          String(a.id) === String(dealer?.assigned_admin_id) ||
-          String(a.id) === String(dealer?.admin_id) ||
-          String(a.admin_id) === String(dealer?.admin_id) ||
-          String(a.id) === String(dealer?.admin)
-        ) || null
+  const dealer = dlList.find(
+    d => d.id === p.dealer_id
+  ) || null
 
-        return { ...p, _subDealer: subDealer, _dealer: dealer, _admin: admin }
-      })
+  const admin = adList.find(
+    a => a.id === p.admin_id
+  ) || null
+
+  return {
+    ...p,
+    _subDealer: subDealer,
+    _dealer: dealer,
+    _admin: admin
+  }
+})
 
       setPromotors(enriched)
       setSubDealers(sdList)
