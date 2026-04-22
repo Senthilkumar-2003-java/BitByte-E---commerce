@@ -218,7 +218,7 @@ export default function SubDealerDashboard() {
 
               <p style={secLabel('#c4b5fd')}>Account Info</p>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'14px' }}>
-                <div><label style={lbl}>Initial</label><input name="initial" value={form.initial} onChange={handleChange} maxLength={5} placeholder="Mr/Ms/Mrs" className="sd-inp" style={inp}/></div>
+                <div><label style={lbl}>Initial</label><input name="initial" value={form.initial} onChange={handleChange} maxLength={5} className="sd-inp" style={inp}/></div>
                 <div><label style={lbl}>First Name *</label><input name="first_name" value={form.first_name} onChange={handleChange} required maxLength={100} className="sd-inp" style={inp}/></div>
                 <div><label style={lbl}>Last Name *</label><input name="last_name" value={form.last_name} onChange={handleChange} required maxLength={100} className="sd-inp" style={inp}/></div>
                 <div><label style={lbl}>Mobile *</label><input name="mobile_number" maxLength={10} value={form.mobile_number} onChange={handleChange} required className="sd-inp" style={inp}/></div>
@@ -263,18 +263,13 @@ export default function SubDealerDashboard() {
                   </select>
                 </div>
                 <div><label style={lbl}>Sub Dealer Name</label>
-                  <input value={selectedSubDealer?.name || ''} readOnly placeholder="Auto fetch" style={{ ...inp, opacity:0.5, cursor:'not-allowed' }}/>
-                </div>
+<input value={selectedSubDealer?.first_name || ''} readOnly placeholder="Auto fetch" style={{ ...inp, opacity:0.5, cursor:'not-allowed' }}/>                </div>
                 <div><label style={lbl}>Sub Dealer Contact</label>
                   <input value={selectedSubDealer?.mobile_number || ''} readOnly placeholder="Auto fetch" style={{ ...inp, opacity:0.5, cursor:'not-allowed' }}/>
                 </div>
               </div>
 
-              <p style={secLabel('#c4b5fd')}>Promotor Info</p>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'14px' }}>
-                <div><label style={lbl}>Promotor Name *</label><input name="promotor_name" value={form.promotor_name} onChange={handleChange} required maxLength={50} className="sd-inp" style={inp}/></div>
-                <div><label style={lbl}>Promotor Contact *</label><input name="promotor_contact_no" value={form.promotor_contact_no} onChange={handleChange} required maxLength={10} className="sd-inp" style={inp}/></div>
-              </div>
+         
 
               <div style={{ display:'flex', gap:'12px', marginTop:'6px' }}>
                 <button type="submit" className="sd-grad-btn"

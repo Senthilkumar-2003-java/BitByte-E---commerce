@@ -217,7 +217,7 @@ export default function PromotorDashboard() {
 
               <p style={secLabel('#6ee7b7')}>Account Info</p>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'14px' }}>
-                <div><label style={lbl}>Initial</label><input name="initial" value={form.initial} onChange={handleChange} maxLength={5} placeholder="Mr/Ms/Mrs" className="pr-inp" style={inp}/></div>
+                <div><label style={lbl}>Initial</label><input name="initial" value={form.initial} onChange={handleChange} maxLength={5} className="pr-inp" style={inp}/></div>
                 <div><label style={lbl}>First Name *</label><input name="first_name" value={form.first_name} onChange={handleChange} required maxLength={100} className="pr-inp" style={inp}/></div>
                 <div><label style={lbl}>Last Name *</label><input name="last_name" value={form.last_name} onChange={handleChange} required maxLength={100} className="pr-inp" style={inp}/></div>
                 <div><label style={lbl}>Mobile *</label><input name="mobile_number" maxLength={10} value={form.mobile_number} onChange={handleChange} required className="pr-inp" style={inp}/></div>
