@@ -83,7 +83,7 @@ function createDealerPopup(d, i, anchorEl, dark, subtext, text, currentAdmin) {
     <div style="border-radius:9px;padding:10px;margin-bottom:6px;background:${adminBoxBg};border:1px solid ${adminBoxBd};">
 <div style="display:inline-block;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(74,222,128,0.12);color:#4ade80;border:1px solid rgba(74,222,128,0.3);margin-bottom:6px;">🛡️ ADMIN</div>  
     <div style="font-size:10px;color:#4ade80;font-family:monospace;margin-bottom:3px;">${currentAdmin?.admin_id || '—'}</div>
-      <div style="font-size:13px;font-weight:700;color:${text};margin-bottom:5px;">${currentAdmin?.first_name || currentAdmin?.name || '—'}</div>
+      <div style="font-size:13px;font-weight:700;color:${text};margin-bottom:5px;">${currentAdmin?.first_name || currentAdmin?.admin_name || '—'}</div>
       <div style="font-size:11px;color:${subtext};margin-bottom:2px;">📞 ${currentAdmin?.mobile_number || currentAdmin?.admin_contact_no || '—'}</div>
       <div style="font-size:11px;color:${subtext};">📍 ${currentAdmin?.city_name || '—'}</div>
     </div>
@@ -100,7 +100,7 @@ function createDealerPopup(d, i, anchorEl, dark, subtext, text, currentAdmin) {
     <div style="background:${dealerBoxBg};border:1px solid ${dealerBoxBd};border-radius:10px;padding:10px;">
       <div style="display:inline-block;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(34,211,238,0.12);color:#22d3ee;border:1px solid rgba(34,211,238,0.25);margin-bottom:6px;">DEALER</div>
       <div style="font-size:10px;color:${c};font-family:monospace;margin-bottom:3px;">${d.dealer_id}</div>
-      <div style="font-size:14px;font-weight:700;color:${text};margin-bottom:6px;">${d.name}</div>
+      <div style="font-size:14px;font-weight:700;color:${text};margin-bottom:6px;">${d.first_name || ''}</div>
       <div style="font-size:11px;color:${subtext};margin-bottom:2px;">📞 ${d.mobile_number}</div>
       <div style="font-size:11px;color:${subtext};">📍 ${d.city_name}</div>
     </div>
@@ -367,7 +367,7 @@ export default function AdminDashboard() {
                           onMouseEnter={e => {
                             clearTimeout(_dhideTimer)
                             setActiveDealer(d)
-                            createDealerPopup(d, i, e.currentTarget, dark, subtext, text, d)
+                            createDealerPopup(d, i, e.currentTarget, dark, subtext, text, d._admin)
                           }}
                           onMouseLeave={() => {
                             removeDealerPopup()
@@ -375,7 +375,7 @@ export default function AdminDashboard() {
                           }}
                         >
                           <div style={{ fontSize: 9, color: c, fontFamily: 'monospace', marginBottom: 4 }}>{d.dealer_id}</div>
-                          <div style={{ color: text, fontWeight: 700, fontSize: 13, marginBottom: 6 }}>{d.name}</div>
+                          <div style={{ color: text, fontWeight: 700, fontSize: 13, marginBottom: 6 }}>{d.first_name || ''}</div>
                           <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 2 }}>📞 {d.mobile_number}</div>
                           <div style={{ color: '#94a3b8', fontSize: 11 }}>📍 {d.city_name}</div>
                           <div style={{ marginTop: 8, width: '100%', height: 2, borderRadius: 2, background: `linear-gradient(90deg,${c}44,${c}cc)` }} />
@@ -474,7 +474,7 @@ export default function AdminDashboard() {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '15px' }}>
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${inpBorder}` }}>
-                    {['Dealer ID', 'First Name', 'Last Name', 'Email', 'Mobile', 'City', 'Created'].map(h => (
+                    {['Dealer ID', 'First Name','Last Name', 'Email', 'Mobile', 'City', 'Created'].map(h => (
                       <th key={h} style={{ padding: '14px 16px', textAlign: 'left', color: subtext, fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
                     ))}
                   </tr>
@@ -483,8 +483,7 @@ export default function AdminDashboard() {
                   {dealers.map((c, i) => (
                     <tr key={i} className="ad-tr" style={{ borderBottom: `1px solid ${border}` }}>
                       <td style={{ padding: '14px 16px', color: '#4ade80', fontFamily: 'monospace', fontSize: '13px' }}>{c.dealer_id}</td>
-                      <td style={{ padding: '14px 16px', color: text }}>{c.first_name}</td>
-                      <td style={{ padding: '14px 16px', color: text }}>{c.last_name}</td>
+                      <td style={{ padding: '14px 16px', color: text }}>{c.first_name || ''}</td>
                       <td style={{ padding: '14px 16px', color: subtext }}>{c.email}</td>
                       <td style={{ padding: '14px 16px', color: subtext }}>{c.mobile_number}</td>
                       <td style={{ padding: '14px 16px', color: subtext }}>{c.city_name}</td>
