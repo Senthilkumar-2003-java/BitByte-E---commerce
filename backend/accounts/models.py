@@ -157,7 +157,9 @@ class SubDealerProfile(models.Model):
         related_name='assigned_sub_dealers'
     )
 
-    name = models.CharField(max_length=100)
+    initial = models.CharField(max_length=5, blank=True)
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
     mobile_number = models.CharField(max_length=10)
 
     door_no = models.CharField(max_length=25, blank=True, null=True)
@@ -186,7 +188,7 @@ class SubDealerProfile(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.name
+        return f"{self.first_name} {self.last_name}"
 
 # ✅ Promotor (created by Sub Dealer)
 class PromotorProfile(models.Model):

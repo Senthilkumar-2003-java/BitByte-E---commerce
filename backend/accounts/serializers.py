@@ -130,7 +130,7 @@ class SubDealerProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = SubDealerProfile
         fields = [
-            'id', 'email', 'password', 'name', 'mobile_number',
+            'id', 'email', 'password', 'initial', 'first_name', 'last_name', 'mobile_number',
             'door_no', 'street_name', 'town_name', 'city_name',
             'district', 'state', 'aadhaar_no', 'pan_no',
             'occupation', 'occupation_detail', 'annual_salary',
@@ -171,7 +171,7 @@ class SubDealerListSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email')
     class Meta:
         model = SubDealerProfile
-        fields = ['id', 'sub_dealer_id', 'name', 'email', 'mobile_number', 'city_name', 'created_at']
+        fields = ['id', 'sub_dealer_id', 'first_name', 'last_name', 'email', 'mobile_number', 'city_name', 'created_at']
 
 
 
