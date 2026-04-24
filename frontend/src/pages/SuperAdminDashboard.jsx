@@ -59,18 +59,19 @@ function TreeNode({ node, role, depth = 0, dark, text, subtext, colorIdx = 0, an
           transition: 'all 0.3s ease',
           position: 'relative',
         }}
-        onMouseEnter={e => {
-          e.currentTarget.style.transform = 'translateY(-3px)'
-          e.currentTarget.style.boxShadow = `0 8px 24px rgba(${hexToRgb(c)},0.25)`
-          e.currentTarget.style.borderColor = `rgba(${hexToRgb(c)},0.7)`
-          showChainPopup(e.currentTarget, ancestors, { node, role }, dark, text, subtext, superAdminEmail)
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.transform = 'translateY(0)'
-          e.currentTarget.style.boxShadow = 'none'
-          e.currentTarget.style.borderColor = `rgba(${hexToRgb(c)},0.35)`
-          scheduleHideChainPopup()
-        }}
+      onMouseEnter={e => {
+  clearTimeout(_chainHideTimer)
+  e.currentTarget.style.transform = 'translateY(-3px)'
+  e.currentTarget.style.boxShadow = `0 8px 24px rgba(${hexToRgb(c)},0.25)`
+  e.currentTarget.style.borderColor = `rgba(${hexToRgb(c)},0.7)`
+  showChainPopup(e.currentTarget, ancestors, { node, role }, dark, text, subtext, superAdminEmail)
+}}
+      onMouseLeave={e => {
+  e.currentTarget.style.transform = 'translateY(0)'
+  e.currentTarget.style.boxShadow = 'none'
+  e.currentTarget.style.borderColor = `rgba(${hexToRgb(c)},0.35)`
+  _chainHideTimer = setTimeout(() => removeChainPopup(), 300)
+}}
       >
         {/* Role Badge */}
         <div style={{
@@ -102,11 +103,35 @@ function TreeNode({ node, role, depth = 0, dark, text, subtext, colorIdx = 0, an
           <div style={{ color: subtext, fontSize: '11px' }}>📍 {node.city_name}</div>
         )}
 
-        {/* Gradient bar */}
-        <div style={{
-          marginTop: '8px', width: '100%', height: 2, borderRadius: 2,
-          background: `linear-gradient(90deg,rgba(${hexToRgb(c)},0.2),${c})`,
-        }} />
+      {/* Gradient bar */}
+<div style={{
+  marginTop: '8px', width: '100%', height: 2, borderRadius: 2,
+  background: `linear-gradient(90deg,rgba(${hexToRgb(c)},0.2),${c})`,
+}} />
+
+{/* Print Button */}
+<button
+  onClick={e => {
+    e.stopPropagation()
+    printPersonCard(node, role, cfg, c)
+  }}
+  style={{
+    marginTop: '8px', width: '100%',
+    padding: '3px 0', fontSize: '9px', fontWeight: 700,
+    background: `rgba(${hexToRgb(c)},0.1)`,
+    border: `1px solid rgba(${hexToRgb(c)},0.35)`,
+    borderRadius: '6px', color: c, cursor: 'pointer',
+    letterSpacing: '0.8px', transition: 'all 0.2s ease',
+  }}
+  onMouseEnter={e => {
+    e.currentTarget.style.background = `rgba(${hexToRgb(c)},0.25)`
+  }}
+  onMouseLeave={e => {
+    e.currentTarget.style.background = `rgba(${hexToRgb(c)},0.1)`
+  }}
+>
+  🖨️ PRINT
+</button>
 
         {/* Expand indicator */}
         {hasChildren && (
@@ -214,10 +239,111 @@ function removeChainPopup() {
 
 function scheduleHideChainPopup() {
   clearTimeout(_chainHideTimer)
-  _chainHideTimer = setTimeout(() => removeChainPopup(), 150)
+  _chainHideTimer = setTimeout(() => removeChainPopup(), 200)
 }
 
+function printPersonCard(node, role, cfg, color) {
+  const roleTitle = {
+    admin:      'ADMIN',
+    dealer:     'DEALER',
+    sub_dealer: 'SUB DEALER',
+    promotor:   'PROMOTOR',
+    customer:   'CUSTOMER',
+  }[role] || role.toUpperCase()
+
+  const idVal = node[cfg.idKey] || node.id || '—'
+  const name = [node.first_name, node.last_name].filter(Boolean).join(' ') || '—'
+  const phone = node.mobile_number || '—'
+  const city = node.city_name || '—'
+
+  const printWindow = window.open('', '_blank')
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>${roleTitle} — ${name}</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+          font-family: 'Inter', system-ui, sans-serif;
+          background: #f8fafc;
+          display: flex; justify-content: center; align-items: center;
+          min-height: 100vh; padding: 40px;
+        }
+        .card {
+          background: #ffffff;
+          border: 2px solid ${color};
+          border-radius: 16px;
+          padding: 36px 40px;
+          max-width: 420px;
+          width: 100%;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        .role-badge {
+          display: inline-block;
+          font-size: 11px; font-weight: 800;
+          padding: 4px 14px; border-radius: 20px;
+          background: ${color}22;
+          color: ${color};
+          border: 1px solid ${color}66;
+          letter-spacing: 1.2px;
+          margin-bottom: 20px;
+        }
+        .id {
+          font-family: monospace;
+          font-size: 12px;
+          color: ${color};
+          margin-bottom: 8px;
+        }
+        .name {
+          font-size: 22px; font-weight: 800;
+          color: #020617;
+          margin-bottom: 16px;
+          line-height: 1.2;
+        }
+        .info-row {
+          display: flex; align-items: center; gap: 10px;
+          font-size: 14px; color: #475569;
+          margin-bottom: 10px;
+        }
+        .divider {
+          height: 2px;
+          background: linear-gradient(90deg, ${color}33, ${color});
+          border-radius: 2px;
+          margin: 20px 0;
+        }
+        .footer {
+          font-size: 10px; color: #94a3b8;
+          text-align: center; margin-top: 20px;
+          letter-spacing: 0.5px;
+        }
+        @media print {
+          body { background: white; padding: 0; }
+          .card { box-shadow: none; border: 2px solid ${color}; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <div class="role-badge">${cfg.label} ${roleTitle}</div>
+        <div class="id">${idVal}</div>
+        <div class="name">${name}</div>
+        <div class="divider"></div>
+        <div class="info-row">📞 ${phone}</div>
+        <div class="info-row">📍 ${city}</div>
+        <div class="footer">BitByte — Printed on ${new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'long', year:'numeric' })}</div>
+      </div>
+      <script>
+        window.onload = () => { window.print() }
+      </script>
+    </body>
+    </html>
+  `)
+  printWindow.document.close()
+} 
+
 function showChainPopup(anchorEl, ancestors, current, dark, text, subtext, superAdminEmail) {
+  clearTimeout(_chainHideTimer)
   removeChainPopup()
 
   const popupBg = dark
@@ -225,7 +351,6 @@ function showChainPopup(anchorEl, ancestors, current, dark, text, subtext, super
     : 'linear-gradient(160deg,#ffffff,#f1f5f9)'
   const popupBorder = dark ? 'rgba(34,211,238,0.2)' : 'rgba(37,99,235,0.2)'
 
-  // Full chain: Super Admin + ancestors + current
   const chain = [
     { type: 'super_admin', data: { email: superAdminEmail } },
     ...ancestors.map(a => ({ type: a.role, data: a.node })),
@@ -250,35 +375,47 @@ function showChainPopup(anchorEl, ancestors, current, dark, text, subtext, super
     const isLast = idx === chain.length - 1
     const isSuperAdmin = item.type === 'super_admin'
 
+    const arrowHtml = idx > 0 ? `
+      <div style="display:flex;justify-content:center;padding:3px 0;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
+          <div style="width:2px;height:10px;background:rgba(150,150,150,0.4);"></div>
+          <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid rgba(150,150,150,0.5);"></div>
+        </div>
+      </div>` : ''
+
     if (isSuperAdmin) {
       return `
-        <div style="border-radius:9px;padding:10px 12px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.25);margin-bottom:0;">
+        ${arrowHtml}
+        <div style="border-radius:9px;padding:10px 12px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.25);">
           <div style="font-size:9px;color:#ffd700;font-weight:700;margin-bottom:4px;">🛡️ SUPER ADMIN</div>
-          <div style="font-size:11px;color:${subtext};word-break:break-all;">${item.data.email || ''}</div>
+          <div style="font-size:11px;color:${subtext};word-break:break-all;">${item.data.email || '—'}</div>
         </div>
       `
     }
 
     const cfg = ROLE_LABELS[item.type]
     if (!cfg) return ''
-    const d = item.data
-    const idVal = d[cfg.idKey] || ''
-    const name = [d.first_name, d.last_name].filter(Boolean).join(' ') || '—'
+    const d = item.data || {}
+    const idVal = d[cfg.idKey] || d.id || '—'
+    const firstName = d.first_name || ''
+    const lastName = d.last_name || ''
+    const name = [firstName, lastName].filter(Boolean).join(' ') || '—'
+    const phone = d.mobile_number || d.phone || '—'
+    const city = d.city_name || d.city || ''
 
     return `
-      ${!isLast || idx > 0 ? `
-        <div style="display:flex;justify-content:center;padding:3px 0;">
-          <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
-            <div style="width:2px;height:10px;background:rgba(${hexToRgb(cfg.color)},0.45);"></div>
-            <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid rgba(${hexToRgb(cfg.color)},0.55);"></div>
-          </div>
-        </div>` : ''}
-      <div style="border-radius:9px;padding:10px 12px;background:rgba(${hexToRgb(cfg.color)},0.06);border:1px solid rgba(${hexToRgb(cfg.color)},${isLast ? '0.5' : '0.2'});${isLast ? `box-shadow:0 0 12px rgba(${hexToRgb(cfg.color)},0.15);` : ''}">
-        <div style="font-size:9px;color:${cfg.color};font-weight:700;margin-bottom:4px;">${cfg.emoji} ${cfg.label}${isLast ? ' <span style="font-size:8px;opacity:0.7;">(YOU ARE HERE)</span>' : ''}</div>
+      ${arrowHtml}
+      <div style="border-radius:9px;padding:10px 12px;
+        background:rgba(${hexToRgb(cfg.color)},0.06);
+        border:1px solid rgba(${hexToRgb(cfg.color)},${isLast ? '0.55' : '0.2'});
+        ${isLast ? `box-shadow:0 0 14px rgba(${hexToRgb(cfg.color)},0.18);` : ''}">
+        <div style="font-size:9px;color:${cfg.color};font-weight:700;margin-bottom:4px;">
+          ${cfg.emoji} ${cfg.label}${isLast ? ' <span style="font-size:8px;opacity:0.6;">(CURRENT)</span>' : ''}
+        </div>
         <div style="font-size:10px;color:${cfg.color};font-family:monospace;margin-bottom:3px;">${idVal}</div>
         <div style="font-size:12px;color:${text};font-weight:700;margin-bottom:4px;">${name}</div>
-        ${d.mobile_number ? `<div style="font-size:11px;color:${subtext};margin-bottom:2px;">📞 ${d.mobile_number}</div>` : ''}
-        ${d.city_name ? `<div style="font-size:11px;color:${subtext};">📍 ${d.city_name}</div>` : ''}
+        ${phone !== '—' ? `<div style="font-size:11px;color:${subtext};margin-bottom:2px;">📞 ${phone}</div>` : ''}
+        ${city ? `<div style="font-size:11px;color:${subtext};">📍 ${city}</div>` : ''}
       </div>
     `
   }).join('')
@@ -292,12 +429,11 @@ function showChainPopup(anchorEl, ancestors, current, dark, text, subtext, super
 
   document.body.appendChild(el)
 
-  // Position
   const rect = anchorEl.getBoundingClientRect()
-  const popW = 240
+  const popW = 250
   const popH = el.scrollHeight || 300
   let left = rect.right + 14
-  let top = rect.top + (rect.height / 2) - (popH / 2)
+  let top = rect.top
   if (left + popW > window.innerWidth - 10) left = rect.left - popW - 14
   if (top < 8) top = 8
   if (top + popH > window.innerHeight - 8) top = window.innerHeight - popH - 8
