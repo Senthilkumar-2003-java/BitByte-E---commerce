@@ -223,15 +223,20 @@ export default function SubDealerDashboard() {
   const fetchAll = async () => {
     try {
       const [prRes, sdRes, dlRes, adRes] = await Promise.all([
-        api.get('/promotors/'),
+        api.get('/promotors/list/'),
         api.get('/sub-dealers/list/'),
         api.get('/dealers/list/'),
         api.get('/admins/list/'),
       ])
+
+      console.log('🔴 promotors data:', prRes.data)
+    console.log('🔴 subdealers data:', sdRes.data)
+
       const sdList = sdRes.data
       const dlList = dlRes.data
       const adList = adRes.data
 
+      
   const enriched = prRes.data.map(p => {
 
   const subDealer = sdList.find(

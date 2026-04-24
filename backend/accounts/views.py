@@ -89,7 +89,7 @@ class DealerListForDealerView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        if request.user.role not in ['dealer', 'admin', 'super_admin']:
+        if request.user.role not in ['sub_dealer', 'dealer', 'admin', 'super_admin']:
             return Response({'error': 'Permission denied'}, status=403)
         dealers = DealerProfile.objects.all()
         serializer = DealerListSerializer(dealers, many=True)
@@ -100,7 +100,7 @@ class AdminListForAdminView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        if request.user.role not in ['admin', 'super_admin']:
+        if request.user.role not in ['sub_dealer', 'dealer', 'admin', 'super_admin']:
             return Response({'error': 'Permission denied'}, status=403)
         admins = AdminProfile.objects.all()
         serializer = AdminListSerializer(admins, many=True)

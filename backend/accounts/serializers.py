@@ -245,16 +245,13 @@ class PromotorProfileSerializer(serializers.ModelSerializer):
 class PromotorListSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email')
 
-    # ✅ ADD THESE 3 LINES
     assigned_sub_dealer_id = serializers.IntegerField(
         source='assigned_sub_dealer.id', read_only=True
     )
-
     dealer_id = serializers.IntegerField(
         source='assigned_sub_dealer.assigned_dealer.id',
         read_only=True
     )
-
     admin_id = serializers.IntegerField(
         source='assigned_sub_dealer.assigned_dealer.assigned_admin.id',
         read_only=True
@@ -265,8 +262,6 @@ class PromotorListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'promotor_id', 'first_name', 'last_name',
             'email', 'mobile_number', 'city_name', 'created_at',
-
-            # ✅ ADD THESE
             'assigned_sub_dealer_id',
             'dealer_id',
             'admin_id',
