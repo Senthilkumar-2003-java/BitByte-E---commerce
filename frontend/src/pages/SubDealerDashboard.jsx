@@ -50,15 +50,21 @@ function createPromotorPopup(p, i, anchorEl, dark, subtextColor, textColor, hier
 
   const el = document.createElement('div')
   el.id = 'promotor-sd-popup'
-  el.style.cssText = `
-    position:fixed; z-index:9999;
-    background:${popupBg}; border:1px solid ${popupBorder};
-    border-radius:14px; padding:14px;
-    box-shadow:0 16px 48px rgba(0,0,0,0.5);
-    animation:proSDPopupIn 0.25s cubic-bezier(0.22,1,0.36,1) both;
-    min-width:220px; max-width:260px;
-    display:flex; flex-direction:column; align-items:stretch;
-  `
+ el.style.cssText = `
+  position:fixed; z-index:9999;
+  background:${popupBg}; border:1px solid ${popupBorder};
+  border-radius:14px; padding:14px;
+  box-shadow:0 16px 48px rgba(0,0,0,0.5);
+  animation:proSDPopupIn 0.25s cubic-bezier(0.22,1,0.36,1) both;
+  min-width:220px; max-width:260px;
+  max-height:82vh;
+  overflow-y:auto;
+  overflow-x:hidden;
+  scroll-behavior:smooth;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(167,139,250,0.4) transparent;
+  display:flex; flex-direction:column; align-items:stretch;
+`
 
   function tierBox(badge, badgeColor, boxBg, boxBorder, id, name, contact, city) {
     return `
@@ -220,51 +226,37 @@ export default function SubDealerDashboard() {
     return () => { window.removeEventListener('resize',handleResize); window.removeEventListener('mousemove',handleMouseMove); cancelAnimationFrame(animationFrameId) }
   }, [dark])
 
-  const fetchAll = async () => {
-    try {
-      const [prRes, sdRes, dlRes, adRes] = await Promise.all([
-        api.get('/promotors/list/'),
-        api.get('/sub-dealers/list/'),
-        api.get('/dealers/list/'),
-        api.get('/admins/list/'),
-      ])
+const fetchAll = async () => {
+  try {
+    const [prRes, sdRes, dlRes, adRes] = await Promise.allSettled([
+      api.get('/promotors/list/'),
+      api.get('/sub-dealers/list/'),
+      api.get('/dealers/list/'),
+      api.get('/admins/list/'),
+    ])
 
-      console.log('🔴 promotors data:', prRes.data)
-    console.log('🔴 subdealers data:', sdRes.data)
+    const prList = prRes.status === 'fulfilled' ? prRes.value.data : []
+    const sdList = sdRes.status === 'fulfilled' ? sdRes.value.data : []
+    const dlList = dlRes.status === 'fulfilled' ? dlRes.value.data : []
+    const adList = adRes.status === 'fulfilled' ? adRes.value.data : []
 
-      const sdList = sdRes.data
-      const dlList = dlRes.data
-      const adList = adRes.data
+    console.log('promotors:', prList)
 
-      
-  const enriched = prRes.data.map(p => {
+    const enriched = prList.map(p => {
+      const subDealer = sdList.find(s => s.id === p.assigned_sub_dealer_id) || null
+      const dealer    = dlList.find(d => d.id === p.dealer_id) || null
+      const admin     = adList.find(a => a.id === p.admin_id) || null
+      return { ...p, _subDealer: subDealer, _dealer: dealer, _admin: admin }
+    })
 
-  const subDealer = sdList.find(
-    s => s.id === p.assigned_sub_dealer_id
-  ) || null
-
-  const dealer = dlList.find(
-    d => d.id === p.dealer_id
-  ) || null
-
-  const admin = adList.find(
-    a => a.id === p.admin_id
-  ) || null
-
-  return {
-    ...p,
-    _subDealer: subDealer,
-    _dealer: dealer,
-    _admin: admin
+    setPromotors(enriched)
+    setSubDealers(sdList)
+    setDealers(dlList)
+    setAdmins(adList)
+  } catch (err) {
+    console.error('fetchAll error:', err)
   }
-})
-
-      setPromotors(enriched)
-      setSubDealers(sdList)
-      setDealers(dlList)
-      setAdmins(adList)
-    } catch (err) { console.error(err) }
-  }
+}
 
   useEffect(() => { fetchAll() }, [])
 

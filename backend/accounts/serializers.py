@@ -324,8 +324,12 @@ class CustomerProfileSerializer(serializers.ModelSerializer):
 
 class CustomerListSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email')
+    assigned_promotor_id = serializers.IntegerField(
+        source='assigned_promotor.id', read_only=True
+    )
+
     class Meta:
         model = CustomerProfile
-        fields = ['id', 'customer_id', 'first_name', 'last_name', 'email', 'mobile_number', 'city_name', 'created_at']        
-
+        fields = ['id', 'customer_id', 'first_name', 'last_name', 'email', 
+                  'mobile_number', 'city_name', 'created_at', 'assigned_promotor_id']
 

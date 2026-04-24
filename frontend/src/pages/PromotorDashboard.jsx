@@ -72,14 +72,20 @@ function createCustomerPopup(cust, i, anchorEl, dark, hierarchy) {
   const el = document.createElement('div')
   el.id = 'customer-popup'
   el.style.cssText = `
-    position:fixed; z-index:9999;
-    background:${popupBg}; border:1px solid ${popupBorder};
-    border-radius:14px; padding:14px;
-    box-shadow:0 16px 48px rgba(0,0,0,0.5);
-    animation:custPopupIn 0.25s cubic-bezier(0.22,1,0.36,1) both;
-    min-width:220px; max-width:260px;
-    display:flex; flex-direction:column; align-items:stretch;
-  `
+  position:fixed; z-index:9999;
+  background:${popupBg}; border:1px solid ${popupBorder};
+  border-radius:14px; padding:14px;
+  box-shadow:0 16px 48px rgba(0,0,0,0.5);
+  animation:custPopupIn 0.25s cubic-bezier(0.22,1,0.36,1) both;
+  min-width:220px; max-width:260px;
+  max-height:82vh;
+  overflow-y:auto;
+  overflow-x:hidden;
+  scroll-behavior:smooth;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(244,114,182,0.4) transparent;
+  display:flex; flex-direction:column; align-items:stretch;
+`
 
   el.innerHTML = `
     <div style="font-size:9px;color:${accentColor};font-weight:700;letter-spacing:1.3px;margin-bottom:10px;
@@ -226,61 +232,37 @@ export default function PromotorDashboard() {
     return () => { window.removeEventListener('resize',handleResize); window.removeEventListener('mousemove',handleMouseMove); cancelAnimationFrame(animationFrameId) }
   }, [dark])
 
-  const fetchAll = async () => {
-    try {
-      const [custRes, proRes, sdRes, dlRes, adRes] = await Promise.all([
-        api.get('/customers/'),
-        api.get('/promotors/list/'),
-        api.get('/sub-dealers/list/'),
-        api.get('/dealers/list/'),
-        api.get('/admins/list/'),
-      ])
-      const proList = proRes.data
-      const sdList  = sdRes.data
-      const dlList  = dlRes.data
-      const adList  = adRes.data
+const fetchAll = async () => {
+  try {
+    const [custRes, proRes, sdRes, dlRes, adRes] = await Promise.allSettled([
+      api.get('/customers/'),
+      api.get('/promotors/list/'),
+      api.get('/sub-dealers/list/'),
+      api.get('/dealers/list/'),
+      api.get('/admins/list/'),
+    ])
 
-      const enriched = custRes.data.map(cust => {
-        // Find promotor who created this customer
-        const promotor = proList.find(p =>
-          String(p.id) === String(cust.assigned_promotor_id) ||
-          String(p.promotor_id) === String(cust.promotor_id) ||
-          String(p.id) === String(cust.promotor) ||
-          String(p.id) === String(cust.created_by)
-        ) || null
+    const custList = custRes.status === 'fulfilled' ? custRes.value.data : []
+    const proList  = proRes.status  === 'fulfilled' ? proRes.value.data  : []
+    const sdList   = sdRes.status   === 'fulfilled' ? sdRes.value.data   : []
+    const dlList   = dlRes.status   === 'fulfilled' ? dlRes.value.data   : []
+    const adList   = adRes.status   === 'fulfilled' ? adRes.value.data   : []
 
-        // Find sub dealer of that promotor
-        const subDealer = sdList.find(s =>
-          String(s.id) === String(promotor?.assigned_sub_dealer_id) ||
-          String(s.sub_dealer_id) === String(promotor?.sub_dealer_id) ||
-          String(s.id) === String(promotor?.sub_dealer)
-        ) || null
+    const enriched = custList.map(cust => {
+      const promotor  = proList.find(p => p.id == cust.assigned_promotor_id) || null
+      const subDealer = sdList.find(s  => s.id == promotor?.assigned_sub_dealer_id) || null
+      const dealer    = dlList.find(d  => d.id == subDealer?.assigned_dealer_id) || null
+      const admin     = adList.find(a  => a.id == dealer?.assigned_admin_id) || null
+      return { ...cust, _promotor: promotor, _subDealer: subDealer, _dealer: dealer, _admin: admin }
+    })
 
-        // Find dealer of that sub dealer
-        const dealer = dlList.find(d =>
-          String(d.id) === String(subDealer?.assigned_dealer_id) ||
-          String(d.dealer_id) === String(subDealer?.dealer_id) ||
-          String(d.id) === String(subDealer?.dealer)
-        ) || null
-
-        // Find admin of that dealer
-        const admin = adList.find(a =>
-          String(a.id) === String(dealer?.assigned_admin_id) ||
-          String(a.id) === String(dealer?.admin_id) ||
-          String(a.admin_id) === String(dealer?.admin_id) ||
-          String(a.id) === String(dealer?.admin)
-        ) || null
-
-        return { ...cust, _promotor: promotor, _subDealer: subDealer, _dealer: dealer, _admin: admin }
-      })
-
-      setCustomers(enriched)
-      setPromotors(proList)
-      setSubDealers(sdList)
-      setDealers(dlList)
-      setAdmins(adList)
-    } catch (err) { console.error(err) }
-  }
+    setCustomers(enriched)
+    setPromotors(proList)
+    setSubDealers(sdList)
+    setDealers(dlList)
+    setAdmins(adList)
+  } catch (err) { console.error(err) }
+}
 
   useEffect(() => { fetchAll() }, [])
 

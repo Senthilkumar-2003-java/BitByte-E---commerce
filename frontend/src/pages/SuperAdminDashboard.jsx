@@ -14,15 +14,15 @@ const COLORS = ['#22d3ee', '#a78bfa', '#34d399', '#f472b6', '#f59e0b', '#60a5fa'
 
 // ─── ROLE CONFIG ───────────────────────────────────────────────────────────────
 const ROLE_CFG = {
-  admin:      { color: '#22d3ee',  label: '🛡️ ADMIN',      idKey: 'admin_id' },
-  dealer:     { color: '#4ade80',  label: '🏪 DEALER',     idKey: 'dealer_id' },
-  sub_dealer: { color: '#f59e0b',  label: '🔗 SUB DEALER', idKey: 'sub_dealer_id' },
-  promotor:   { color: '#a78bfa',  label: '🌟 PROMOTOR',   idKey: 'promotor_id' },
-  customer:   { color: '#f472b6',  label: '👤 CUSTOMER',   idKey: 'customer_id' },
+  admin: { color: '#22d3ee', label: '🛡️ ADMIN', idKey: 'admin_id' },
+  dealer: { color: '#4ade80', label: '🏪 DEALER', idKey: 'dealer_id' },
+  sub_dealer: { color: '#f59e0b', label: '🔗 SUB DEALER', idKey: 'sub_dealer_id' },
+  promotor: { color: '#a78bfa', label: '🌟 PROMOTOR', idKey: 'promotor_id' },
+  customer: { color: '#f472b6', label: '👤 CUSTOMER', idKey: 'customer_id' },
 }
 
 // ─── TREE NODE COMPONENT ───────────────────────────────────────────────────────
-function TreeNode({ node, role, depth = 0, dark, text, subtext, colorIdx = 0 }) {
+function TreeNode({ node, role, depth = 0, dark, text, subtext, colorIdx = 0, ancestors = [], superAdminEmail = '' }) {
   const [expanded, setExpanded] = useState(depth < 2)
   const cfg = ROLE_CFG[role]
   const c = COLORS[colorIdx % COLORS.length]
@@ -63,11 +63,13 @@ function TreeNode({ node, role, depth = 0, dark, text, subtext, colorIdx = 0 }) 
           e.currentTarget.style.transform = 'translateY(-3px)'
           e.currentTarget.style.boxShadow = `0 8px 24px rgba(${hexToRgb(c)},0.25)`
           e.currentTarget.style.borderColor = `rgba(${hexToRgb(c)},0.7)`
+          showChainPopup(e.currentTarget, ancestors, { node, role }, dark, text, subtext, superAdminEmail)
         }}
         onMouseLeave={e => {
           e.currentTarget.style.transform = 'translateY(0)'
           e.currentTarget.style.boxShadow = 'none'
           e.currentTarget.style.borderColor = `rgba(${hexToRgb(c)},0.35)`
+          scheduleHideChainPopup()
         }}
       >
         {/* Role Badge */}
@@ -133,46 +135,49 @@ function TreeNode({ node, role, depth = 0, dark, text, subtext, colorIdx = 0 }) 
       {/* Children */}
       {hasChildren && expanded && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-          {/* Vertical stem */}
-          <div style={{
-            width: 2, height: 28,
-            background: `linear-gradient(180deg,${c},rgba(${hexToRgb(c)},0.3))`,
-            marginTop: '10px',
-          }} />
 
-          {/* Horizontal bar */}
-          {children.length > 1 && (
+          {/* ── Vertical stem down from parent ── */}
+          <div style={{ width: 2, height: 28, background: `linear-gradient(180deg,${c},rgba(${hexToRgb(c)},0.3))`, marginTop: '10px' }} />
+
+          {/* ── Horizontal line + children ── */}
+          <div style={{ position: 'relative', width: '100%' }}>
+
+            {/* Horizontal connector line — spans full width */}
+            {children.length > 1 && (
+              <div style={{
+                position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+                background: `rgba(${hexToRgb(c)},0.45)`,
+              }} />
+            )}
+
+            {/* Children row */}
             <div style={{
-              height: 2,
-              background: `linear-gradient(90deg,transparent,rgba(${hexToRgb(c)},0.5),transparent)`,
-              alignSelf: 'stretch', margin: '0 20px',
-            }} />
-          )}
-
-          {/* Child nodes row */}
-          <div style={{
-            display: 'flex', gap: '16px', justifyContent: 'center',
-            flexWrap: 'wrap', alignItems: 'flex-start', paddingTop: '0',
-          }}>
-            {children.map((child, ci) => (
-              <div key={child.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                {/* Vertical stem to child */}
-                <div style={{
-                  width: 2, height: children.length > 1 ? 20 : 0,
-                  background: `rgba(${hexToRgb(c)},0.5)`,
-                }} />
-                <TreeNode
-                  node={child}
-                  role={childRole}
-                  depth={depth + 1}
-                  dark={dark}
-                  text={text}
-                  subtext={subtext}
-                  colorIdx={colorIdx + ci + 1}
-                />
-              </div>
-            ))}
+              display: 'flex',
+              justifyContent: children.length === 1 ? 'center' : 'space-between',
+              alignItems: 'flex-start',
+              gap: '8px',
+              paddingTop: '0',
+            }}>
+              {children.map((child, ci) => (
+                <div key={child.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: children.length === 1 ? '0 0 auto' : 1 }}>
+                  {/* Vertical stem down to each child */}
+                  <div style={{ width: 2, height: 20, background: `rgba(${hexToRgb(c)},0.5)` }} />
+                  <TreeNode
+                    node={child}
+                    role={childRole}
+                    depth={depth + 1}
+                    dark={dark}
+                    text={text}
+                    subtext={subtext}
+                    colorIdx={colorIdx + ci + 1}
+                    ancestors={[...ancestors, { node, role }]}
+                    superAdminEmail={superAdminEmail}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
+
         </div>
       )}
     </div>
@@ -189,6 +194,120 @@ function hexToRgb(hex) {
 
 let _popupEl = null
 let _hideTimer = null
+
+// ─── CHAIN POPUP (hover on any tree node) ──────────────────────────────────
+const ROLE_LABELS = {
+  admin: { emoji: '🛡️', label: 'ADMIN', color: '#22d3ee', idKey: 'admin_id' },
+  dealer: { emoji: '🏪', label: 'DEALER', color: '#4ade80', idKey: 'dealer_id' },
+  sub_dealer: { emoji: '🔗', label: 'SUB DEALER', color: '#f59e0b', idKey: 'sub_dealer_id' },
+  promotor: { emoji: '🌟', label: 'PROMOTOR', color: '#a78bfa', idKey: 'promotor_id' },
+  customer: { emoji: '👤', label: 'CUSTOMER', color: '#f472b6', idKey: 'customer_id' },
+}
+
+let _chainPopupEl = null
+let _chainHideTimer = null
+
+function removeChainPopup() {
+  document.querySelectorAll('#chain-popup').forEach(el => el.remove())
+  _chainPopupEl = null
+}
+
+function scheduleHideChainPopup() {
+  clearTimeout(_chainHideTimer)
+  _chainHideTimer = setTimeout(() => removeChainPopup(), 150)
+}
+
+function showChainPopup(anchorEl, ancestors, current, dark, text, subtext, superAdminEmail) {
+  removeChainPopup()
+
+  const popupBg = dark
+    ? 'linear-gradient(160deg,#091525,#060e1c)'
+    : 'linear-gradient(160deg,#ffffff,#f1f5f9)'
+  const popupBorder = dark ? 'rgba(34,211,238,0.2)' : 'rgba(37,99,235,0.2)'
+
+  // Full chain: Super Admin + ancestors + current
+  const chain = [
+    { type: 'super_admin', data: { email: superAdminEmail } },
+    ...ancestors.map(a => ({ type: a.role, data: a.node })),
+    { type: current.role, data: current.node },
+  ]
+
+  const el = document.createElement('div')
+  el.id = 'chain-popup'
+  el.style.cssText = `
+    position:fixed; z-index:9999;
+    background:${popupBg}; border:1px solid ${popupBorder};
+    border-radius:14px; padding:14px 16px;
+    box-shadow:0 16px 48px rgba(0,0,0,0.55);
+    animation:popupIn 0.25s cubic-bezier(0.22,1,0.36,1) both;
+    min-width:210px; max-width:250px;
+    max-height:82vh; overflow-y:auto; overflow-x:hidden;
+    scroll-behavior:smooth; scrollbar-width:thin;
+    scrollbar-color:rgba(34,211,238,0.35) transparent;
+  `
+
+  const itemsHtml = chain.map((item, idx) => {
+    const isLast = idx === chain.length - 1
+    const isSuperAdmin = item.type === 'super_admin'
+
+    if (isSuperAdmin) {
+      return `
+        <div style="border-radius:9px;padding:10px 12px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.25);margin-bottom:0;">
+          <div style="font-size:9px;color:#ffd700;font-weight:700;margin-bottom:4px;">🛡️ SUPER ADMIN</div>
+          <div style="font-size:11px;color:${subtext};word-break:break-all;">${item.data.email || ''}</div>
+        </div>
+      `
+    }
+
+    const cfg = ROLE_LABELS[item.type]
+    if (!cfg) return ''
+    const d = item.data
+    const idVal = d[cfg.idKey] || ''
+    const name = [d.first_name, d.last_name].filter(Boolean).join(' ') || '—'
+
+    return `
+      ${!isLast || idx > 0 ? `
+        <div style="display:flex;justify-content:center;padding:3px 0;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
+            <div style="width:2px;height:10px;background:rgba(${hexToRgb(cfg.color)},0.45);"></div>
+            <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid rgba(${hexToRgb(cfg.color)},0.55);"></div>
+          </div>
+        </div>` : ''}
+      <div style="border-radius:9px;padding:10px 12px;background:rgba(${hexToRgb(cfg.color)},0.06);border:1px solid rgba(${hexToRgb(cfg.color)},${isLast ? '0.5' : '0.2'});${isLast ? `box-shadow:0 0 12px rgba(${hexToRgb(cfg.color)},0.15);` : ''}">
+        <div style="font-size:9px;color:${cfg.color};font-weight:700;margin-bottom:4px;">${cfg.emoji} ${cfg.label}${isLast ? ' <span style="font-size:8px;opacity:0.7;">(YOU ARE HERE)</span>' : ''}</div>
+        <div style="font-size:10px;color:${cfg.color};font-family:monospace;margin-bottom:3px;">${idVal}</div>
+        <div style="font-size:12px;color:${text};font-weight:700;margin-bottom:4px;">${name}</div>
+        ${d.mobile_number ? `<div style="font-size:11px;color:${subtext};margin-bottom:2px;">📞 ${d.mobile_number}</div>` : ''}
+        ${d.city_name ? `<div style="font-size:11px;color:${subtext};">📍 ${d.city_name}</div>` : ''}
+      </div>
+    `
+  }).join('')
+
+  el.innerHTML = `
+    <div style="font-size:9px;color:#a5f3fc;font-weight:700;letter-spacing:1.2px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid ${popupBorder};">
+      🔗 HIERARCHY CHAIN
+    </div>
+    ${itemsHtml}
+  `
+
+  document.body.appendChild(el)
+
+  // Position
+  const rect = anchorEl.getBoundingClientRect()
+  const popW = 240
+  const popH = el.scrollHeight || 300
+  let left = rect.right + 14
+  let top = rect.top + (rect.height / 2) - (popH / 2)
+  if (left + popW > window.innerWidth - 10) left = rect.left - popW - 14
+  if (top < 8) top = 8
+  if (top + popH > window.innerHeight - 8) top = window.innerHeight - popH - 8
+  el.style.left = left + 'px'
+  el.style.top = top + 'px'
+
+  el.addEventListener('mouseenter', () => clearTimeout(_chainHideTimer))
+  el.addEventListener('mouseleave', () => scheduleHideChainPopup())
+  _chainPopupEl = el
+}
 
 function removeAdminPopup() {
   document.querySelectorAll('#admin-popup').forEach(el => el.remove())
@@ -217,13 +336,19 @@ function createAdminPopup(a, i, anchorEl, dark, subtext, text) {
   const el = document.createElement('div')
   el.id = 'admin-popup'
   el.style.cssText = `
-    position:fixed; z-index:9999;
-    background:${popupBg}; border:1px solid ${popupBorder};
-    border-radius:14px; padding:14px;
-    box-shadow:0 16px 48px rgba(0,0,0,0.45);
-    animation:popupIn 0.25s cubic-bezier(0.22,1,0.36,1) both;
-    min-width:200px; max-width:240px;
-  `
+  position:fixed; z-index:9999;
+  background:${popupBg}; border:1px solid ${popupBorder};
+  border-radius:14px; padding:14px;
+  box-shadow:0 16px 48px rgba(0,0,0,0.45);
+  animation:popupIn 0.25s cubic-bezier(0.22,1,0.36,1) both;
+  min-width:200px; max-width:240px;
+  max-height:82vh;
+  overflow-y:auto;
+  overflow-x:hidden;
+  scroll-behavior:smooth;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(34,211,238,0.4) transparent;
+`
   el.innerHTML = `
     <div style="font-size:9px;color:${accentColor};font-weight:700;letter-spacing:1.3px;margin-bottom:11px;padding-bottom:9px;border-bottom:1px solid ${popupBorder};display:flex;align-items:center;gap:6px;">
       <span style="width:5px;height:5px;border-radius:50%;background:${accentColor};display:inline-block;"></span>
@@ -498,8 +623,14 @@ export default function SuperAdminDashboard() {
 
               {/* Tree */}
               {!hierarchyLoading && hierarchyData && (
-                <div style={{ overflowX: 'auto', overflowY: 'visible', paddingBottom: '20px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 'max-content', margin: '0 auto' }}>
+                <div style={{
+                  overflowX: 'auto',
+                  overflowY: 'auto',
+                  paddingBottom: '20px',
+                  scrollBehavior: 'smooth',
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: 'rgba(34,211,238,0.35) transparent',
+                }}>                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 'max-content', margin: '0 auto' }}>
 
                     {/* Super Admin Root Node */}
                     <div style={{
@@ -544,6 +675,8 @@ export default function SuperAdminDashboard() {
                                 text={text}
                                 subtext={subtext}
                                 colorIdx={ai}
+                                ancestors={[]}
+                                superAdminEmail={localStorage.getItem('email') || ''}
                               />
                             </div>
                           ))}
