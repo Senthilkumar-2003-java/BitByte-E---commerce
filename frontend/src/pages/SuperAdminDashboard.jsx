@@ -111,10 +111,10 @@ function TreeNode({ node, role, depth = 0, dark, text, subtext, colorIdx = 0, an
 
 {/* Print Button */}
 <button
-  onClick={e => {
-    e.stopPropagation()
-    printPersonCard(node, role, cfg, c)
-  }}
+ onClick={e => {
+  e.stopPropagation()
+  printPersonCard(node, role, cfg, c, ancestors, superAdminEmail)
+}}
   style={{
     marginTop: '8px', width: '100%',
     padding: '3px 0', fontSize: '9px', fontWeight: 700,
@@ -134,16 +134,16 @@ function TreeNode({ node, role, depth = 0, dark, text, subtext, colorIdx = 0, an
 </button>
 
         {/* Expand indicator */}
-        {hasChildren && (
-          <div style={{
-            position: 'absolute', top: '8px', right: '10px',
-            color: c, fontSize: '10px', fontWeight: 700,
-            transition: 'transform 0.3s ease',
-            transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
-          }}>
-            ▼
-          </div>
-        )}
+      {hasChildren && (
+  <div style={{
+    position: 'absolute', top: '8px', right: '10px',
+    color: c, fontSize: '10px', fontWeight: 700,
+    transition: 'transform 0.3s ease',
+    transform: expanded ? 'rotate(0deg)' : 'rotate(180deg)',
+  }}>
+    ▲
+  </div>
+)}
 
         {/* Children count badge */}
         {hasChildren && (
@@ -242,100 +242,153 @@ function scheduleHideChainPopup() {
   _chainHideTimer = setTimeout(() => removeChainPopup(), 200)
 }
 
-function printPersonCard(node, role, cfg, color) {
-  const roleTitle = {
-    admin:      'ADMIN',
-    dealer:     'DEALER',
-    sub_dealer: 'SUB DEALER',
-    promotor:   'PROMOTOR',
-    customer:   'CUSTOMER',
-  }[role] || role.toUpperCase()
+function printPersonCard(node, role, cfg, color, ancestors, superAdminEmail) {
+  const ROLE_PRINT = {
+    admin:      { label: 'ADMIN',      emoji: '🛡️', idKey: 'admin_id' },
+    dealer:     { label: 'DEALER',     emoji: '🏪', idKey: 'dealer_id' },
+    sub_dealer: { label: 'SUB DEALER', emoji: '🔗', idKey: 'sub_dealer_id' },
+    promotor:   { label: 'PROMOTOR',   emoji: '🌟', idKey: 'promotor_id' },
+    customer:   { label: 'CUSTOMER',   emoji: '👤', idKey: 'customer_id' },
+  }
 
-  const idVal = node[cfg.idKey] || node.id || '—'
-  const name = [node.first_name, node.last_name].filter(Boolean).join(' ') || '—'
-  const phone = node.mobile_number || '—'
-  const city = node.city_name || '—'
+  // Full chain: Super Admin + ancestors + current
+  const chain = [
+    { type: 'super_admin', data: { email: superAdminEmail } },
+    ...ancestors.map(a => ({ type: a.role, data: a.node })),
+    { type: role, data: node },
+  ]
+
+  const chainHtml = chain.map((item, idx) => {
+    const isLast = idx === chain.length - 1
+
+    if (item.type === 'super_admin') {
+      return `
+        <div class="chain-item ${isLast ? 'current' : ''}">
+          <div class="chain-role">🛡️ SUPER ADMIN</div>
+          <div class="chain-email">${item.data.email || '—'}</div>
+        </div>
+        ${idx < chain.length - 1 ? `<div class="chain-arrow"><div style="display:flex;flex-direction:column;align-items:center;gap:0px;"><div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:9px solid #94a3b8;"></div><div style="width:2px;height:12px;background:linear-gradient(180deg,#94a3b8,rgba(148,163,184,0.2));"></div></div></div>` : ''}      `
+    }
+
+    const r = ROLE_PRINT[item.type]
+    if (!r) return ''
+    const d = item.data || {}
+    const idVal = d[r.idKey] || d.id || '—'
+    const name = [d.first_name, d.last_name].filter(Boolean).join(' ') || '—'
+    const phone = d.mobile_number || '—'
+    const city = d.city_name || '—'
+
+    return `
+      <div class="chain-item ${isLast ? 'current' : ''}">
+        <div class="chain-role">${r.emoji} ${r.label}</div>
+        <div class="chain-id">${idVal}</div>
+        <div class="chain-name">${name}</div>
+        <div class="chain-info">📞 ${phone}</div>
+        <div class="chain-info">📍 ${city}</div>
+      </div>
+      ${idx < chain.length - 1 ? `<div class="chain-arrow"><div style="display:flex;flex-direction:column;align-items:center;gap:0px;"><div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:9px solid #94a3b8;"></div><div style="width:2px;height:12px;background:linear-gradient(180deg,#94a3b8,rgba(148,163,184,0.2));"></div></div></div>` : ''}
+    `
+  }).join('')
+
+  const currentName = [node.first_name, node.last_name].filter(Boolean).join(' ') || '—'
+  const roleLabel = ROLE_PRINT[role]?.label || role.toUpperCase()
 
   const printWindow = window.open('', '_blank')
   printWindow.document.write(`
     <!DOCTYPE html>
     <html>
     <head>
-      <title>${roleTitle} — ${name}</title>
+      <title>${roleLabel} — ${currentName}</title>
       <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin:0; padding:0; box-sizing:border-box; }
         body {
           font-family: 'Inter', system-ui, sans-serif;
           background: #f8fafc;
-          display: flex; justify-content: center; align-items: center;
-          min-height: 100vh; padding: 40px;
+          padding: 40px;
+          display: flex; justify-content: center;
         }
-        .card {
+        .wrapper {
+          max-width: 480px; width: 100%;
+        }
+        .header {
+          text-align: center;
+          margin-bottom: 28px;
+        }
+        .header h1 {
+          font-size: 20px; font-weight: 800; color: #020617;
+        }
+        .header p {
+          font-size: 12px; color: #64748b; margin-top: 4px;
+        }
+        .chain-item {
           background: #ffffff;
-          border: 2px solid ${color};
-          border-radius: 16px;
-          padding: 36px 40px;
-          max-width: 420px;
-          width: 100%;
-          box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+          border: 1.5px solid #e2e8f0;
+          border-radius: 12px;
+          padding: 14px 18px;
         }
-        .role-badge {
-          display: inline-block;
-          font-size: 11px; font-weight: 800;
-          padding: 4px 14px; border-radius: 20px;
-          background: ${color}22;
+        .chain-item.current {
+          border-color: ${color};
+          background: ${color}11;
+          box-shadow: 0 4px 16px ${color}22;
+        }
+        .chain-role {
+          font-size: 10px; font-weight: 800;
+          color: #64748b; letter-spacing: 1px;
+          margin-bottom: 4px;
+          text-transform: uppercase;
+        }
+        .chain-item.current .chain-role {
           color: ${color};
-          border: 1px solid ${color}66;
-          letter-spacing: 1.2px;
-          margin-bottom: 20px;
         }
-        .id {
-          font-family: monospace;
-          font-size: 12px;
-          color: ${color};
-          margin-bottom: 8px;
+        .chain-id {
+          font-family: monospace; font-size: 11px;
+          color: ${color}; margin-bottom: 4px;
         }
-        .name {
-          font-size: 22px; font-weight: 800;
-          color: #020617;
-          margin-bottom: 16px;
-          line-height: 1.2;
+        .chain-name {
+          font-size: 16px; font-weight: 800;
+          color: #020617; margin-bottom: 6px;
         }
-        .info-row {
-          display: flex; align-items: center; gap: 10px;
-          font-size: 14px; color: #475569;
-          margin-bottom: 10px;
+        .chain-email {
+          font-size: 12px; color: #475569;
         }
-        .divider {
-          height: 2px;
-          background: linear-gradient(90deg, ${color}33, ${color});
-          border-radius: 2px;
-          margin: 20px 0;
+        .chain-info {
+          font-size: 12px; color: #475569;
+          margin-top: 3px;
         }
+        .chain-arrow {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0;
+}
+.chain-arrow::before {
+  content: '';
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
         .footer {
+          text-align: center;
           font-size: 10px; color: #94a3b8;
-          text-align: center; margin-top: 20px;
-          letter-spacing: 0.5px;
+          margin-top: 24px; letter-spacing: 0.5px;
         }
         @media print {
-          body { background: white; padding: 0; }
-          .card { box-shadow: none; border: 2px solid ${color}; }
+          body { background: white; padding: 20px; }
+          .chain-item { box-shadow: none; }
         }
       </style>
     </head>
     <body>
-      <div class="card">
-        <div class="role-badge">${cfg.label} ${roleTitle}</div>
-        <div class="id">${idVal}</div>
-        <div class="name">${name}</div>
-        <div class="divider"></div>
-        <div class="info-row">📞 ${phone}</div>
-        <div class="info-row">📍 ${city}</div>
-        <div class="footer">BitByte — Printed on ${new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'long', year:'numeric' })}</div>
+      <div class="wrapper">
+        <div class="header">
+          <h1>BitByte — ${roleLabel} Profile</h1>
+          <p>Hierarchy Chain Report</p>
+        </div>
+        ${chainHtml}
+        <div class="footer">
+          Printed on ${new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'long', year:'numeric' })}
+        </div>
       </div>
-      <script>
-        window.onload = () => { window.print() }
-      </script>
+      <script>window.onload = () => { window.print() }<\/script>
     </body>
     </html>
   `)
@@ -375,13 +428,13 @@ function showChainPopup(anchorEl, ancestors, current, dark, text, subtext, super
     const isLast = idx === chain.length - 1
     const isSuperAdmin = item.type === 'super_admin'
 
-    const arrowHtml = idx > 0 ? `
-      <div style="display:flex;justify-content:center;padding:3px 0;">
-        <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
-          <div style="width:2px;height:10px;background:rgba(150,150,150,0.4);"></div>
-          <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid rgba(150,150,150,0.5);"></div>
-        </div>
-      </div>` : ''
+const arrowHtml = idx > 0 ? `
+  <div style="display:flex;justify-content:center;padding:4px 0;">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:0px;">
+      <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:9px solid rgba(34,211,238,0.6);"></div>
+      <div style="width:2px;height:12px;background:linear-gradient(180deg,rgba(34,211,238,0.5),rgba(34,211,238,0.1));"></div>
+    </div>
+  </div>` : ''
 
     if (isSuperAdmin) {
       return `
