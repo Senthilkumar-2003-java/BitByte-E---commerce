@@ -564,64 +564,53 @@ export default function SubDealerDashboard() {
 
 const fetchAll = async () => {
   try {
-    const [hierarchyRes, sdRes, dlRes, adRes] = await Promise.allSettled([
-      api.get('/hierarchy/full/'),
-      api.get('/sub-dealers/list/'),
-      api.get('/dealers/list/'),
-      api.get('/admins/list/'),
+    const [promotorRes, customerRes, dashRes] = await Promise.allSettled([
+      api.get('/promotors/'),
+      api.get('/customers/'),   // ✅ customers also fetch
+      api.get('/dashboard/'),
     ])
 
-    const hierarchyData = hierarchyRes.status === 'fulfilled' ? hierarchyRes.value.data : null
-    const sdList = sdRes.status === 'fulfilled' ? sdRes.value.data : []
-    const dlList = dlRes.status === 'fulfilled' ? dlRes.value.data : []
-    const adList = adRes.status === 'fulfilled' ? adRes.value.data : []
+    const promotorList = promotorRes.status === 'fulfilled' ? promotorRes.value.data : []
+    const customerList = customerRes.status === 'fulfilled' ? customerRes.value.data : []
+    const dashData     = dashRes.status    === 'fulfilled' ? dashRes.value.data    : {}
 
-    if (hierarchyData?.super_admin_email) {
-      localStorage.setItem('superAdminEmail', hierarchyData.super_admin_email)
-    }
-
-    // Build nested sub dealer map from hierarchy
-    let nestedSDMap = {}
-    let myDealerData = null
-    let myAdminData = null
-
-    if (hierarchyData?.admins?.length > 0) {
-      hierarchyData.admins.forEach(admin => {
-        (admin.dealers || []).forEach(dealer => {
-          (dealer.sub_dealers || []).forEach(sd => {
-            nestedSDMap[String(sd.id)] = {
-              ...sd,
-              _dealer: dealer,
-              _admin: admin,
-            }
-          })
-          // Find current dealer by matching logged in user's sub dealers
-          if (!myDealerData && dealer.sub_dealers?.length > 0) {
-            myDealerData = dealer
-            myAdminData = admin
-          }
-        })
-      })
-    }
-
-    const enrichedSD = sdList.map(sd => {
-      const nested = nestedSDMap[String(sd.id)] || {}
-      return {
-        ...sd,
-        promotors: (nested.promotors || []).map(p => ({
-          ...p,
-          customers: p.customers || []
-        })),
-        _dealer: nested._dealer || dlList.find(d => String(d.id) === String(sd.assigned_dealer_id)) || null,
-        _admin: nested._admin || null,
+    // superAdminEmail fetch
+    try {
+      const hRes = await api.get('/hierarchy/full/')
+      if (hRes?.data?.super_admin_email) {
+        localStorage.setItem('superAdminEmail', hRes.data.super_admin_email)
       }
-    })
+    } catch(e) {}
 
-    setSubDealers(enrichedSD)
-    setDealers(dlList)
-    setAdmins(adList)
-    setPromotors([])
-  } catch (err) {
+    // ✅ promotors-ku customers attach pannurom
+    const enrichedPromotors = promotorList.map(p => ({
+      ...p,
+      customers: customerList.filter(c =>
+        String(c.assigned_promotor_id) === String(p.id)
+      ),
+    }))
+
+    // ✅ logged-in sub dealer as root node
+    const mySelf = {
+      id:            dashData.id,
+      sub_dealer_id: dashData.sub_dealer_id,
+      first_name:    dashData.first_name,
+      last_name:     dashData.last_name,
+      mobile_number: dashData.mobile_number,
+      city_name:     dashData.city_name,
+      promotors:     enrichedPromotors,
+      _dealer: dashData.dealer_id ? {
+        dealer_id:     dashData.dealer_id,
+        first_name:    dashData.dealer_name,
+        mobile_number: dashData.dealer_contact_no,
+      } : null,
+      _admin: null,
+    }
+
+    setSubDealers([mySelf])
+    setPromotors(promotorList)
+
+  } catch(err) {
     console.error('fetchAll error:', err)
   }
 }
@@ -718,14 +707,14 @@ const fetchAll = async () => {
 
         {/* PROMOTOR HIERARCHY MODAL */}
     {showHierarchy && (
-  <div onClick={() => { setShowHierarchy(false); setActiveSD(null); removeSubDealerPopup(); removeSDChainPopup() }}
+  <div onClick={() => { setShowHierarchy(false); removeSDChainPopup() }}
     style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', backdropFilter:'blur(8px)', zIndex:1000, display:'flex', alignItems:'flex-start', justifyContent:'center', paddingTop:'40px', overflowY:'auto' }}>
     <div onClick={e => e.stopPropagation()}
       style={{ background: dark ? '#0f172a' : '#f8fafc', border:'1px solid rgba(245,158,11,0.2)', borderRadius:'20px', padding:'32px', maxWidth:'1100px', width:'95%', marginBottom:'40px' }}>
 
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'28px', paddingBottom:'14px', borderBottom:'1px solid rgba(245,158,11,0.1)' }}>
         <span style={{ color:'#fcd34d', fontSize:'13px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em' }}>🏢 Sub Dealer Hierarchy</span>
-        <button onClick={() => { setShowHierarchy(false); setActiveSD(null); removeSubDealerPopup(); removeSDChainPopup() }}
+<button onClick={() => { setShowHierarchy(false); removeSDChainPopup() }}
           style={{ background:'transparent', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', borderRadius:'8px', padding:'6px 14px', cursor:'pointer', fontSize:'12px' }}>
           ✕ Close
         </button>
@@ -734,20 +723,19 @@ const fetchAll = async () => {
       <div style={{ overflowX:'auto', overflowY:'auto', scrollBehavior:'smooth', scrollbarWidth:'thin', scrollbarColor:'rgba(245,158,11,0.35) transparent' }}>
         <div style={{ display:'flex', flexDirection:'column', alignItems:'center', minWidth:'max-content', margin:'0 auto' }}>
 
-          {/* Dealer Root Node */}
-          <div style={{
-            background:'linear-gradient(135deg,rgba(245,158,11,0.13),rgba(34,211,238,0.08))',
-            border:'1px solid rgba(245,158,11,0.55)',
-            borderRadius:'16px', padding:'16px 48px',
-            fontWeight:800, fontSize:'16px', color:'#f59e0b',
-            animation:'sdPulseGlow 3s ease-in-out infinite',
-            boxShadow:'0 0 24px rgba(245,158,11,0.1)',
-          }}>
-            🏪 Dealer
-            <div style={{ fontSize:'11px', color:'#94a3b8', fontWeight:400, marginTop:'4px', textAlign:'center' }}>
-              {localStorage.getItem('email')}
-            </div>
-          </div>
+         <div style={{
+  background:'linear-gradient(135deg,rgba(167,139,250,0.13),rgba(34,211,238,0.08))',
+  border:'1px solid rgba(167,139,250,0.55)',
+  borderRadius:'16px', padding:'16px 48px',
+  fontWeight:800, fontSize:'16px', color:'#a78bfa',
+  animation:'proSDPulseGlow 3s ease-in-out infinite',
+  boxShadow:'0 0 24px rgba(167,139,250,0.1)',
+}}>
+  🔗 Sub Dealer
+  <div style={{ fontSize:'11px', color:'#94a3b8', fontWeight:400, marginTop:'4px', textAlign:'center' }}>
+    {localStorage.getItem('email')}
+  </div>
+</div>
 
           <div style={{ width:2, height:32, background:'linear-gradient(180deg,#f59e0b,rgba(245,158,11,0.3))' }}>
             <div style={{ position:'relative' }}>

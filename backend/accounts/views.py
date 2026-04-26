@@ -264,7 +264,7 @@ class CreateCustomerView(APIView):
         return Response(serializer.errors, status=400)
 
     def get(self, request):
-        if request.user.role != 'promotor':
+        if request.user.role not in ['promotor', 'sub_dealer', 'dealer', 'admin', 'super_admin']:
             return Response({'error': 'Permission denied'}, status=403)
         customers = CustomerProfile.objects.all().order_by('-created_at')
         serializer = CustomerListSerializer(customers, many=True)
@@ -297,7 +297,7 @@ class FullHierarchyView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        if request.user.role not in ['super_admin', 'admin']:
+        if request.user.role not in ['super_admin', 'admin', 'dealer', 'sub_dealer']:
             return Response({'error': 'Permission denied'}, status=403)
 
         if request.user.role == 'admin':
