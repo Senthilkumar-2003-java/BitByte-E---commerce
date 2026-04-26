@@ -166,6 +166,342 @@ function createPromotorPopup(p, i, anchorEl, dark, subtextColor, textColor, hier
   _ppopupEl = el
 }
 
+
+// ─── SD TREE NODE ─────────────────────────────────────────────────────────
+const SD_TREE_COLORS = ['#f59e0b', '#a78bfa', '#f472b6', '#22d3ee', '#4ade80', '#60a5fa']
+
+const SD_ROLE_CFG = {
+  sub_dealer: { color: '#f59e0b', label: '🔗 SUB DEALER', idKey: 'sub_dealer_id' },
+  promotor:   { color: '#a78bfa', label: '🌟 PROMOTOR',   idKey: 'promotor_id' },
+  customer:   { color: '#f472b6', label: '👤 CUSTOMER',   idKey: 'customer_id' },
+}
+
+const SD_ROLE_LABELS = {
+  sub_dealer: { emoji: '🔗', label: 'SUB DEALER', color: '#f59e0b', idKey: 'sub_dealer_id' },
+  promotor:   { emoji: '🌟', label: 'PROMOTOR',   color: '#a78bfa', idKey: 'promotor_id' },
+  customer:   { emoji: '👤', label: 'CUSTOMER',   color: '#f472b6', idKey: 'customer_id' },
+}
+
+let _sdChainPopupEl = null
+let _sdChainHideTimer = null
+
+function hexToRgbSD(hex) {
+  const r = parseInt(hex.slice(1,3),16)
+  const g = parseInt(hex.slice(3,5),16)
+  const b = parseInt(hex.slice(5,7),16)
+  return `${r},${g},${b}`
+}
+
+function removeSDChainPopup() {
+  document.querySelectorAll('#sd-chain-popup').forEach(el => el.remove())
+  _sdChainPopupEl = null
+}
+
+function scheduleHideSDChainPopup() {
+  clearTimeout(_sdChainHideTimer)
+  _sdChainHideTimer = setTimeout(() => removeSDChainPopup(), 200)
+}
+
+function showSDChainPopup(anchorEl, ancestors, current, dark, text, subtext, superAdminEmail, dealerData, adminData) {
+  clearTimeout(_sdChainHideTimer)
+  removeSDChainPopup()
+
+  const popupBg = dark ? 'linear-gradient(160deg,#091525,#060e1c)' : 'linear-gradient(160deg,#ffffff,#f1f5f9)'
+  const popupBorder = dark ? 'rgba(245,158,11,0.2)' : 'rgba(245,158,11,0.3)'
+
+  const chain = [
+    { type: 'super_admin', data: { email: superAdminEmail } },
+    ...(adminData ? [{ type: 'admin', data: adminData }] : []),
+    ...(dealerData ? [{ type: 'dealer', data: dealerData }] : []),
+    ...ancestors.map(a => ({ type: a.role, data: a.node })),
+    { type: current.role, data: current.node },
+  ]
+
+  const el = document.createElement('div')
+  el.id = 'sd-chain-popup'
+  el.style.cssText = `
+    position:fixed; z-index:9999;
+    background:${popupBg}; border:1px solid ${popupBorder};
+    border-radius:14px; padding:14px 16px;
+    box-shadow:0 16px 48px rgba(0,0,0,0.55);
+    animation:sdPopupIn 0.25s cubic-bezier(0.22,1,0.36,1) both;
+    min-width:300px; max-width:340px;
+    max-height:82vh; overflow-y:auto; overflow-x:hidden;
+    scroll-behavior:smooth; scrollbar-width:thin;
+    scrollbar-color:rgba(245,158,11,0.35) transparent;
+  `
+
+  const CHAIN_LABELS = {
+    super_admin: { emoji: '🛡️', label: 'SUPER ADMIN', color: '#ffd700', idKey: null },
+    admin:       { emoji: '🛡️', label: 'ADMIN',       color: '#4ade80', idKey: 'admin_id' },
+    dealer:      { emoji: '🏪', label: 'DEALER',      color: '#22d3ee', idKey: 'dealer_id' },
+    sub_dealer:  { emoji: '🔗', label: 'SUB DEALER',  color: '#f59e0b', idKey: 'sub_dealer_id' },
+    promotor:    { emoji: '🌟', label: 'PROMOTOR',    color: '#a78bfa', idKey: 'promotor_id' },
+    customer:    { emoji: '👤', label: 'CUSTOMER',    color: '#f472b6', idKey: 'customer_id' },
+  }
+
+  const itemsHtml = chain.map((item, idx) => {
+    const isLast = idx === chain.length - 1
+    const cfg = CHAIN_LABELS[item.type]
+    if (!cfg) return ''
+
+    const arrowHtml = idx > 0 ? `
+      <div style="display:flex;justify-content:center;padding:4px 0;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0px;">
+          <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:9px solid rgba(245,158,11,0.6);"></div>
+          <div style="width:2px;height:12px;background:linear-gradient(180deg,rgba(245,158,11,0.5),rgba(245,158,11,0.1));"></div>
+        </div>
+      </div>` : ''
+
+    if (item.type === 'super_admin') {
+      return `
+        ${arrowHtml}
+        <div style="border-radius:9px;padding:10px 12px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.25);">
+          <div style="font-size:9px;color:#ffd700;font-weight:700;margin-bottom:4px;">🛡️ SUPER ADMIN</div>
+          <div style="font-size:11px;color:${subtext};word-break:break-all;">${item.data.email || '—'}</div>
+        </div>`
+    }
+
+    const d = item.data || {}
+    const idVal = cfg.idKey ? (d[cfg.idKey] || d.id || '—') : ''
+    const name = [d.first_name, d.last_name].filter(Boolean).join(' ') || d.admin_name || d.dealer_name || '—'
+    const phone = d.mobile_number || d.admin_contact_no || '—'
+    const city = d.city_name || ''
+
+    return `
+      ${arrowHtml}
+      <div style="border-radius:9px;padding:10px 12px;
+        background:rgba(${hexToRgbSD(cfg.color)},0.06);
+        border:1px solid rgba(${hexToRgbSD(cfg.color)},${isLast ? '0.55' : '0.2'});
+        ${isLast ? `box-shadow:0 0 14px rgba(${hexToRgbSD(cfg.color)},0.18);` : ''}">
+        <div style="font-size:10px;color:${cfg.color};font-weight:700;margin-bottom:5px;">
+          ${cfg.emoji} ${cfg.label}${isLast ? ' <span style="font-size:8px;opacity:0.6;">(CURRENT)</span>' : ''}
+        </div>
+        ${idVal ? `<div style="font-size:11px;color:${cfg.color};font-family:monospace;margin-bottom:4px;">${idVal}</div>` : ''}
+        <div style="font-size:14px;color:${text};font-weight:700;margin-bottom:4px;">${name}</div>
+        ${phone !== '—' ? `<div style="font-size:12px;color:${subtext};margin-bottom:3px;">📞 ${phone}</div>` : ''}
+        ${city ? `<div style="font-size:12px;color:${subtext};">📍 ${city}</div>` : ''}
+      </div>`
+  }).join('')
+
+  el.innerHTML = `
+    <div style="font-size:9px;color:#fcd34d;font-weight:700;letter-spacing:1.2px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid ${popupBorder};">
+      🔗 HIERARCHY CHAIN
+    </div>
+    ${itemsHtml}
+  `
+
+  document.body.appendChild(el)
+
+  const rect = anchorEl.getBoundingClientRect()
+  const popW = 340
+  const popH = el.scrollHeight || 300
+  let left = rect.right + 14
+  let top = rect.top
+  if (left + popW > window.innerWidth - 10) left = rect.left - popW - 14
+  if (top < 8) top = 8
+  if (top + popH > window.innerHeight - 8) top = window.innerHeight - popH - 8
+  el.style.left = left + 'px'
+  el.style.top = top + 'px'
+
+  el.addEventListener('mouseenter', () => clearTimeout(_sdChainHideTimer))
+  el.addEventListener('mouseleave', () => scheduleHideSDChainPopup())
+  _sdChainPopupEl = el
+}
+
+function printSDPersonCard(node, role, color, ancestors, superAdminEmail, dealerData, adminData) {
+  const ROLE_PRINT = {
+    sub_dealer: { label: 'SUB DEALER', emoji: '🔗', idKey: 'sub_dealer_id' },
+    promotor:   { label: 'PROMOTOR',   emoji: '🌟', idKey: 'promotor_id' },
+    customer:   { label: 'CUSTOMER',   emoji: '👤', idKey: 'customer_id' },
+  }
+
+  const chain = [
+    { type: 'super_admin', data: { email: superAdminEmail } },
+    ...(adminData ? [{ type: 'admin', data: adminData }] : []),
+    ...(dealerData ? [{ type: 'dealer', data: dealerData }] : []),
+    ...ancestors.map(a => ({ type: a.role, data: a.node })),
+    { type: role, data: node },
+  ]
+
+  const PRINT_LABELS = {
+    super_admin: { label: 'SUPER ADMIN', emoji: '🛡️', idKey: null },
+    admin:       { label: 'ADMIN',       emoji: '🛡️', idKey: 'admin_id' },
+    dealer:      { label: 'DEALER',      emoji: '🏪', idKey: 'dealer_id' },
+    sub_dealer:  { label: 'SUB DEALER',  emoji: '🔗', idKey: 'sub_dealer_id' },
+    promotor:    { label: 'PROMOTOR',    emoji: '🌟', idKey: 'promotor_id' },
+    customer:    { label: 'CUSTOMER',    emoji: '👤', idKey: 'customer_id' },
+  }
+
+  const arrowDiv = `<div class="chain-arrow"><div style="display:flex;flex-direction:column;align-items:center;gap:0px;"><div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:9px solid #94a3b8;"></div><div style="width:2px;height:12px;background:linear-gradient(180deg,#94a3b8,rgba(148,163,184,0.2));"></div></div></div>`
+
+  const chainHtml = chain.map((item, idx) => {
+    const isLast = idx === chain.length - 1
+    const arrow = idx < chain.length - 1 ? arrowDiv : ''
+    const r = PRINT_LABELS[item.type]
+    if (!r) return ''
+    const d = item.data || {}
+
+    if (item.type === 'super_admin') {
+      return `<div class="chain-item"><div class="chain-role">🛡️ SUPER ADMIN</div><div class="chain-email">${d.email || '—'}</div></div>${arrow}`
+    }
+
+    const idVal = r.idKey ? (d[r.idKey] || d.id || '—') : ''
+    const name = [d.first_name, d.last_name].filter(Boolean).join(' ') || d.admin_name || '—'
+    const phone = d.mobile_number || d.admin_contact_no || '—'
+    const city = d.city_name || '—'
+
+    return `
+      <div class="chain-item ${isLast ? 'current' : ''}">
+        <div class="chain-role">${r.emoji} ${r.label}</div>
+        ${idVal ? `<div class="chain-id">${idVal}</div>` : ''}
+        <div class="chain-name">${name}</div>
+        <div class="chain-info">📞 ${phone}</div>
+        <div class="chain-info">📍 ${city}</div>
+      </div>${arrow}`
+  }).join('')
+
+  const roleLabel = ROLE_PRINT[role]?.label || role.toUpperCase()
+  const currentName = [node.first_name, node.last_name].filter(Boolean).join(' ') || '—'
+
+  const printWindow = window.open('', '_blank')
+  printWindow.document.write(`
+    <!DOCTYPE html><html><head>
+    <title>${roleLabel} — ${currentName}</title>
+    <style>
+      *{margin:0;padding:0;box-sizing:border-box;}
+      body{font-family:'Inter',system-ui,sans-serif;background:#f8fafc;padding:40px;display:flex;justify-content:center;}
+      .wrapper{max-width:480px;width:100%;}
+      .header{text-align:center;margin-bottom:28px;}
+      .header h1{font-size:20px;font-weight:800;color:#020617;}
+      .header p{font-size:12px;color:#64748b;margin-top:4px;}
+      .chain-item{background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;padding:14px 18px;}
+      .chain-item.current{border-color:${color};background:${color}11;box-shadow:0 4px 16px ${color}22;}
+      .chain-role{font-size:10px;font-weight:800;color:#64748b;letter-spacing:1px;margin-bottom:4px;text-transform:uppercase;}
+      .chain-item.current .chain-role{color:${color};}
+      .chain-id{font-family:monospace;font-size:11px;color:${color};margin-bottom:4px;}
+      .chain-name{font-size:16px;font-weight:800;color:#020617;margin-bottom:6px;}
+      .chain-email{font-size:12px;color:#475569;}
+      .chain-info{font-size:12px;color:#475569;margin-top:3px;}
+      .chain-arrow{display:flex;justify-content:center;padding:4px 0;}
+      .footer{text-align:center;font-size:10px;color:#94a3b8;margin-top:24px;}
+      @media print{body{background:white;padding:20px;}.chain-item{box-shadow:none;}}
+    </style>
+    </head><body>
+    <div class="wrapper">
+      <div class="header"><h1>BitByte — ${roleLabel} Profile</h1><p>Hierarchy Chain Report</p></div>
+      ${chainHtml}
+      <div class="footer">Printed on ${new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'})}</div>
+    </div>
+    <script>window.onload=()=>{window.print()}<\/script>
+    </body></html>
+  `)
+  printWindow.document.close()
+}
+
+function SDTreeNode({ node, role, depth=0, dark, text, subtext, colorIdx=0, ancestors=[], superAdminEmail='', dealerData=null, adminData=null }) {
+  const [expanded, setExpanded] = useState(depth < 2)
+  const cfg = SD_ROLE_CFG[role]
+  const c = SD_TREE_COLORS[colorIdx % SD_TREE_COLORS.length]
+
+  const childRole = { sub_dealer: 'promotor', promotor: 'customer' }[role]
+  const children = {
+    sub_dealer: node.promotors,
+    promotor: node.customers,
+  }[role] || []
+  const hasChildren = children.length > 0
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', minWidth:0 }}>
+      <div
+        onClick={() => hasChildren && setExpanded(!expanded)}
+        style={{
+          background: dark ? `rgba(${hexToRgbSD(c)},0.06)` : `rgba(${hexToRgbSD(c)},0.08)`,
+          border: `1px solid rgba(${hexToRgbSD(c)},0.35)`,
+          borderRadius:'12px', padding:'12px 16px',
+          minWidth:'160px', maxWidth:'200px',
+          cursor: hasChildren ? 'pointer' : 'default',
+          transition:'all 0.3s ease', position:'relative',
+        }}
+        onMouseEnter={e => {
+          clearTimeout(_sdChainHideTimer)
+          e.currentTarget.style.transform = 'translateY(-3px)'
+          e.currentTarget.style.boxShadow = `0 8px 24px rgba(${hexToRgbSD(c)},0.25)`
+          e.currentTarget.style.borderColor = `rgba(${hexToRgbSD(c)},0.7)`
+          showSDChainPopup(e.currentTarget, ancestors, { node, role }, dark, text, subtext, superAdminEmail, dealerData, adminData)
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.transform = 'translateY(0)'
+          e.currentTarget.style.boxShadow = 'none'
+          e.currentTarget.style.borderColor = `rgba(${hexToRgbSD(c)},0.35)`
+          _sdChainHideTimer = setTimeout(() => removeSDChainPopup(), 300)
+        }}
+      >
+        <div style={{ display:'inline-block', fontSize:'9px', fontWeight:700, padding:'2px 8px', borderRadius:'20px', marginBottom:'8px', background:`rgba(${hexToRgbSD(c)},0.15)`, color:c, border:`1px solid rgba(${hexToRgbSD(c)},0.35)` }}>
+          {cfg.label}
+        </div>
+        <div style={{ color:c, fontFamily:'monospace', fontSize:'10px', marginBottom:'4px', wordBreak:'break-all' }}>
+          {node[cfg.idKey]}
+        </div>
+        <div style={{ color:text, fontWeight:700, fontSize:'13px', marginBottom:'6px' }}>
+          {node.first_name || '—'} {node.last_name || ''}
+        </div>
+        <div style={{ color:subtext, fontSize:'11px', marginBottom:'2px' }}>📞 {node.mobile_number}</div>
+        {node.city_name && <div style={{ color:subtext, fontSize:'11px' }}>📍 {node.city_name}</div>}
+
+        <div style={{ marginTop:'8px', width:'100%', height:2, borderRadius:2, background:`linear-gradient(90deg,rgba(${hexToRgbSD(c)},0.2),${c})` }} />
+
+        <button
+          onClick={e => { e.stopPropagation(); printSDPersonCard(node, role, c, ancestors, superAdminEmail, dealerData, adminData) }}
+          style={{ marginTop:'8px', width:'100%', padding:'3px 0', fontSize:'9px', fontWeight:700, background:`rgba(${hexToRgbSD(c)},0.1)`, border:`1px solid rgba(${hexToRgbSD(c)},0.35)`, borderRadius:'6px', color:c, cursor:'pointer', letterSpacing:'0.8px', transition:'all 0.2s ease' }}
+          onMouseEnter={e => e.currentTarget.style.background = `rgba(${hexToRgbSD(c)},0.25)`}
+          onMouseLeave={e => e.currentTarget.style.background = `rgba(${hexToRgbSD(c)},0.1)`}
+        >🖨️ PRINT</button>
+
+        {hasChildren && (
+          <div style={{ position:'absolute', top:'8px', right:'10px', color:c, fontSize:'10px', fontWeight:700, transition:'transform 0.3s ease', transform: expanded ? 'rotate(0deg)' : 'rotate(180deg)' }}>▲</div>
+        )}
+        {hasChildren && (
+          <div style={{ position:'absolute', bottom:'-10px', left:'50%', transform:'translateX(-50%)', background:c, color:'#000', fontSize:'9px', fontWeight:800, padding:'1px 7px', borderRadius:'20px', whiteSpace:'nowrap' }}>
+            {children.length} {childRole?.replace('_',' ')}
+          </div>
+        )}
+      </div>
+
+      {hasChildren && expanded && (
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', width:'100%' }}>
+          <div style={{ width:2, height:28, background:`linear-gradient(180deg,${c},rgba(${hexToRgbSD(c)},0.3))`, marginTop:'10px' }} />
+          <div style={{ position:'relative', width:'100%' }}>
+            {children.length > 1 && (
+              <div style={{ position:'absolute', top:0, left:0, right:0, height:2, background:`rgba(${hexToRgbSD(c)},0.45)` }} />
+            )}
+            <div style={{ display:'flex', justifyContent: children.length===1 ? 'center' : 'space-between', alignItems:'flex-start', gap:'8px' }}>
+              {children.map((child, ci) => (
+                <div key={child.id} style={{ display:'flex', flexDirection:'column', alignItems:'center', flex: children.length===1 ? '0 0 auto' : 1 }}>
+                  <div style={{ width:2, height:20, background:`rgba(${hexToRgbSD(c)},0.5)` }} />
+                  <SDTreeNode
+                    node={child}
+                    role={childRole}
+                    depth={depth+1}
+                    dark={dark}
+                    text={text}
+                    subtext={subtext}
+                    colorIdx={colorIdx+ci+1}
+                    ancestors={[...ancestors, { node, role }]}
+                    superAdminEmail={superAdminEmail}
+                    dealerData={dealerData}
+                    adminData={adminData}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function SubDealerDashboard() {
   const navigate = useNavigate()
   const [dark, setDark] = useState(true)
@@ -228,31 +564,63 @@ export default function SubDealerDashboard() {
 
 const fetchAll = async () => {
   try {
-    const [prRes, sdRes, dlRes, adRes] = await Promise.allSettled([
-      api.get('/promotors/list/'),
+    const [hierarchyRes, sdRes, dlRes, adRes] = await Promise.allSettled([
+      api.get('/hierarchy/full/'),
       api.get('/sub-dealers/list/'),
       api.get('/dealers/list/'),
       api.get('/admins/list/'),
     ])
 
-    const prList = prRes.status === 'fulfilled' ? prRes.value.data : []
+    const hierarchyData = hierarchyRes.status === 'fulfilled' ? hierarchyRes.value.data : null
     const sdList = sdRes.status === 'fulfilled' ? sdRes.value.data : []
     const dlList = dlRes.status === 'fulfilled' ? dlRes.value.data : []
     const adList = adRes.status === 'fulfilled' ? adRes.value.data : []
 
-    console.log('promotors:', prList)
+    if (hierarchyData?.super_admin_email) {
+      localStorage.setItem('superAdminEmail', hierarchyData.super_admin_email)
+    }
 
-    const enriched = prList.map(p => {
-      const subDealer = sdList.find(s => s.id === p.assigned_sub_dealer_id) || null
-      const dealer    = dlList.find(d => d.id === p.dealer_id) || null
-      const admin     = adList.find(a => a.id === p.admin_id) || null
-      return { ...p, _subDealer: subDealer, _dealer: dealer, _admin: admin }
+    // Build nested sub dealer map from hierarchy
+    let nestedSDMap = {}
+    let myDealerData = null
+    let myAdminData = null
+
+    if (hierarchyData?.admins?.length > 0) {
+      hierarchyData.admins.forEach(admin => {
+        (admin.dealers || []).forEach(dealer => {
+          (dealer.sub_dealers || []).forEach(sd => {
+            nestedSDMap[String(sd.id)] = {
+              ...sd,
+              _dealer: dealer,
+              _admin: admin,
+            }
+          })
+          // Find current dealer by matching logged in user's sub dealers
+          if (!myDealerData && dealer.sub_dealers?.length > 0) {
+            myDealerData = dealer
+            myAdminData = admin
+          }
+        })
+      })
+    }
+
+    const enrichedSD = sdList.map(sd => {
+      const nested = nestedSDMap[String(sd.id)] || {}
+      return {
+        ...sd,
+        promotors: (nested.promotors || []).map(p => ({
+          ...p,
+          customers: p.customers || []
+        })),
+        _dealer: nested._dealer || dlList.find(d => String(d.id) === String(sd.assigned_dealer_id)) || null,
+        _admin: nested._admin || null,
+      }
     })
 
-    setPromotors(enriched)
-    setSubDealers(sdList)
+    setSubDealers(enrichedSD)
     setDealers(dlList)
     setAdmins(adList)
+    setPromotors([])
   } catch (err) {
     console.error('fetchAll error:', err)
   }
@@ -349,78 +717,78 @@ const fetchAll = async () => {
         </div>
 
         {/* PROMOTOR HIERARCHY MODAL */}
-        {showHierarchy && (
-          <div onClick={() => { setShowHierarchy(false); setActivePromotor(null); removePromotorPopup() }}
-            style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', backdropFilter:'blur(8px)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <div onClick={e => e.stopPropagation()}
-              style={{ background: dark ? '#0f172a' : '#f8fafc', border:'1px solid rgba(167,139,250,0.2)', borderRadius:'20px', padding:'32px', maxWidth:'960px', width:'95%', maxHeight:'80vh', overflowY:'auto' }}>
+    {showHierarchy && (
+  <div onClick={() => { setShowHierarchy(false); setActiveSD(null); removeSubDealerPopup(); removeSDChainPopup() }}
+    style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', backdropFilter:'blur(8px)', zIndex:1000, display:'flex', alignItems:'flex-start', justifyContent:'center', paddingTop:'40px', overflowY:'auto' }}>
+    <div onClick={e => e.stopPropagation()}
+      style={{ background: dark ? '#0f172a' : '#f8fafc', border:'1px solid rgba(245,158,11,0.2)', borderRadius:'20px', padding:'32px', maxWidth:'1100px', width:'95%', marginBottom:'40px' }}>
 
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'28px', paddingBottom:'14px', borderBottom:'1px solid rgba(167,139,250,0.1)' }}>
-                <span style={{ color:'#c4b5fd', fontSize:'13px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em' }}>🏢 Promotor Hierarchy</span>
-                <button onClick={() => { setShowHierarchy(false); setActivePromotor(null); removePromotorPopup() }}
-                  style={{ background:'transparent', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', borderRadius:'8px', padding:'6px 14px', cursor:'pointer', fontSize:'12px' }}>
-                  ✕ Close
-                </button>
-              </div>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'28px', paddingBottom:'14px', borderBottom:'1px solid rgba(245,158,11,0.1)' }}>
+        <span style={{ color:'#fcd34d', fontSize:'13px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em' }}>🏢 Sub Dealer Hierarchy</span>
+        <button onClick={() => { setShowHierarchy(false); setActiveSD(null); removeSubDealerPopup(); removeSDChainPopup() }}
+          style={{ background:'transparent', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', borderRadius:'8px', padding:'6px 14px', cursor:'pointer', fontSize:'12px' }}>
+          ✕ Close
+        </button>
+      </div>
 
-              <div style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
+      <div style={{ overflowX:'auto', overflowY:'auto', scrollBehavior:'smooth', scrollbarWidth:'thin', scrollbarColor:'rgba(245,158,11,0.35) transparent' }}>
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', minWidth:'max-content', margin:'0 auto' }}>
 
-                {/* Sub Dealer node — top */}
-                <div style={{
-                  background:'linear-gradient(135deg,rgba(167,139,250,0.13),rgba(34,211,238,0.08))',
-                  border:'1px solid rgba(167,139,250,0.55)',
-                  borderRadius:'14px', padding:'13px 36px',
-                  fontWeight:800, fontSize:'15px', color:'#a78bfa',
-                  whiteSpace:'nowrap', animation:'proSDPulseGlow 3s ease-in-out infinite'
-                }}>
-                  💎 Sub Dealer
-                </div>
-
-                <div style={{ width:2, height:28, background:'linear-gradient(180deg,#a78bfa,rgba(167,139,250,0.3))', position:'relative' }}>
-                  <div style={{ position:'absolute', bottom:-4, left:'50%', transform:'translateX(-50%)', width:7, height:7, borderRadius:'50%', background:'#a78bfa', animation:'proSDDotPulse 2s ease-in-out infinite' }} />
-                </div>
-
-                <div style={{ height:2, background:'linear-gradient(90deg,transparent,rgba(167,139,250,0.5),transparent)', alignSelf:'stretch', margin:'0 40px' }} />
-
-                {/* Promotor cards */}
-                <div style={{ display:'flex', gap:0, justifyContent:'space-around', alignSelf:'stretch', alignItems:'flex-start' }}>
-                  {promotors.length === 0 && <div style={{ color:'#94a3b8', padding:'40px' }}>No promotors yet.</div>}
-                  {promotors.map((p, i) => {
-                    const c = PROMOTOR_COLORS[i % PROMOTOR_COLORS.length]
-                    const isActive = activePromotor?.id === p.id
-                    return (
-                      <div key={p.id || i} style={{ display:'flex', flexDirection:'column', alignItems:'center', flex:1 }}>
-                        <div style={{ width:2, height:28, background:`linear-gradient(180deg,${c}88,${c}33)`, position:'relative' }}>
-                          <div style={{ position:'absolute', bottom:-3, left:'50%', transform:'translateX(-50%)', width:6, height:6, borderRadius:'50%', background:c, animation:`proSDDotPulse ${1.8+i*0.3}s ease-in-out infinite` }} />
-                        </div>
-                        <div
-                          className={`p-card${isActive ? ' p-active' : ''}`}
-                          onMouseEnter={e => {
-                            clearTimeout(_phideTimer)
-                            setActivePromotor(p)
-                            createPromotorPopup(p, i, e.currentTarget, dark, subtext, text, {
-                              superAdminEmail: localStorage.getItem('superAdminEmail') || localStorage.getItem('email') || '—',
-                              admin:     p._admin,
-                              dealer:    p._dealer,
-                              subDealer: p._subDealer,
-                            })
-                          }}
-                          onMouseLeave={() => schedulePromotorHide(setActivePromotor)}
-                        >
-                          <div style={{ fontSize:9, color:c, fontFamily:'monospace', marginBottom:4 }}>{p.promotor_id || '—'}</div>
-                          <div style={{ color:text, fontWeight:700, fontSize:13, marginBottom:6 }}>{p.first_name || ''}</div>
-                          <div style={{ color:'#94a3b8', fontSize:11, marginBottom:2 }}>📞 {p.mobile_number}</div>
-                          <div style={{ color:'#94a3b8', fontSize:11 }}>📍 {p.city_name}</div>
-                          <div style={{ marginTop:8, width:'100%', height:2, borderRadius:2, background:`linear-gradient(90deg,${c}44,${c}cc)` }} />
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
+          {/* Dealer Root Node */}
+          <div style={{
+            background:'linear-gradient(135deg,rgba(245,158,11,0.13),rgba(34,211,238,0.08))',
+            border:'1px solid rgba(245,158,11,0.55)',
+            borderRadius:'16px', padding:'16px 48px',
+            fontWeight:800, fontSize:'16px', color:'#f59e0b',
+            animation:'sdPulseGlow 3s ease-in-out infinite',
+            boxShadow:'0 0 24px rgba(245,158,11,0.1)',
+          }}>
+            🏪 Dealer
+            <div style={{ fontSize:'11px', color:'#94a3b8', fontWeight:400, marginTop:'4px', textAlign:'center' }}>
+              {localStorage.getItem('email')}
             </div>
           </div>
-        )}
+
+          <div style={{ width:2, height:32, background:'linear-gradient(180deg,#f59e0b,rgba(245,158,11,0.3))' }}>
+            <div style={{ position:'relative' }}>
+              <div style={{ position:'absolute', bottom:-4, left:'50%', transform:'translateX(-50%)', width:7, height:7, borderRadius:'50%', background:'#f59e0b', animation:'sdDotPulse 2s ease-in-out infinite' }} />
+            </div>
+          </div>
+
+          {subDealers.length > 0 ? (
+            <>
+              <div style={{ height:2, background:'linear-gradient(90deg,transparent,rgba(245,158,11,0.5),transparent)', width:'80%' }} />
+              <div style={{ display:'flex', gap:'32px', justifyContent:'center', alignItems:'flex-start', flexWrap:'wrap', paddingTop:0 }}>
+                {subDealers.map((sd, si) => (
+                  <div key={sd.id} style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
+                    <div style={{ width:2, height:24, background:'rgba(245,158,11,0.5)', position:'relative' }}>
+                      <div style={{ position:'absolute', bottom:-3, left:'50%', transform:'translateX(-50%)', width:6, height:6, borderRadius:'50%', background:SD_TREE_COLORS[si % SD_TREE_COLORS.length], animation:`sdDotPulse ${1.8+si*0.2}s ease-in-out infinite` }} />
+                    </div>
+                    <SDTreeNode
+                      node={sd}
+                      role="sub_dealer"
+                      depth={0}
+                      dark={dark}
+                      text={text}
+                      subtext={subtext}
+                      colorIdx={si}
+                      ancestors={[]}
+                      superAdminEmail={localStorage.getItem('superAdminEmail') || ''}
+                      dealerData={sd._dealer || null}
+                      adminData={sd._admin || null}
+                    />
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div style={{ color:subtext, padding:'60px', textAlign:'center', fontSize:'15px' }}>No sub dealers yet.</div>
+          )}
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 
         {/* Create Form */}
         {showForm && (

@@ -60,11 +60,6 @@ function showAdminChainPopup(anchorEl, ancestors, current, dark, text, subtext, 
   clearTimeout(_aChainHideTimer)
   removeAdminChainPopup()
 
-  const popupBg = dark
-    ? 'linear-gradient(160deg,#091525,#060e1c)'
-    : 'linear-gradient(160deg,#ffffff,#f1f5f9)'
-  const popupBorder = dark ? 'rgba(74,222,128,0.2)' : 'rgba(37,99,235,0.2)'
-
   const chain = [
     { type: 'super_admin', data: { email: superAdminEmail } },
     ...(adminData ? [{ type: 'admin', data: adminData }] : []),
@@ -74,36 +69,81 @@ function showAdminChainPopup(anchorEl, ancestors, current, dark, text, subtext, 
 
   const el = document.createElement('div')
   el.id = 'admin-chain-popup'
+
+  // Inject keyframes once
+  if (!document.getElementById('acp-styles')) {
+    const s = document.createElement('style')
+    s.id = 'acp-styles'
+    s.textContent = `
+      @keyframes acpSlideIn{from{opacity:0;transform:translateX(18px) scale(0.95)}to{opacity:1;transform:translateX(0) scale(1)}}
+      @keyframes acpPulse{0%,100%{opacity:0.6;transform:scale(1)}50%{opacity:1;transform:scale(1.3)}}
+      @keyframes acpGlow{0%,100%{box-shadow:0 0 0px rgba(74,222,128,0)}50%{box-shadow:0 0 20px rgba(74,222,128,0.22)}}
+      @keyframes acpShimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+      @keyframes acpBadgePop{0%{transform:scale(0.8);opacity:0}100%{transform:scale(1);opacity:1}}
+      #admin-chain-popup::-webkit-scrollbar{width:6px}
+      #admin-chain-popup::-webkit-scrollbar-track{background:rgba(255,255,255,0.03);border-radius:10px;margin:4px 0}
+      #admin-chain-popup::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#4ade80,#22d3ee);border-radius:10px;box-shadow:0 0 6px rgba(74,222,128,0.4)}
+      #admin-chain-popup::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,#86efac,#67e8f9)}
+      #admin-chain-popup{scrollbar-color:rgba(74,222,128,0.5) rgba(255,255,255,0.03)}
+    `
+    document.head.appendChild(s)
+  }
+
+  const isDark = dark
   el.style.cssText = `
     position:fixed; z-index:9999;
-    background:${popupBg}; border:1px solid ${popupBorder};
-    border-radius:14px; padding:14px 16px;
-    box-shadow:0 16px 48px rgba(0,0,0,0.55);
-    animation:dealerPopupIn 0.25s cubic-bezier(0.22,1,0.36,1) both;
-    min-width:210px; max-width:250px;
-    max-height:82vh; overflow-y:auto; overflow-x:hidden;
+    background:${isDark ? 'rgba(5,10,20,0.97)' : 'rgba(248,250,252,0.98)'};
+    border:1px solid ${isDark ? 'rgba(74,222,128,0.22)' : 'rgba(37,99,235,0.18)'};
+    border-radius:20px; padding:20px;
+    box-shadow:${isDark
+      ? '0 32px 80px rgba(0,0,0,0.85), 0 0 0 1px rgba(74,222,128,0.06), inset 0 1px 0 rgba(255,255,255,0.04)'
+      : '0 32px 80px rgba(0,0,0,0.15), 0 0 0 1px rgba(37,99,235,0.05)'};
+    animation:acpSlideIn 0.3s cubic-bezier(0.22,1,0.36,1) both;
+    min-width:200px; max-width:260px;
+    max-height:85vh; overflow-y:auto; overflow-x:hidden;
     scroll-behavior:smooth; scrollbar-width:thin;
-    scrollbar-color:rgba(74,222,128,0.35) transparent;
+    scroll-padding:8px;
+    -webkit-overflow-scrolling:touch;
+    backdrop-filter:blur(28px);
+    font-family:'Inter',system-ui,sans-serif;
   `
+
+  const totalNodes = chain.length
 
   const itemsHtml = chain.map((item, idx) => {
     const isLast = idx === chain.length - 1
     const isSuperAdmin = item.type === 'super_admin'
 
     const arrowHtml = idx > 0 ? `
-      <div style="display:flex;justify-content:center;padding:4px 0;">
-        <div style="display:flex;flex-direction:column;align-items:center;gap:0px;">
-          <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:9px solid rgba(74,222,128,0.6);"></div>
-          <div style="width:2px;height:12px;background:linear-gradient(180deg,rgba(74,222,128,0.5),rgba(74,222,128,0.1));"></div>
+      <div style="display:flex;justify-content:center;padding:5px 0;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+          <div style="width:1.5px;height:16px;background:linear-gradient(180deg,rgba(74,222,128,0.65),rgba(74,222,128,0.1));"></div>
+          <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid rgba(74,222,128,0.5);"></div>
         </div>
       </div>` : ''
 
     if (isSuperAdmin) {
       return `
         ${arrowHtml}
-        <div style="border-radius:9px;padding:10px 12px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.25);">
-          <div style="font-size:9px;color:#ffd700;font-weight:700;margin-bottom:4px;">🛡️ SUPER ADMIN</div>
-          <div style="font-size:11px;color:${subtext};word-break:break-all;">${item.data.email || '—'}</div>
+        <div style="
+          border-radius:14px;padding:14px 16px;
+          background:${isDark ? 'linear-gradient(135deg,rgba(255,215,0,0.09),rgba(255,140,0,0.04))' : 'linear-gradient(135deg,rgba(255,215,0,0.14),rgba(255,140,0,0.06))'};
+          border:1px solid rgba(255,215,0,0.28);
+          position:relative;overflow:hidden;
+        ">
+          <div style="position:absolute;top:-10px;right:-10px;width:70px;height:70px;background:radial-gradient(circle,rgba(255,215,0,0.14),transparent 70%);pointer-events:none;"></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+            <div style="width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,#ffd700,#ff8c00);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;box-shadow:0 4px 12px rgba(255,215,0,0.35);">🛡️</div>
+            <div>
+              <div style="font-size:9px;color:#ffd700;font-weight:800;letter-spacing:1.8px;">SUPER ADMIN</div>
+              <div style="font-size:8px;color:rgba(255,215,0,0.45);margin-top:2px;letter-spacing:0.5px;">ROOT • FULL ACCESS</div>
+            </div>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:5px;">
+              <div style="width:7px;height:7px;border-radius:50%;background:#4ade80;animation:acpPulse 1.8s ease-in-out infinite;box-shadow:0 0 8px rgba(74,222,128,0.9);"></div>
+              <span style="font-size:9px;color:#4ade80;font-weight:700;">LIVE</span>
+            </div>
+          </div>
+          <div style="font-size:12px;color:${isDark ? '#cbd5e1' : '#475569'};word-break:break-all;font-family:monospace;letter-spacing:0.3px;">${item.data.email || '—'}</div>
         </div>
       `
     }
@@ -115,41 +155,91 @@ function showAdminChainPopup(anchorEl, ancestors, current, dark, text, subtext, 
     const name = [d.first_name, d.last_name].filter(Boolean).join(' ') || '—'
     const phone = d.mobile_number || '—'
     const city = d.city_name || ''
+    const rc = hexToRgbA(cfg.color)
 
     return `
       ${arrowHtml}
-      <div style="border-radius:9px;padding:10px 12px;
-        background:rgba(${hexToRgbA(cfg.color)},0.06);
-        border:1px solid rgba(${hexToRgbA(cfg.color)},${isLast ? '0.55' : '0.2'});
-        ${isLast ? `box-shadow:0 0 14px rgba(${hexToRgbA(cfg.color)},0.18);` : ''}">
-        <div style="font-size:9px;color:${cfg.color};font-weight:700;margin-bottom:4px;">
-          ${cfg.emoji} ${cfg.label}${isLast ? ' <span style="font-size:8px;opacity:0.6;">(CURRENT)</span>' : ''}
+      <div style="
+        border-radius:14px;padding:14px 16px;
+        background:${isLast
+          ? `linear-gradient(135deg,rgba(${rc},0.13),rgba(${rc},0.05))`
+          : `rgba(${rc},0.04)`};
+        border:${isLast
+          ? `1.5px solid rgba(${rc},0.55)`
+          : `1px solid rgba(${rc},0.16)`};
+        position:relative;overflow:hidden;
+        ${isLast ? `animation:acpGlow 3s ease-in-out infinite;` : ''}
+      ">
+        ${isLast ? `<div style="position:absolute;top:-15px;right:-15px;width:80px;height:80px;background:radial-gradient(circle,rgba(${rc},0.18),transparent 70%);pointer-events:none;"></div>` : ''}
+
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:11px;">
+          <div style="width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,${cfg.color},rgba(${rc},0.45));display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;box-shadow:0 4px 12px rgba(${rc},0.3);">${cfg.emoji}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:9px;color:${cfg.color};font-weight:800;letter-spacing:1.8px;">${cfg.label}</div>
+            <div style="font-size:9px;color:${cfg.color};font-family:monospace;opacity:0.6;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${idVal}</div>
+          </div>
+          ${isLast ? `
+          <div style="font-size:8px;font-weight:800;padding:3px 9px;border-radius:20px;
+            background:rgba(${rc},0.18);color:${cfg.color};
+            border:1px solid rgba(${rc},0.4);
+            animation:acpBadgePop 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+            white-space:nowrap;letter-spacing:0.5px;">● CURRENT</div>` : ''}
         </div>
-        <div style="font-size:10px;color:${cfg.color};font-family:monospace;margin-bottom:3px;">${idVal}</div>
-        <div style="font-size:12px;color:${text};font-weight:700;margin-bottom:4px;">${name}</div>
-        ${phone !== '—' ? `<div style="font-size:11px;color:${subtext};margin-bottom:2px;">📞 ${phone}</div>` : ''}
-        ${city ? `<div style="font-size:11px;color:${subtext};">📍 ${city}</div>` : ''}
+
+        <div style="font-size:14px;color:${isDark ? '#f1f5f9' : '#0f172a'};font-weight:700;margin-bottom:9px;letter-spacing:-0.3px;">${name}</div>
+
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          ${phone !== '—' ? `
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:20px;height:20px;border-radius:6px;background:rgba(${rc},0.12);border:1px solid rgba(${rc},0.2);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;">📞</div>
+            <span style="font-size:12px;color:${isDark ? '#94a3b8' : '#64748b'};">${phone}</span>
+          </div>` : ''}
+          ${city ? `
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:20px;height:20px;border-radius:6px;background:rgba(${rc},0.12);border:1px solid rgba(${rc},0.2);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;">📍</div>
+            <span style="font-size:12px;color:${isDark ? '#94a3b8' : '#64748b'};">${city}</span>
+          </div>` : ''}
+        </div>
       </div>
     `
   }).join('')
 
   el.innerHTML = `
-    <div style="font-size:9px;color:#86efac;font-weight:700;letter-spacing:1.2px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid ${popupBorder};">
-      🔗 HIERARCHY CHAIN
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid ${isDark ? 'rgba(74,222,128,0.1)' : 'rgba(37,99,235,0.08)'};">
+      <div style="display:flex;align-items:center;gap:9px;">
+        <div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#4ade80,#22d3ee);display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 4px 10px rgba(74,222,128,0.4);">🔗</div>
+        <div>
+          <div style="font-size:11px;color:${isDark ? '#4ade80' : '#16a34a'};font-weight:800;letter-spacing:1.8px;">HIERARCHY CHAIN</div>
+          <div style="font-size:9px;color:${isDark ? '#475569' : '#94a3b8'};margin-top:2px;">${totalNodes} level${totalNodes !== 1 ? 's' : ''} deep</div>
+        </div>
+      </div>
+      <div style="
+        font-size:9px;font-weight:800;padding:4px 11px;border-radius:20px;
+        background:linear-gradient(90deg,rgba(74,222,128,0.15),rgba(34,211,238,0.12),rgba(74,222,128,0.15));
+        background-size:200% auto;
+        animation:acpShimmer 2.5s linear infinite;
+        border:1px solid rgba(74,222,128,0.22);
+        color:${isDark ? '#86efac' : '#16a34a'};
+        letter-spacing:1px;">● LIVE</div>
     </div>
+
     ${itemsHtml}
+
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.05)'};">
+      <div style="font-size:9px;color:${isDark ? '#334155' : '#cbd5e1'};text-align:center;letter-spacing:0.8px;font-weight:600;">BitByte Network • Hierarchy View</div>
+    </div>
   `
 
   document.body.appendChild(el)
 
   const rect = anchorEl.getBoundingClientRect()
-  const popW = 250
-  const popH = el.scrollHeight || 300
-  let left = rect.right + 14
-  let top = rect.top
-  if (left + popW > window.innerWidth - 10) left = rect.left - popW - 14
-  if (top < 8) top = 8
-  if (top + popH > window.innerHeight - 8) top = window.innerHeight - popH - 8
+  const popW = 340
+  const popH = Math.min(el.scrollHeight || 460, window.innerHeight * 0.85)
+  let left = rect.right + 18
+  let top = rect.top + (rect.height / 2) - (popH / 2)
+  if (left + popW > window.innerWidth - 12) left = rect.left - popW - 18
+  if (top < 12) top = 12
+  if (top + popH > window.innerHeight - 12) top = window.innerHeight - popH - 12
   el.style.left = left + 'px'
   el.style.top = top + 'px'
 
