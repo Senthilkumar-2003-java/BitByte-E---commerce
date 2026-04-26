@@ -300,8 +300,8 @@ function AdminTreeNode({ node, role, depth = 0, dark, text, subtext, colorIdx = 
           {node[cfg.idKey]}
         </div>
         <div style={{ color: text, fontWeight: 700, fontSize: '13px', marginBottom: '6px' }}>
-          {node.first_name} {node.last_name || ''}
-        </div>
+  {node.first_name || node.dealer_name || node.promotor_name || '—'} {node.last_name || ''}
+</div>
         <div style={{ color: subtext, fontSize: '11px', marginBottom: '2px' }}>📞 {node.mobile_number}</div>
         {node.city_name && <div style={{ color: subtext, fontSize: '11px' }}>📍 {node.city_name}</div>}
 
@@ -406,7 +406,8 @@ function createDealerPopup(d, i, anchorEl, dark, subtext, text, currentAdmin) {
 
     <!-- Super Admin -->
     <div style="border-radius:9px;padding:10px;margin-bottom:6px;background:${saBoxBg};border:1px solid ${saBoxBorder};">
-<div style="display:inline-block;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(255,215,0,0.12);color:#ffd700;border:1px solid rgba(255,215,0,0.3);margin-bottom:6px;">🛡️ SUPER ADMIN</div>      <div style="font-size:11px;color:${subtext};word-break:break-all;">${localStorage.getItem('superAdminEmail') || localStorage.getItem('email') || '—'}</div>
+<div style="display:inline-block;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(255,215,0,0.12);color:#ffd700;border:1px solid rgba(255,215,0,0.3);margin-bottom:6px;">🛡️ SUPER ADMIN</div>    
+<div style="font-size:11px;color:${subtext};word-break:break-all;">${localStorage.getItem('superAdminEmail') || localStorage.getItem('email') || '—'}</div>
       <div style="margin-top:5px;font-size:9px;padding:2px 7px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.25);border-radius:20px;color:#ffd700;display:inline-block;">● ONLINE</div>
     </div>
 
@@ -523,48 +524,67 @@ export default function AdminDashboard() {
 
 const fetchDealers = async () => {
   try {
-    const [dealerRes, adminRes, hierarchyRes] = await Promise.allSettled([
-      api.get('/dealers/'),
-      api.get('/admins/list/'),
+    const [hierarchyRes, dealerRes] = await Promise.allSettled([
       api.get('/hierarchy/full/'),
+      api.get('/dealers/'),
     ])
 
-    const adminList = adminRes.status === 'fulfilled' ? adminRes.value.data : []
-    const flatDealers = dealerRes.status === 'fulfilled' ? dealerRes.value.data : []
     const hierarchyData = hierarchyRes.status === 'fulfilled' ? hierarchyRes.value.data : null
+    const flatDealers = dealerRes.status === 'fulfilled' ? dealerRes.value.data : []
 
-    // Build nested dealer map from hierarchy if available
-    let nestedDealerMap = {}
-    if (hierarchyData?.admins) {
-      hierarchyData.admins.forEach(admin => {
-        (admin.dealers || []).forEach(d => {
-          nestedDealerMap[d.dealer_id] = d
-        })
-      })
+    if (hierarchyData?.super_admin_email) {
+      localStorage.setItem('superAdminEmail', hierarchyData.super_admin_email)
     }
 
-    const dealerData = flatDealers.map(d => {
-      const nested = nestedDealerMap[d.dealer_id] || {}
-      return {
-        ...d,
-        sub_dealers: (nested.sub_dealers || d.sub_dealers || []).map(sd => ({
-          ...sd,
-          promotors: (sd.promotors || []).map(p => ({
-            ...p,
-            customers: p.customers || []
-          }))
-        })),
-        _admin: adminList.find(a =>
-          String(a.id) === String(d.assigned_admin_id) ||
-          String(a.id) === String(d.admin) ||
-          String(a.email) === String(d.admin_email)
-        ) || null
-      }
-    })
+    let dealerList = []
+    let myAdminData = null
 
-    setDealers(dealerData)
-    setAdmins(adminList)
-  } catch (err) { console.error('dealers error:', err) }
+    if (hierarchyData?.admins?.length > 0) {
+      myAdminData = hierarchyData.admins[0]
+
+      // Build id map from hierarchy dealers
+      const hierarchyDealerMap = {}
+      ;(myAdminData.dealers || []).forEach(d => {
+        hierarchyDealerMap[String(d.id)] = d
+      })
+
+      // Merge flat dealers (for table) with hierarchy nested data (for tree)
+      dealerList = flatDealers.map(d => {
+        const nested = hierarchyDealerMap[String(d.id)] || {}
+        return {
+          ...d,
+          sub_dealers: (nested.sub_dealers || []).map(sd => ({
+            ...sd,
+            promotors: (sd.promotors || []).map(p => ({
+              ...p,
+              customers: p.customers || []
+            }))
+          })),
+          _admin: myAdminData ? {
+            id: myAdminData.id,
+            admin_id: myAdminData.admin_id,
+            first_name: myAdminData.first_name,
+            last_name: myAdminData.last_name,
+            mobile_number: myAdminData.mobile_number,
+            city_name: myAdminData.city_name,
+          } : null
+        }
+      })
+    } else {
+      // Fallback — flat dealers only
+      dealerList = flatDealers
+    }
+
+    setDealers(dealerList)
+
+    try {
+      const adminRes = await api.get('/admins/list/')
+      setAdmins(adminRes.data)
+    } catch { }
+
+  } catch (err) {
+    console.error('dealers error:', err)
+  }
 }
   const fetchAdmins = async () => {
     try { const res = await api.get('/admins/list/'); setAdmins(res.data) } catch (err) { console.error('admins error:', err.response?.status) }
@@ -729,7 +749,7 @@ const fetchDealers = async () => {
                                 colorIdx={di}
                                 ancestors={[]}
                                 superAdminEmail={localStorage.getItem('superAdminEmail') || ''}
-                                adminData={dealer._admin || null}
+adminData={dealer._admin || null}
                               />
                             </div>
                           ))}
