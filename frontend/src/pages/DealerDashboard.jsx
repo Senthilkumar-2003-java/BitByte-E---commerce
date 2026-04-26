@@ -151,6 +151,282 @@ function createSubDealerPopup(sd, i, anchorEl, dark, subtext, text, currentDeale
   _sdPopupEl = el
 }
 
+// ── hex helper ──
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3),16)
+  const g = parseInt(hex.slice(3,5),16)
+  const b = parseInt(hex.slice(5,7),16)
+  return `${r},${g},${b}`
+}
+
+// ── Tree colors ──
+const DL_TREE_COLORS = ['#f59e0b','#22d3ee','#a78bfa','#f472b6','#4ade80','#60a5fa']
+
+const DL_ROLE_CFG = {
+  sub_dealer: { color:'#22d3ee', label:'🔗 SUB DEALER', idKey:'sub_dealer_id' },
+  promotor:   { color:'#a78bfa', label:'🌟 PROMOTOR',   idKey:'promotor_id' },
+  customer:   { color:'#f472b6', label:'👤 CUSTOMER',   idKey:'customer_id' },
+}
+
+// ── Chain popup globals ──
+let _dlChainPopupEl = null
+let _dlChainHideTimer = null
+
+function removeDLChainPopup() {
+  document.querySelectorAll('#dl-chain-popup').forEach(el => el.remove())
+  _dlChainPopupEl = null
+}
+
+function showDLChainPopup(anchorEl, ancestors, current, dark, text, subtext, dealerProfile) {
+  clearTimeout(_dlChainHideTimer)
+  removeDLChainPopup()
+
+  const popupBg     = dark ? 'linear-gradient(160deg,#091525,#060e1c)' : 'linear-gradient(160deg,#ffffff,#f1f5f9)'
+  const popupBorder = dark ? 'rgba(245,158,11,0.2)' : 'rgba(245,158,11,0.3)'
+
+  const CHAIN_LABELS = {
+    super_admin: { emoji:'🛡️', label:'SUPER ADMIN', color:'#ffd700', idKey:null },
+    admin:       { emoji:'🛡️', label:'ADMIN',       color:'#4ade80', idKey:'admin_id' },
+    dealer:      { emoji:'🏪', label:'DEALER',       color:'#f59e0b', idKey:'dealer_id' },
+    sub_dealer:  { emoji:'🔗', label:'SUB DEALER',   color:'#22d3ee', idKey:'sub_dealer_id' },
+    promotor:    { emoji:'🌟', label:'PROMOTOR',     color:'#a78bfa', idKey:'promotor_id' },
+    customer:    { emoji:'👤', label:'CUSTOMER',     color:'#f472b6', idKey:'customer_id' },
+  }
+
+  const chain = [
+    { type:'super_admin', data:{ email: localStorage.getItem('superAdminEmail') || '—' } },
+    ...(dealerProfile?.admin_id ? [{
+      type:'admin',
+      data:{ admin_id: dealerProfile.admin_id, first_name: dealerProfile.admin_name, mobile_number: dealerProfile.admin_contact_no }
+    }] : []),
+    { type:'dealer', data:{ dealer_id: dealerProfile?.dealer_id, first_name: dealerProfile?.first_name, last_name: dealerProfile?.last_name, mobile_number: dealerProfile?.mobile_number, city_name: dealerProfile?.city_name } },
+    ...ancestors.map(a => ({ type: a.role, data: a.node })),
+    { type: current.role, data: current.node },
+  ]
+
+  const el = document.createElement('div')
+  el.id = 'dl-chain-popup'
+  el.style.cssText = `
+    position:fixed; z-index:9999;
+    background:${popupBg}; border:1px solid ${popupBorder};
+    border-radius:14px; padding:14px 16px;
+    box-shadow:0 16px 48px rgba(0,0,0,0.55);
+    animation:dlPopupIn 0.25s cubic-bezier(0.22,1,0.36,1) both;
+    min-width:260px; max-width:320px;
+    max-height:82vh; overflow-y:auto; overflow-x:hidden;
+    scroll-behavior:smooth; scrollbar-width:thin;
+    scrollbar-color:rgba(245,158,11,0.35) transparent;
+  `
+
+  const itemsHtml = chain.map((item, idx) => {
+    const isLast = idx === chain.length - 1
+    const cfg = CHAIN_LABELS[item.type]
+    if (!cfg) return ''
+
+    const arrowHtml = idx > 0 ? `
+      <div style="display:flex;justify-content:center;padding:4px 0;">
+        <div style="display:flex;flex-direction:column;align-items:center;">
+          <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:9px solid rgba(245,158,11,0.6);"></div>
+          <div style="width:2px;height:12px;background:linear-gradient(180deg,rgba(245,158,11,0.5),rgba(245,158,11,0.1));"></div>
+        </div>
+      </div>` : ''
+
+    if (item.type === 'super_admin') {
+      return `${arrowHtml}
+        <div style="border-radius:9px;padding:10px 12px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.25);">
+          <div style="font-size:9px;color:#ffd700;font-weight:700;margin-bottom:4px;">🛡️ SUPER ADMIN</div>
+          <div style="font-size:11px;color:${subtext};word-break:break-all;">${item.data.email || '—'}</div>
+        </div>`
+    }
+
+    const d = item.data || {}
+    const idVal = cfg.idKey ? (d[cfg.idKey] || '—') : ''
+    const name  = [d.first_name, d.last_name].filter(Boolean).join(' ') || '—'
+    const phone = d.mobile_number || '—'
+    const city  = d.city_name || ''
+
+    return `${arrowHtml}
+      <div style="border-radius:9px;padding:10px 12px;
+        background:rgba(${hexToRgb(cfg.color)},0.06);
+        border:1px solid rgba(${hexToRgb(cfg.color)},${isLast ? '0.55' : '0.2'});
+        ${isLast ? `box-shadow:0 0 14px rgba(${hexToRgb(cfg.color)},0.18);` : ''}">
+        <div style="font-size:9px;color:${cfg.color};font-weight:700;margin-bottom:4px;">
+          ${cfg.emoji} ${cfg.label}${isLast ? ' <span style="font-size:8px;opacity:0.6;">(CURRENT)</span>' : ''}
+        </div>
+        ${idVal ? `<div style="font-size:10px;color:${cfg.color};font-family:monospace;margin-bottom:3px;">${idVal}</div>` : ''}
+        <div style="font-size:13px;color:${text};font-weight:700;margin-bottom:4px;">${name}</div>
+        ${phone !== '—' ? `<div style="font-size:11px;color:${subtext};margin-bottom:2px;">📞 ${phone}</div>` : ''}
+        ${city ? `<div style="font-size:11px;color:${subtext};">📍 ${city}</div>` : ''}
+      </div>`
+  }).join('')
+
+  el.innerHTML = `
+    <div style="font-size:9px;color:#fcd34d;font-weight:700;letter-spacing:1.2px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid ${popupBorder};">
+      🔗 HIERARCHY CHAIN
+    </div>
+    ${itemsHtml}
+  `
+
+  document.body.appendChild(el)
+
+  const rect = anchorEl.getBoundingClientRect()
+  const popW = 320
+  const popH = el.scrollHeight || 400
+  let left = rect.right + 14
+  let top  = rect.top
+  if (left + popW > window.innerWidth - 10)  left = rect.left - popW - 14
+  if (top < 8)                                top  = 8
+  if (top + popH > window.innerHeight - 8)   top  = window.innerHeight - popH - 8
+  el.style.left = left + 'px'
+  el.style.top  = top  + 'px'
+
+  el.addEventListener('mouseenter', () => clearTimeout(_dlChainHideTimer))
+  el.addEventListener('mouseleave', () => { _dlChainHideTimer = setTimeout(() => removeDLChainPopup(), 200) })
+}
+
+// ── Print ──
+function printDLCard(node, role, color, ancestors, dealerProfile) {
+  const ROLE_PRINT = {
+    sub_dealer: { label:'SUB DEALER', emoji:'🔗', idKey:'sub_dealer_id' },
+    promotor:   { label:'PROMOTOR',   emoji:'🌟', idKey:'promotor_id' },
+    customer:   { label:'CUSTOMER',   emoji:'👤', idKey:'customer_id' },
+  }
+  const arrowDiv = `<div class="chain-arrow"><div style="display:flex;flex-direction:column;align-items:center;"><div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:9px solid #94a3b8;"></div><div style="width:2px;height:12px;background:linear-gradient(180deg,#94a3b8,rgba(148,163,184,0.2));"></div></div></div>`
+
+  const chain = [
+    { type:'super_admin', label:'SUPER ADMIN', emoji:'🛡️', data:{ email: localStorage.getItem('superAdminEmail') || '—' } },
+    ...(dealerProfile?.admin_id ? [{ type:'admin', label:'ADMIN', emoji:'🛡️', data:{ admin_id: dealerProfile.admin_id, first_name: dealerProfile.admin_name, mobile_number: dealerProfile.admin_contact_no } }] : []),
+    { type:'dealer', label:'DEALER', emoji:'🏪', data:{ dealer_id: dealerProfile?.dealer_id, first_name: dealerProfile?.first_name, last_name: dealerProfile?.last_name, mobile_number: dealerProfile?.mobile_number, city_name: dealerProfile?.city_name } },
+    ...ancestors.map(a => ({ type: a.role, label: a.role.replace('_',' ').toUpperCase(), emoji:'', data: a.node })),
+    { type: role, label: ROLE_PRINT[role]?.label || role.toUpperCase(), emoji: ROLE_PRINT[role]?.emoji || '', data: node },
+  ]
+
+  const idMap = { admin:'admin_id', dealer:'dealer_id', sub_dealer:'sub_dealer_id', promotor:'promotor_id', customer:'customer_id' }
+
+  const chainHtml = chain.map((item, idx) => {
+    const isLast = idx === chain.length - 1
+    const arrow  = idx < chain.length - 1 ? arrowDiv : ''
+    const d = item.data || {}
+    if (item.type === 'super_admin') {
+      return `<div class="chain-item"><div class="chain-role">${item.emoji} ${item.label}</div><div class="chain-email">${d.email || '—'}</div></div>${arrow}`
+    }
+    const idKey = idMap[item.type]
+    const idVal = idKey ? (d[idKey] || '—') : ''
+    const name  = [d.first_name, d.last_name].filter(Boolean).join(' ') || '—'
+    return `
+      <div class="chain-item ${isLast ? 'current' : ''}">
+        <div class="chain-role">${item.emoji} ${item.label}</div>
+        ${idVal ? `<div class="chain-id">${idVal}</div>` : ''}
+        <div class="chain-name">${name}</div>
+        <div class="chain-info">📞 ${d.mobile_number || '—'}</div>
+        <div class="chain-info">📍 ${d.city_name || '—'}</div>
+      </div>${arrow}`
+  }).join('')
+
+  const currentName = [node.first_name, node.last_name].filter(Boolean).join(' ') || '—'
+  const roleLabel   = ROLE_PRINT[role]?.label || role.toUpperCase()
+  const win = window.open('', '_blank')
+  win.document.write(`<!DOCTYPE html><html><head><title>${roleLabel} — ${currentName}</title>
+    <style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Inter',system-ui,sans-serif;background:#f8fafc;padding:40px;display:flex;justify-content:center;}.wrapper{max-width:480px;width:100%;}.header{text-align:center;margin-bottom:28px;}.header h1{font-size:20px;font-weight:800;color:#020617;}.header p{font-size:12px;color:#64748b;margin-top:4px;}.chain-item{background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;padding:14px 18px;}.chain-item.current{border-color:${color};background:${color}11;box-shadow:0 4px 16px ${color}22;}.chain-role{font-size:10px;font-weight:800;color:#64748b;letter-spacing:1px;margin-bottom:4px;text-transform:uppercase;}.chain-item.current .chain-role{color:${color};}.chain-id{font-family:monospace;font-size:11px;color:${color};margin-bottom:4px;}.chain-name{font-size:16px;font-weight:800;color:#020617;margin-bottom:6px;}.chain-email,.chain-info{font-size:12px;color:#475569;margin-top:3px;}.chain-arrow{display:flex;justify-content:center;padding:4px 0;}.footer{text-align:center;font-size:10px;color:#94a3b8;margin-top:24px;}@media print{body{background:white;padding:20px;}.chain-item{box-shadow:none;}}</style>
+    </head><body><div class="wrapper"><div class="header"><h1>BitByte — ${roleLabel} Profile</h1><p>Hierarchy Chain Report</p></div>${chainHtml}<div class="footer">Printed on ${new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'})}</div></div><script>window.onload=()=>{window.print()}<\/script></body></html>`)
+  win.document.close()
+}
+
+// ── DL Tree Node ──
+function DLTreeNode({ node, role, depth=0, dark, text, subtext, colorIdx=0, ancestors=[], dealerProfile=null }) {
+  const [expanded, setExpanded] = useState(depth < 2)
+  const cfg = DL_ROLE_CFG[role]
+  const c   = DL_TREE_COLORS[colorIdx % DL_TREE_COLORS.length]
+
+  const childRole = { sub_dealer:'promotor', promotor:'customer' }[role]
+  const children  = { sub_dealer: node.promotors, promotor: node.customers }[role] || []
+  const hasChildren = children.length > 0
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', minWidth:0 }}>
+      <div
+        onClick={() => hasChildren && setExpanded(!expanded)}
+        style={{
+          background: dark ? `rgba(${hexToRgb(c)},0.06)` : `rgba(${hexToRgb(c)},0.08)`,
+          border:`1px solid rgba(${hexToRgb(c)},0.35)`,
+          borderRadius:'12px', padding:'12px 16px',
+          minWidth:'160px', maxWidth:'200px',
+          cursor: hasChildren ? 'pointer' : 'default',
+          transition:'all 0.3s ease', position:'relative',
+        }}
+        onMouseEnter={e => {
+          clearTimeout(_dlChainHideTimer)
+          e.currentTarget.style.transform = 'translateY(-3px)'
+          e.currentTarget.style.boxShadow = `0 8px 24px rgba(${hexToRgb(c)},0.25)`
+          e.currentTarget.style.borderColor = `rgba(${hexToRgb(c)},0.7)`
+          showDLChainPopup(e.currentTarget, ancestors, { node, role }, dark, text, subtext, dealerProfile)
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.transform = 'translateY(0)'
+          e.currentTarget.style.boxShadow = 'none'
+          e.currentTarget.style.borderColor = `rgba(${hexToRgb(c)},0.35)`
+          _dlChainHideTimer = setTimeout(() => removeDLChainPopup(), 300)
+        }}
+      >
+        <div style={{ display:'inline-block', fontSize:'9px', fontWeight:700, padding:'2px 8px', borderRadius:'20px', marginBottom:'8px', background:`rgba(${hexToRgb(c)},0.15)`, color:c, border:`1px solid rgba(${hexToRgb(c)},0.35)` }}>
+          {cfg.label}
+        </div>
+        <div style={{ color:c, fontFamily:'monospace', fontSize:'10px', marginBottom:'4px', wordBreak:'break-all' }}>{node[cfg.idKey]}</div>
+        <div style={{ color:text, fontWeight:700, fontSize:'13px', marginBottom:'6px' }}>{node.first_name || '—'} {node.last_name || ''}</div>
+        <div style={{ color:subtext, fontSize:'11px', marginBottom:'2px' }}>📞 {node.mobile_number}</div>
+        {node.city_name && <div style={{ color:subtext, fontSize:'11px' }}>📍 {node.city_name}</div>}
+
+        <div style={{ marginTop:'8px', width:'100%', height:2, borderRadius:2, background:`linear-gradient(90deg,rgba(${hexToRgb(c)},0.2),${c})` }} />
+
+        <button
+          onClick={e => { e.stopPropagation(); printDLCard(node, role, c, ancestors, dealerProfile) }}
+          style={{ marginTop:'8px', width:'100%', padding:'3px 0', fontSize:'9px', fontWeight:700, background:`rgba(${hexToRgb(c)},0.1)`, border:`1px solid rgba(${hexToRgb(c)},0.35)`, borderRadius:'6px', color:c, cursor:'pointer', letterSpacing:'0.8px', transition:'all 0.2s ease' }}
+          onMouseEnter={e => e.currentTarget.style.background = `rgba(${hexToRgb(c)},0.25)`}
+          onMouseLeave={e => e.currentTarget.style.background = `rgba(${hexToRgb(c)},0.1)`}
+        >🖨️ PRINT</button>
+
+        {hasChildren && (
+          <div style={{ position:'absolute', top:'8px', right:'10px', color:c, fontSize:'10px', fontWeight:700, transition:'transform 0.3s ease', transform: expanded ? 'rotate(0deg)' : 'rotate(180deg)' }}>▲</div>
+        )}
+        {hasChildren && (
+          <div style={{ position:'absolute', bottom:'-10px', left:'50%', transform:'translateX(-50%)', background:c, color:'#000', fontSize:'9px', fontWeight:800, padding:'1px 7px', borderRadius:'20px', whiteSpace:'nowrap' }}>
+            {children.length} {childRole?.replace('_',' ')}
+          </div>
+        )}
+      </div>
+
+      {hasChildren && expanded && (
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', width:'100%' }}>
+          <div style={{ width:2, height:28, background:`linear-gradient(180deg,${c},rgba(${hexToRgb(c)},0.3))`, marginTop:'10px' }} />
+          <div style={{ position:'relative', width:'100%' }}>
+            {children.length > 1 && (
+              <div style={{ position:'absolute', top:0, left:0, right:0, height:2, background:`rgba(${hexToRgb(c)},0.45)` }} />
+            )}
+            <div style={{ display:'flex', justifyContent: children.length===1 ? 'center' : 'space-between', alignItems:'flex-start', gap:'8px' }}>
+              {children.map((child, ci) => (
+                <div key={child.id} style={{ display:'flex', flexDirection:'column', alignItems:'center', flex: children.length===1 ? '0 0 auto' : 1 }}>
+                  <div style={{ width:2, height:20, background:`rgba(${hexToRgb(c)},0.5)` }} />
+                  <DLTreeNode
+                    node={child}
+                    role={childRole}
+                    depth={depth+1}
+                    dark={dark}
+                    text={text}
+                    subtext={subtext}
+                    colorIdx={colorIdx+ci+1}
+                    ancestors={[...ancestors, { node, role }]}
+                    dealerProfile={dealerProfile}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function DealerDashboard() {
   const navigate = useNavigate()
   const [dark, setDark] = useState(true)
@@ -219,9 +495,42 @@ export default function DealerDashboard() {
     } catch (err) { console.error('profile error:', err) }
   }
 
-  const fetchSubDealers = async () => {
-    try { const res = await api.get('/sub-dealers/'); setSubDealers(res.data) } catch (err) { console.error(err) }
-  }
+ const fetchSubDealers = async () => {
+  try {
+    const [sdRes, promotorRes, customerRes] = await Promise.allSettled([
+      api.get('/sub-dealers/'),
+      api.get('/promotors/list/'),  // PromotorListForView endpoint
+      api.get('/customers/'),
+    ])
+
+    const sdList       = sdRes.status       === 'fulfilled' ? sdRes.value.data       : []
+    const promotorList = promotorRes.status === 'fulfilled' ? promotorRes.value.data : []
+    const customerList = customerRes.status === 'fulfilled' ? customerRes.value.data : []
+
+    // superAdminEmail
+    try {
+      const hRes = await api.get('/hierarchy/full/')
+      if (hRes?.data?.super_admin_email) {
+        localStorage.setItem('superAdminEmail', hRes.data.super_admin_email)
+      }
+    } catch(e) {}
+
+    // customers attach to promotors, promotors attach to sub dealers
+    const enriched = sdList.map(sd => ({
+      ...sd,
+      promotors: promotorList
+        .filter(p => String(p.assigned_sub_dealer_id) === String(sd.id))
+        .map(p => ({
+          ...p,
+          customers: customerList.filter(c =>
+            String(c.assigned_promotor_id) === String(p.id)
+          )
+        }))
+    }))
+
+    setSubDealers(enriched)
+  } catch(err) { console.error(err) }
+}
 
   const fetchDealers = async () => {
     try { const res = await api.get('/dealers/list/'); setDealers(res.data) } catch (err) { console.error(err) }
@@ -262,6 +571,8 @@ export default function DealerDashboard() {
         @keyframes sdPopupIn{from{opacity:0;transform:translateY(8px) scale(0.97);}to{opacity:1;transform:translateY(0) scale(1);}}
         @keyframes sdPulseGlow{0%,100%{box-shadow:0 0 8px rgba(245,158,11,0.15);}50%{box-shadow:0 0 22px rgba(245,158,11,0.35);}}
         @keyframes sdDotPulse{0%,100%{transform:scale(1);opacity:0.7;}50%{transform:scale(1.6);opacity:1;}}
+        @keyframes dlPopupIn{from{opacity:0;transform:translateY(8px) scale(0.97);}to{opacity:1;transform:translateY(0) scale(1);}}
+@keyframes sdDotPulse{0%,100%{transform:scale(1);opacity:0.7;}50%{transform:scale(1.6);opacity:1;}}
         .dl-inp:focus{border-color:#f59e0b !important}
         .dl-grad-btn{position:relative;overflow:hidden}
         .dl-grad-btn::after{content:"";position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);transform:translateX(-100%)}
@@ -319,83 +630,93 @@ export default function DealerDashboard() {
           </div>
         </div>
 
-        {/* ── SUB DEALER HIERARCHY MODAL ── */}
-        {showHierarchy && (
-          <div onClick={() => { setShowHierarchy(false); setActiveSD(null); removeSubDealerPopup() }}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div onClick={e => e.stopPropagation()}
-              style={{ background: dark ? '#0f172a' : '#f8fafc', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '20px', padding: '32px', maxWidth: '960px', width: '95%', maxHeight: '80vh', overflowY: 'auto' }}>
+{showHierarchy && (
+  <div onClick={() => { setShowHierarchy(false); setActiveSD(null); removeDLChainPopup() }}
+    style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', backdropFilter:'blur(8px)', zIndex:1000, display:'flex', alignItems:'flex-start', justifyContent:'center', paddingTop:'40px', overflowY:'auto' }}>
+    <div onClick={e => e.stopPropagation()}
+      style={{ background: dark?'#0f172a':'#f8fafc', border:'1px solid rgba(245,158,11,0.2)', borderRadius:'20px', padding:'32px', maxWidth:'1100px', width:'95%', marginBottom:'40px' }}>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', paddingBottom: '14px', borderBottom: '1px solid rgba(245,158,11,0.1)' }}>
-                <span style={{ color: '#fcd34d', fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>🏢 Sub Dealer Hierarchy</span>
-                <button onClick={() => { setShowHierarchy(false); setActiveSD(null); removeSubDealerPopup() }}
-                  style={{ background: 'transparent', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', borderRadius: '8px', padding: '6px 14px', cursor: 'pointer', fontSize: '12px' }}>
-                  ✕ Close
-                </button>
-              </div>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'28px', paddingBottom:'14px', borderBottom:'1px solid rgba(245,158,11,0.1)' }}>
+        <span style={{ color:'#fcd34d', fontSize:'13px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em' }}>🏢 Sub Dealer Hierarchy</span>
+        <button onClick={() => { setShowHierarchy(false); setActiveSD(null); removeDLChainPopup() }}
+          style={{ background:'transparent', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', borderRadius:'8px', padding:'6px 14px', cursor:'pointer', fontSize:'12px' }}>
+          ✕ Close
+        </button>
+      </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div style={{ overflowX:'auto', overflowY:'auto', scrollBehavior:'smooth', scrollbarWidth:'thin', scrollbarColor:'rgba(245,158,11,0.35) transparent' }}>
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', minWidth:'max-content', margin:'0 auto' }}>
 
-                {/* Dealer node */}
-                <div style={{
-                  background: 'linear-gradient(135deg,rgba(245,158,11,0.13),rgba(34,211,238,0.08))',
-                  border: '1px solid rgba(245,158,11,0.55)',
-                  borderRadius: '14px',
-                  padding: '13px 36px',
-                  fontWeight: 800,
-                  fontSize: '15px',
-                  color: '#f59e0b',
-                  whiteSpace: 'nowrap',
-                  animation: 'sdPulseGlow 3s ease-in-out infinite'
-                }}>
-                  🏪 Dealer
-                </div>
-
-                {/* Stem to sub dealers */}
-                <div style={{ width: 2, height: 28, background: 'linear-gradient(180deg,#f59e0b,rgba(245,158,11,0.3))', position: 'relative' }}>
-                  <div style={{ position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)', width: 7, height: 7, borderRadius: '50%', background: '#f59e0b', animation: 'sdDotPulse 2s ease-in-out infinite' }} />
-                </div>
-
-                {/* Horizontal bar */}
-                <div style={{ height: 2, background: 'linear-gradient(90deg,transparent,rgba(245,158,11,0.5),transparent)', alignSelf: 'stretch', margin: '0 40px' }} />
-
-                {/* Sub Dealer cards */}
-                <div style={{ display: 'flex', gap: 0, justifyContent: 'space-around', alignSelf: 'stretch', alignItems: 'flex-start' }}>
-                  {subDealers.length === 0 && <div style={{ color: '#94a3b8', padding: '40px' }}>No sub dealers yet.</div>}
-                  {subDealers.map((sd, i) => {
-                    const c = SD_COLORS[i % SD_COLORS.length]
-                    const isActive = activeSD?.id === sd.id
-                    return (
-                      <div key={sd.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
-                        <div style={{ width: 2, height: 28, background: `linear-gradient(180deg,${c}88,${c}33)`, position: 'relative' }}>
-                          <div style={{ position: 'absolute', bottom: -3, left: '50%', transform: 'translateX(-50%)', width: 6, height: 6, borderRadius: '50%', background: c, animation: `sdDotPulse ${1.8 + i * 0.3}s ease-in-out infinite` }} />
-                        </div>
-                        <div
-                          className={`sd-card${isActive ? ' sd-active' : ''}`}
-                          onMouseEnter={e => {
-                            clearTimeout(_sdHideTimer)
-                            setActiveSD(sd)
-                            createSubDealerPopup(sd, i, e.currentTarget, dark, subtext, text, myProfile)
-                          }}
-                          onMouseLeave={() => {
-                            removeSubDealerPopup()
-                            setActiveSD(null)
-                          }}
-                        >
-                          <div style={{ fontSize: 9, color: c, fontFamily: 'monospace', marginBottom: 4 }}>{sd.sub_dealer_id}</div>
-                          <div style={{ color: text, fontWeight: 700, fontSize: 13, marginBottom: 6 }}>{sd.first_name || ''}</div>
-                          <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 2 }}>📞 {sd.mobile_number}</div>
-                          <div style={{ color: '#94a3b8', fontSize: 11 }}>📍 {sd.city_name}</div>
-                          <div style={{ marginTop: 8, width: '100%', height: 2, borderRadius: 2, background: `linear-gradient(90deg,${c}44,${c}cc)` }} />
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
+          {/* Dealer Root Node */}
+          <div style={{
+            background:'linear-gradient(135deg,rgba(245,158,11,0.13),rgba(34,211,238,0.08))',
+            border:'1px solid rgba(245,158,11,0.55)',
+            borderRadius:'16px', padding:'16px 48px',
+            fontWeight:800, fontSize:'16px', color:'#f59e0b',
+            animation:'sdPulseGlow 3s ease-in-out infinite',
+            boxShadow:'0 0 24px rgba(245,158,11,0.1)',
+          }}>
+            🏪 Dealer
+            <div style={{ fontSize:'11px', color:'#94a3b8', fontWeight:400, marginTop:'4px', textAlign:'center' }}>
+              {localStorage.getItem('email')}
             </div>
           </div>
-        )}
+
+          <div style={{ width:2, height:32, background:'linear-gradient(180deg,#f59e0b,rgba(245,158,11,0.3))' }}>
+            <div style={{ position:'relative' }}>
+              <div style={{ position:'absolute', bottom:-4, left:'50%', transform:'translateX(-50%)', width:7, height:7, borderRadius:'50%', background:'#f59e0b', animation:'sdDotPulse 2s ease-in-out infinite' }} />
+            </div>
+          </div>
+
+          {subDealers.length > 0 ? (
+            <>
+              <div style={{ height:2, background:'linear-gradient(90deg,transparent,rgba(245,158,11,0.5),transparent)', width:'80%' }} />
+              <div style={{ display:'flex', gap:'32px', justifyContent:'center', alignItems:'flex-start', flexWrap:'wrap', paddingTop:0 }}>
+                {subDealers.map((sd, si) => (
+                  <div key={sd.id} style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
+                    <div style={{ width:2, height:24, background:'rgba(245,158,11,0.5)', position:'relative' }}>
+                      <div style={{ position:'absolute', bottom:-3, left:'50%', transform:'translateX(-50%)', width:6, height:6, borderRadius:'50%', background:DL_TREE_COLORS[si % DL_TREE_COLORS.length], animation:`sdDotPulse ${1.8+si*0.2}s ease-in-out infinite` }} />
+                    </div>
+                    <DLTreeNode
+                      node={sd}
+                      role="sub_dealer"
+                      depth={0}
+                      dark={dark}
+                      text={text}
+                      subtext={subtext}
+                      colorIdx={si}
+                      ancestors={[]}
+                      dealerProfile={myProfile}
+                    />
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div style={{ color:subtext, padding:'60px', textAlign:'center', fontSize:'15px' }}>No sub dealers yet.</div>
+          )}
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div style={{ display:'flex', gap:'16px', flexWrap:'wrap', justifyContent:'center', marginTop:'28px', paddingTop:'20px', borderTop:'1px solid rgba(245,158,11,0.1)' }}>
+        {[
+          { role:'Sub Dealer', color:'#22d3ee', emoji:'🔗' },
+          { role:'Promotor',   color:'#a78bfa', emoji:'🌟' },
+          { role:'Customer',   color:'#f472b6', emoji:'👤' },
+        ].map(l => (
+          <div key={l.role} style={{ display:'flex', alignItems:'center', gap:'6px' }}>
+            <div style={{ width:10, height:10, borderRadius:'50%', background:l.color }} />
+            <span style={{ color:subtext, fontSize:'12px' }}>{l.emoji} {l.role}</span>
+          </div>
+        ))}
+        <div style={{ color:subtext, fontSize:'12px', width:'100%', textAlign:'center', marginTop:'4px' }}>
+          💡 Click any node to expand/collapse • Hover to see full chain
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 
         {/* Create Sub Dealer Form */}
         {showForm && (
