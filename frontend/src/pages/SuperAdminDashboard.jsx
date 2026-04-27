@@ -856,7 +856,6 @@ export default function SuperAdminDashboard() {
           </div>
         </div>
 
-        {/* ── FULL HIERARCHY MODAL ── */}
  {/* ── FULL HIERARCHY MODAL ── */}
 {showHierarchy && (
   <div

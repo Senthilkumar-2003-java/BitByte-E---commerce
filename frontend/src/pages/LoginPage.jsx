@@ -60,28 +60,41 @@ export default function LoginPage() {
     return () => { window.removeEventListener('resize',handleResize); window.removeEventListener('mousemove',handleMouseMove); cancelAnimationFrame(animationFrameId) }
   }, [dark])
 
-  const pingInterval = useRef(null)
+  const [serverReady, setServerReady] = useState(false)
+const pingInterval = useRef(null)
 
-  useEffect(() => {
-    const wakeUp = async () => {
-      try {
-        await fetch('https://bitbyte-e-commerce.onrender.com/api/ping/')
-        clearInterval(pingInterval.current)
-      } catch {
-        // retry continue
-      }
+useEffect(() => {
+  const wakeUp = async () => {
+    try {
+      await fetch('https://bitbyte-e-commerce.onrender.com/api/ping/')
+      setServerReady(true)          // ✅ mark server as ready
+      clearInterval(pingInterval.current)
+    } catch {
+      // retry continue
     }
-    wakeUp()
-    pingInterval.current = setInterval(wakeUp, 3000)
-    return () => clearInterval(pingInterval.current)
-  }, [])
+  }
+  wakeUp()
+  pingInterval.current = setInterval(wakeUp, 3000)
+  return () => clearInterval(pingInterval.current)
+}, [])
 
-  const handleLogin = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
+const handleLogin = async (e) => {
+  e.preventDefault()
+  setLoading(true)
+  setError('')
 
-    const attemptLogin = () => api.post('/login/', { email, password })
+  // ✅ Wait for server to wake up before attempting login
+  if (!serverReady) {
+    setError('⏳ Server is starting up, please wait...')
+    await new Promise((resolve) => {
+      const check = setInterval(() => {
+        if (serverReady) { clearInterval(check); resolve() }
+      }, 500)
+      setTimeout(() => { clearInterval(check); resolve() }, 15000) // max 15s wait
+    })
+  }
+
+  const attemptLogin = () => api.post('/login/', { email, password })
 
     try {
       let res
@@ -173,10 +186,10 @@ export default function LoginPage() {
               style={{ width:'100%', background: inpBg, border:`1px solid ${inpBorder}`, borderRadius:'12px', padding:'13px 16px', color: text, fontSize:'14px', outline:'none', transition:'border .2s', boxSizing:'border-box' }}
               onFocus={e => e.target.style.borderColor = accent} onBlur={e => e.target.style.borderColor = inpBorder} />
           </div>
-          <button type="submit" disabled={loading} className="btn-shimmer"
-            style={{ padding:'14px', background:'linear-gradient(90deg,#22d3ee,#4ade80)', border:'none', borderRadius:'14px', fontWeight:800, color:'#006165', fontSize:'14px', textTransform:'uppercase', letterSpacing:'0.1em', cursor:'pointer', marginTop:'4px', opacity: loading ? 0.6 : 1 }}>
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
+  <button type="submit" disabled={loading || !serverReady} className="btn-shimmer"
+  style={{ padding:'14px', background:'linear-gradient(90deg,#22d3ee,#4ade80)', border:'none', borderRadius:'14px', fontWeight:800, color:'#006165', fontSize:'14px', textTransform:'uppercase', letterSpacing:'0.1em', cursor: (loading || !serverReady) ? 'not-allowed' : 'pointer', marginTop:'4px', opacity: (loading || !serverReady) ? 0.6 : 1 }}>
+  {loading ? 'Logging in...' : !serverReady ? '⏳ Connecting...' : 'Login'}
+</button>
         </form>
       </div>
     </div>
