@@ -694,7 +694,11 @@ const fetchDealers = async () => {
   } catch {}
 }
   
-  useEffect(() => { fetchDealers(); fetchAdmins(); fetchAnnouncements() }, [])
+useEffect(() => { 
+  fetchDealers(); fetchAdmins(); fetchAnnouncements()
+  const interval = setInterval(fetchAnnouncements, 10000)
+  return () => clearInterval(interval)
+}, [])
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value })
   const handleAdminChange = (e) => {

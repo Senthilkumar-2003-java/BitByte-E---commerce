@@ -409,7 +409,11 @@ const canvasRef = useRef(null)
   } catch {}
 }
 
-useEffect(() => { fetchAll(); fetchAnnouncements() }, [])
+useEffect(() => { 
+  fetchAll(); fetchAnnouncements()
+  const interval = setInterval(fetchAnnouncements, 10000)
+  return () => clearInterval(interval)
+}, [])
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value })
   const handleSubmit = async e => {

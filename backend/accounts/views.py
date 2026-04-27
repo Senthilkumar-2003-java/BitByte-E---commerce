@@ -391,7 +391,6 @@ class AnnouncementView(APIView):
         return Response(serializer.errors, status=400)
 
     def get(self, request):
-        # Each role fetches only their announcements
         role = request.user.role
         if role == 'super_admin':
             announcements = Announcement.objects.filter(is_active=True).order_by('-created_at')

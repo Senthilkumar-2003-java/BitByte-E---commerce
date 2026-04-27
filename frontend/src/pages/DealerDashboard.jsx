@@ -645,7 +645,11 @@ const [unreadCount, setUnreadCount] = useState(0)
 
 
 
-  useEffect(() => { fetchSubDealers(); fetchDealers(); fetchMyProfile(); fetchAnnouncements() }, [])
+useEffect(() => { 
+  fetchSubDealers(); fetchDealers(); fetchMyProfile(); fetchAnnouncements()
+  const interval = setInterval(fetchAnnouncements, 10000)
+  return () => clearInterval(interval)
+}, [])
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value })
   const handleDealerChange = (e) => {

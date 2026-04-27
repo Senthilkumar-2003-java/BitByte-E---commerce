@@ -72,6 +72,8 @@ const fetchAnnouncements = async () => {
 useEffect(() => {
   api.get('/dashboard/').then(res => setProfile(res.data)).catch(() => {})
   fetchAnnouncements()
+  const interval = setInterval(fetchAnnouncements, 10000)
+  return () => clearInterval(interval)
 }, [])
 
   const card  = { background: cardBg, border: cardBorder, borderRadius:'20px', padding:'32px 36px', marginBottom:'20px' }

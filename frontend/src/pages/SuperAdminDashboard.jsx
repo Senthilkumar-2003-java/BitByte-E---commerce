@@ -757,7 +757,13 @@ const fetchAnnouncementCount = async () => {
     setHierarchyLoading(false)
   }
 
-  useEffect(() => { fetchAdmins(); fetchAnnouncementCount() }, [])
+useEffect(() => { 
+  fetchAdmins()
+  fetchAnnouncementCount()
+  const interval = setInterval(fetchAnnouncementCount, 10000)
+  return () => clearInterval(interval)
+}, [])
+
 
   const handleOpenHierarchy = () => {
     setShowHierarchy(true)

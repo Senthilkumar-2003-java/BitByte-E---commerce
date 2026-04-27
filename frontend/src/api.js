@@ -12,7 +12,26 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const original = error.config
+    if (error.response?.status === 401 && !original._retry) {
+      original._retry = true
+      try {
+        const refresh = localStorage.getItem('refresh')
+        if (refresh) {
+          const res = await axios.post(
+            'https://bitbyte-e-commerce.onrender.com/api/login/refresh/',
+            { refresh }
+          )
+          localStorage.setItem('token', res.data.access)
+          original.headers.Authorization = `Bearer ${res.data.access}`
+          return api(original)
+        }
+      } catch {
+        localStorage.clear()
+        window.location.href = '/login'
+      }
+    }
     if (error.response?.status === 401) {
       localStorage.clear()
       window.location.href = '/login'
