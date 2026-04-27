@@ -696,7 +696,7 @@ const fetchDealers = async () => {
   
 useEffect(() => { 
   fetchDealers(); fetchAdmins(); fetchAnnouncements()
-  const interval = setInterval(fetchAnnouncements, 10000)
+  const interval = setInterval(fetchAnnouncements, 30000)
   return () => clearInterval(interval)
 }, [])
 

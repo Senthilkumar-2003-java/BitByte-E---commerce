@@ -720,7 +720,7 @@ const fetchAnnouncements = async () => {
 
 useEffect(() => { 
   fetchAll(); fetchAnnouncements()
-  const interval = setInterval(fetchAnnouncements, 10000)
+  const interval = setInterval(fetchAnnouncements, 30000)
   return () => clearInterval(interval)
 }, [])
 
@@ -830,6 +830,8 @@ useEffect(() => {
           </div>
         </div>
 
+
+
         {/* PROMOTOR HIERARCHY MODAL */}
  {showHierarchy && (
   <div
@@ -929,6 +931,126 @@ useEffect(() => {
     </div>
   </div>
 )}
+
+{/* ── ANNOUNCEMENT VIEW MODAL (SubDealer) ── */}
+{showAnnouncements && (
+  <div
+    onClick={() => setShowAnnouncements(false)}
+    style={{
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(0,0,0,0.82)',
+      backdropFilter: 'blur(10px)',
+      zIndex: 1100,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }}
+  >
+    <div
+      onClick={e => e.stopPropagation()}
+      style={{
+        background: dark ? 'linear-gradient(145deg,#091525,#060e1c)' : '#f8fafc',
+        border: '1px solid rgba(167,139,250,0.3)',
+        borderRadius: '24px',
+        width: '95%',
+        maxWidth: '560px',
+        maxHeight: '85vh',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        boxShadow: '0 32px 80px rgba(0,0,0,0.6)'
+      }}
+    >
+      {/* HEADER */}
+      <div style={{
+        padding: '24px 28px',
+        borderBottom: '1px solid rgba(167,139,250,0.15)',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+      }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div style={{
+            width: '38px',
+            height: '38px',
+            borderRadius: '10px',
+            background: 'linear-gradient(135deg,#a78bfa,#22d3ee)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            📢
+          </div>
+
+          <div>
+            <div style={{ color: '#a78bfa', fontWeight: 800 }}>ANNOUNCEMENTS</div>
+            <div style={{ fontSize: '11px', color: subtext }}>
+              {announcements.length} messages
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setShowAnnouncements(false)}
+          style={{
+            background: 'rgba(239,68,68,0.1)',
+            border: '1px solid rgba(239,68,68,0.3)',
+            color: '#f87171',
+            borderRadius: '8px',
+            padding: '6px 12px',
+            cursor: 'pointer'
+          }}
+        >
+          ✕ Close
+        </button>
+      </div>
+
+      {/* BODY */}
+      <div style={{
+        flex: 1,
+        overflowY: 'auto',
+        padding: '20px 28px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px'
+      }}>
+        {announcements.length === 0 ? (
+          <div style={{ textAlign: 'center', color: subtext }}>
+            No announcements yet
+          </div>
+        ) : announcements.map((ann, i) => (
+          <div key={ann.id} style={{
+            background: i === 0
+              ? 'rgba(167,139,250,0.08)'
+              : 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(167,139,250,0.25)',
+            borderRadius: '14px',
+            padding: '16px'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginBottom: '6px'
+            }}>
+              <span style={{ fontWeight: 700, color: '#a78bfa' }}>
+                {ann.title}
+              </span>
+              <span style={{ fontSize: '11px', color: subtext }}>
+                {new Date(ann.created_at).toLocaleDateString()}
+              </span>
+            </div>
+
+            <p style={{ margin: 0, fontSize: '13px', color: subtext }}>
+              {ann.message}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+)}
+
 
         {/* Create Form */}
         {showForm && (

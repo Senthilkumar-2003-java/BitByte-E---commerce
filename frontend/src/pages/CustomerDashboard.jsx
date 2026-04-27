@@ -72,7 +72,7 @@ const fetchAnnouncements = async () => {
 useEffect(() => {
   api.get('/dashboard/').then(res => setProfile(res.data)).catch(() => {})
   fetchAnnouncements()
-  const interval = setInterval(fetchAnnouncements, 10000)
+  const interval = setInterval(fetchAnnouncements, 30000)
   return () => clearInterval(interval)
 }, [])
 

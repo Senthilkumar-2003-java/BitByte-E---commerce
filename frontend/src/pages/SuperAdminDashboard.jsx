@@ -760,7 +760,10 @@ const fetchAnnouncementCount = async () => {
 useEffect(() => { 
   fetchAdmins()
   fetchAnnouncementCount()
-  const interval = setInterval(fetchAnnouncementCount, 10000)
+  const interval = setInterval(() => {
+    fetchAdmins()
+    fetchAnnouncementCount()
+  }, 30000)
   return () => clearInterval(interval)
 }, [])
 

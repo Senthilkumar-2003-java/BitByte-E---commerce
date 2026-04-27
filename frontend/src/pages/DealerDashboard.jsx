@@ -647,7 +647,7 @@ const [unreadCount, setUnreadCount] = useState(0)
 
 useEffect(() => { 
   fetchSubDealers(); fetchDealers(); fetchMyProfile(); fetchAnnouncements()
-  const interval = setInterval(fetchAnnouncements, 10000)
+  const interval = setInterval(fetchAnnouncements, 30000)
   return () => clearInterval(interval)
 }, [])
 

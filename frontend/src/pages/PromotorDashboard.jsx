@@ -411,7 +411,7 @@ const canvasRef = useRef(null)
 
 useEffect(() => { 
   fetchAll(); fetchAnnouncements()
-  const interval = setInterval(fetchAnnouncements, 10000)
+  const interval = setInterval(fetchAnnouncements, 30000)
   return () => clearInterval(interval)
 }, [])
 
