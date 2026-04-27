@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, AdminProfile, DealerProfile, SubDealerProfile, PromotorProfile, CustomerProfile
+from .models import User, AdminProfile, DealerProfile, SubDealerProfile, PromotorProfile, CustomerProfile, Announcement
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -333,3 +333,7 @@ class CustomerListSerializer(serializers.ModelSerializer):
         fields = ['id', 'customer_id', 'first_name', 'last_name', 'email', 
                   'mobile_number', 'city_name', 'created_at', 'assigned_promotor_id']
 
+class AnnouncementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Announcement
+        fields = ['id', 'title', 'message', 'target_roles', 'created_at', 'is_active']

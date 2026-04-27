@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from rest_framework.decorators import api_view, permission_classes
-from .models import User, AdminProfile, DealerProfile, SubDealerProfile, PromotorProfile, CustomerProfile
+from .models import User, AdminProfile, DealerProfile, SubDealerProfile, PromotorProfile, CustomerProfile, Announcement
 from .serializers import *
 
 class LoginView(APIView):
@@ -377,6 +377,31 @@ class FullHierarchyView(APIView):
             })
 
         return Response({'super_admin_email': request.user.email, 'admins': tree})
+
+class AnnouncementView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if request.user.role != 'super_admin':
+            return Response({'error': 'Permission denied'}, status=403)
+        serializer = AnnouncementSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(created_by=request.user)
+            return Response({'message': 'Announcement sent successfully'}, status=201)
+        return Response(serializer.errors, status=400)
+
+    def get(self, request):
+        # Each role fetches only their announcements
+        role = request.user.role
+        if role == 'super_admin':
+            announcements = Announcement.objects.filter(is_active=True).order_by('-created_at')
+        else:
+            announcements = Announcement.objects.filter(
+                is_active=True,
+                target_roles__contains=role
+            ).order_by('-created_at')
+        serializer = AnnouncementSerializer(announcements, many=True)
+        return Response(serializer.data)
 
 @api_view(['GET'])
 @permission_classes([AllowAny])

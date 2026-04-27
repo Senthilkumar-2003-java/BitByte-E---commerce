@@ -533,6 +533,9 @@ export default function DealerDashboard() {
   const [msg, setMsg] = useState('')
   const [msgType, setMsgType] = useState('success')
   const [form, setForm] = useState(emptyForm)
+  const [showAnnouncements, setShowAnnouncements] = useState(false)
+const [announcements, setAnnouncements] = useState([])
+const [unreadCount, setUnreadCount] = useState(0)
   const canvasRef = useRef(null)
 
   const bg = dark ? '#020617' : '#f8fafc'
@@ -629,7 +632,20 @@ export default function DealerDashboard() {
     try { const res = await api.get('/dealers/list/'); setDealers(res.data) } catch (err) { console.error(err) }
   }
 
-  useEffect(() => { fetchSubDealers(); fetchDealers(); fetchMyProfile() }, [])
+  const fetchAnnouncements = async () => {
+  try {
+    const res = await api.get('/announcements/')
+    const sorted = res.data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    setAnnouncements(sorted)
+    const lastSeen = parseInt(localStorage.getItem('dealerAnnouncementSeen') || '0')
+    const unread = sorted.filter(a => new Date(a.created_at).getTime() > lastSeen).length
+    setUnreadCount(unread)
+  } catch {}
+}
+
+
+
+  useEffect(() => { fetchSubDealers(); fetchDealers(); fetchMyProfile(); fetchAnnouncements() }, [])
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value })
   const handleDealerChange = (e) => {
@@ -696,6 +712,20 @@ export default function DealerDashboard() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <span style={{ color: subtext, fontSize: '14px' }}>{localStorage.getItem('email')}</span>
+          {/* 📢 Announcement Bell */}
+<div
+  onClick={() => { setShowAnnouncements(true); localStorage.setItem('dealerAnnouncementSeen', Date.now().toString()); setUnreadCount(0) }}
+  style={{ position: 'relative', cursor: 'pointer', padding: '6px', borderRadius: '10px', border: '1px solid rgba(245,158,11,0.35)', background: 'rgba(245,158,11,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.25s ease' }}
+  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,158,11,0.25)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(245,158,11,0.1)'; e.currentTarget.style.transform = 'translateY(0)' }}
+>
+  <span style={{ fontSize: '18px', lineHeight: 1 }}>📢</span>
+  {unreadCount > 0 && (
+    <div style={{ position: 'absolute', top: '-7px', right: '-7px', background: 'linear-gradient(135deg,#f59e0b,#fcd34d)', color: '#000', borderRadius: '50%', minWidth: '18px', height: '18px', fontSize: '9px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px', boxShadow: '0 2px 8px rgba(245,158,11,0.5)', border: '1.5px solid #020617' }}>
+      {unreadCount > 99 ? '99+' : unreadCount}
+    </div>
+  )}
+</div>
           <button onClick={() => setDark(!dark)}
             style={{ padding: '8px 16px', borderRadius: '16px', border: `1px solid ${border}`, background: 'transparent', color: text, cursor: 'pointer', fontWeight: 600, fontSize: '13px', transition: 'all 0.3s ease' }}>
             {dark ? '☀️ Light' : '🌙 Dark'}
@@ -728,100 +758,36 @@ export default function DealerDashboard() {
           </div>
         </div>
 
-{showHierarchy && (
-  <div
-    onClick={() => { setShowHierarchy(false); setActiveSD(null); removeDLChainPopup() }}
-    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-  >
-    <div
-      onClick={e => e.stopPropagation()}
-      style={{ background: dark ? '#0f172a' : '#f8fafc', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '22px', width: '95%', maxWidth: '1100px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
-    >
-
-      {/* HEADER - fixed top */}
-      <div style={{ flexShrink: 0, padding: '20px 28px', borderBottom: '1px solid rgba(245,158,11,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          <span style={{ color: '#fcd34d', fontSize: '14px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>🏢 Sub Dealer Hierarchy</span>
-          <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
-            {[
-              { label: 'Sub Dealers', count: subDealers.length, color: '#22d3ee' },
-              { label: 'Promotors', count: subDealers.reduce((a, sd) => a + (sd.promotors?.length || 0), 0), color: '#a78bfa' },
-              { label: 'Customers', count: subDealers.reduce((a, sd) => a + (sd.promotors || []).reduce((b, p) => b + (p.customers?.length || 0), 0), 0), color: '#f472b6' },
-            ].map(s => (
-              <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: `rgba(${hexToRgb(s.color)},0.08)`, border: `1px solid rgba(${hexToRgb(s.color)},0.25)`, borderRadius: '20px', padding: '3px 12px' }}>
-                <span style={{ color: s.color, fontWeight: 800, fontSize: '13px' }}>{s.count}</span>
-                <span style={{ color: subtext, fontSize: '11px' }}>{s.label}</span>
-              </div>
-            ))}
+{/* ── ANNOUNCEMENT VIEW MODAL (Dealer) ── */}
+{showAnnouncements && (
+  <div onClick={() => setShowAnnouncements(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(10px)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div onClick={e => e.stopPropagation()} style={{ background: dark ? 'linear-gradient(145deg,#0a1628,#060e1c)' : '#f8fafc', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '24px', width: '95%', maxWidth: '560px', maxHeight: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 32px 80px rgba(0,0,0,0.6)', animation: 'fadeIn 0.3s cubic-bezier(0.22,1,0.36,1)' }}>
+      <div style={{ flexShrink: 0, padding: '24px 28px', borderBottom: '1px solid rgba(245,158,11,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'linear-gradient(135deg,rgba(245,158,11,0.25),rgba(34,211,238,0.15))', border: '1px solid rgba(245,158,11,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>📢</div>
+          <div>
+            <div style={{ color: '#f59e0b', fontWeight: 800, fontSize: '14px' }}>ANNOUNCEMENTS</div>
+            <div style={{ color: subtext, fontSize: '11px', marginTop: '2px' }}>{announcements.length} total from Super Admin</div>
           </div>
         </div>
-        <button
-          onClick={() => { setShowHierarchy(false); setActiveSD(null); removeDLChainPopup() }}
-          style={{ background: 'transparent', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', borderRadius: '8px', padding: '6px 14px', cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap', flexShrink: 0 }}
-        >✕ Close</button>
+        <button onClick={() => setShowAnnouncements(false)} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', borderRadius: '8px', padding: '6px 14px', cursor: 'pointer', fontSize: '12px' }}>✕ Close</button>
       </div>
-
-      {/* SCROLL AREA - middle scrolls */}
-      <div style={{ flex: 1, overflowX: 'auto', overflowY: 'auto', padding: '28px 32px', scrollBehavior: 'smooth', scrollbarWidth: 'thin', scrollbarColor: 'rgba(245,158,11,0.4) rgba(255,255,255,0.03)' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 'max-content', margin: '0 auto' }}>
-
-          {/* Dealer Root Node */}
-          <div style={{ background: 'linear-gradient(135deg,rgba(245,158,11,0.13),rgba(34,211,238,0.08))', border: '1px solid rgba(245,158,11,0.55)', borderRadius: '16px', padding: '16px 48px', fontWeight: 800, fontSize: '16px', color: '#f59e0b', animation: 'sdPulseGlow 3s ease-in-out infinite', boxShadow: '0 0 24px rgba(245,158,11,0.1)', textAlign: 'center' }}>
-            🏪 Dealer
-            <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 400, marginTop: '4px' }}>
-              {localStorage.getItem('email')}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {announcements.length === 0 ? (
+          <div style={{ textAlign: 'center', color: subtext, padding: '60px 0', fontSize: '15px' }}>No announcements yet.</div>
+        ) : announcements.map((ann, idx) => (
+          <div key={ann.id} style={{ background: idx === 0 ? (dark ? 'rgba(245,158,11,0.07)' : 'rgba(245,158,11,0.05)') : (dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'), border: `1px solid ${idx === 0 ? 'rgba(245,158,11,0.35)' : (dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)')}`, borderRadius: '14px', padding: '16px 18px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {idx === 0 && <span style={{ fontSize: '9px', fontWeight: 800, padding: '2px 8px', borderRadius: '20px', background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}>● NEW</span>}
+                <span style={{ color: idx === 0 ? '#f59e0b' : text, fontWeight: 700, fontSize: '14px' }}>{ann.title}</span>
+              </div>
+              <span style={{ color: subtext, fontSize: '10px', whiteSpace: 'nowrap' }}>{new Date(ann.created_at).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })}</span>
             </div>
-          </div>
-
-          {/* Stem */}
-          <div style={{ width: 2, height: 32, background: 'linear-gradient(180deg,#f59e0b,rgba(245,158,11,0.3))' }} />
-
-          {subDealers.length > 0 ? (
-            <>
-              <div style={{ height: 2, background: 'linear-gradient(90deg,transparent,rgba(245,158,11,0.5),transparent)', width: '80%' }} />
-              <div style={{ display: 'flex', gap: '32px', justifyContent: 'center', alignItems: 'flex-start' }}>
-                {subDealers.map((sd, si) => (
-                  <div key={sd.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <div style={{ width: 2, height: 24, background: 'rgba(245,158,11,0.5)' }} />
-                    <DLTreeNode
-                      node={sd}
-                      role="sub_dealer"
-                      depth={0}
-                      dark={dark}
-                      text={text}
-                      subtext={subtext}
-                      colorIdx={si}
-                      ancestors={[]}
-                      dealerProfile={myProfile}
-                    />
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <div style={{ color: subtext, padding: '60px', textAlign: 'center', fontSize: '15px' }}>No sub dealers yet.</div>
-          )}
-
-        </div>
-      </div>
-
-      {/* LEGEND - fixed bottom */}
-      <div style={{ flexShrink: 0, padding: '14px 28px', borderTop: '1px solid rgba(245,158,11,0.08)', display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center' }}>
-        {[
-          { role: 'Sub Dealer', color: '#22d3ee', emoji: '🔗' },
-          { role: 'Promotor',   color: '#a78bfa', emoji: '🌟' },
-          { role: 'Customer',   color: '#f472b6', emoji: '👤' },
-        ].map(l => (
-          <div key={l.role} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <div style={{ width: 9, height: 9, borderRadius: '50%', background: l.color }} />
-            <span style={{ color: subtext, fontSize: '11px' }}>{l.emoji} {l.role}</span>
+            <p style={{ color: dark ? '#cbd5e1' : '#475569', fontSize: '13px', lineHeight: '1.6', margin: 0 }}>{ann.message}</p>
           </div>
         ))}
-        <div style={{ color: subtext, fontSize: '11px', width: '100%', textAlign: 'center' }}>
-          💡 Click any node to expand/collapse • Hover to see full chain
-        </div>
       </div>
-
     </div>
   </div>
 )}

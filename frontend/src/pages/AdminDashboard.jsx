@@ -565,6 +565,9 @@ export default function AdminDashboard() {
   const [msg, setMsg] = useState('')
   const [msgType, setMsgType] = useState('success')
   const [form, setForm] = useState(emptyForm)
+  const [showAnnouncements, setShowAnnouncements] = useState(false)
+const [announcements, setAnnouncements] = useState([])
+const [unreadCount, setUnreadCount] = useState(0)
   const canvasRef = useRef(null)
 
   // Elite Color Palette
@@ -679,7 +682,19 @@ const fetchDealers = async () => {
   const fetchAdmins = async () => {
     try { const res = await api.get('/admins/list/'); setAdmins(res.data) } catch (err) { console.error('admins error:', err.response?.status) }
   }
-  useEffect(() => { fetchDealers(); fetchAdmins() }, [])
+
+  const fetchAnnouncements = async () => {
+  try {
+    const res = await api.get('/announcements/')
+    const sorted = res.data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    setAnnouncements(sorted)
+    const lastSeen = parseInt(localStorage.getItem('adminAnnouncementSeen') || '0')
+    const unread = sorted.filter(a => new Date(a.created_at).getTime() > lastSeen).length
+    setUnreadCount(unread)
+  } catch {}
+}
+  
+  useEffect(() => { fetchDealers(); fetchAdmins(); fetchAnnouncements() }, [])
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value })
   const handleAdminChange = (e) => {
@@ -742,7 +757,24 @@ const fetchDealers = async () => {
           <span style={{ color: '#86efac', fontWeight: 700, fontSize: '14px' }}>🛡️ Admin Dashboard</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <span style={{ color: subtext, fontSize: '14px' }}>{localStorage.getItem('email')}</span>
+<span style={{ color: subtext, fontSize: '14px' }}>{localStorage.getItem('email')}</span>
+
+          {/* 📢 Announcement Bell */}
+          <div
+            onClick={() => { setShowAnnouncements(true); localStorage.setItem('adminAnnouncementSeen', Date.now().toString()); setUnreadCount(0) }}
+            style={{ position: 'relative', cursor: 'pointer', padding: '6px', borderRadius: '10px', border: '1px solid rgba(74,222,128,0.35)', background: 'rgba(74,222,128,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.25s ease' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(74,222,128,0.25)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(74,222,128,0.1)'; e.currentTarget.style.transform = 'translateY(0)' }}
+          >
+            <span style={{ fontSize: '18px', lineHeight: 1 }}>📢</span>
+            {unreadCount > 0 && (
+              <div style={{ position: 'absolute', top: '-7px', right: '-7px', background: 'linear-gradient(135deg,#4ade80,#22d3ee)', color: '#000', borderRadius: '50%', minWidth: '18px', height: '18px', fontSize: '9px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px', boxShadow: '0 2px 8px rgba(74,222,128,0.5)', border: '1.5px solid #020617' }}>
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </div>
+            )}
+          </div>
+
+        
 
           {/* ── DARK / LIGHT TOGGLE ── */}
           <button onClick={() => setDark(!dark)}
@@ -887,6 +919,51 @@ const fetchDealers = async () => {
         </div>
       </div>
 
+    </div>
+  </div>
+)}
+
+{/* ── ANNOUNCEMENT VIEW MODAL (Admin) ── */}
+{showAnnouncements && (
+  <div
+    onClick={() => setShowAnnouncements(false)}
+    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(10px)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+  >
+    <div
+      onClick={e => e.stopPropagation()}
+      style={{ background: dark ? 'linear-gradient(145deg,#0a1628,#060e1c)' : '#f8fafc', border: '1px solid rgba(74,222,128,0.3)', borderRadius: '24px', width: '95%', maxWidth: '560px', maxHeight: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 32px 80px rgba(0,0,0,0.6)', animation: 'fadeIn 0.3s cubic-bezier(0.22,1,0.36,1)' }}
+    >
+      {/* Header */}
+      <div style={{ flexShrink: 0, padding: '24px 28px', borderBottom: `1px solid rgba(74,222,128,0.15)`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'linear-gradient(135deg,rgba(74,222,128,0.25),rgba(34,211,238,0.15))', border: '1px solid rgba(74,222,128,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>📢</div>
+          <div>
+            <div style={{ color: '#4ade80', fontWeight: 800, fontSize: '14px', letterSpacing: '0.05em' }}>ANNOUNCEMENTS</div>
+            <div style={{ color: subtext, fontSize: '11px', marginTop: '2px' }}>{announcements.length} total from Super Admin</div>
+          </div>
+        </div>
+        <button onClick={() => setShowAnnouncements(false)} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', borderRadius: '8px', padding: '6px 14px', cursor: 'pointer', fontSize: '12px' }}>✕ Close</button>
+      </div>
+
+      {/* List */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: '12px', scrollbarWidth: 'thin', scrollbarColor: 'rgba(74,222,128,0.4) transparent' }}>
+        {announcements.length === 0 ? (
+          <div style={{ textAlign: 'center', color: subtext, padding: '60px 0', fontSize: '15px' }}>No announcements yet.</div>
+        ) : (
+          announcements.map((ann, idx) => (
+            <div key={ann.id} style={{ background: idx === 0 ? (dark ? 'rgba(74,222,128,0.07)' : 'rgba(74,222,128,0.05)') : (dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'), border: `1px solid ${idx === 0 ? 'rgba(74,222,128,0.35)' : (dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)')}`, borderRadius: '14px', padding: '16px 18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {idx === 0 && <span style={{ fontSize: '9px', fontWeight: 800, padding: '2px 8px', borderRadius: '20px', background: 'rgba(74,222,128,0.15)', color: '#4ade80', border: '1px solid rgba(74,222,128,0.3)' }}>● NEW</span>}
+                  <span style={{ color: idx === 0 ? '#4ade80' : text, fontWeight: 700, fontSize: '14px' }}>{ann.title}</span>
+                </div>
+                <span style={{ color: subtext, fontSize: '10px', whiteSpace: 'nowrap' }}>{new Date(ann.created_at).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })}</span>
+              </div>
+              <p style={{ color: dark ? '#cbd5e1' : '#475569', fontSize: '13px', lineHeight: '1.6', margin: 0 }}>{ann.message}</p>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   </div>
 )}

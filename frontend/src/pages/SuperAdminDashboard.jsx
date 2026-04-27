@@ -680,6 +680,11 @@ export default function SuperAdminDashboard() {
     aadhaar_no: '', pan_no: '', occupation: 'employee', occupation_detail: '',
     annual_salary: '', admin_name: '', admin_id: '', admin_contact_no: ''
   })
+const [showAnnouncement, setShowAnnouncement] = useState(false)
+const [announcementForm, setAnnouncementForm] = useState({ title: '', message: '', roles: [] })
+const [announcementMsg, setAnnouncementMsg] = useState('')
+const [announcingSending, setAnnouncingSending] = useState(false)
+const [announcementCount, setAnnouncementCount] = useState(0)
   const canvasRef = useRef(null)
 
   const bg = dark ? '#020617' : '#f8fafc'
@@ -731,6 +736,16 @@ export default function SuperAdminDashboard() {
     try { const res = await api.get('/admins/'); setAdmins(res.data) } catch { }
   }
 
+const fetchAnnouncementCount = async () => {
+  try {
+    const res = await api.get('/announcements/')
+    const lastSeen = parseInt(localStorage.getItem('superAdminAnnouncementSeen') || '0')
+    const unread = res.data.filter(a => new Date(a.created_at).getTime() > lastSeen).length
+    setAnnouncementCount(unread)
+  } catch {}
+}
+
+
   const fetchHierarchy = async () => {
     setHierarchyLoading(true)
     try {
@@ -742,7 +757,7 @@ export default function SuperAdminDashboard() {
     setHierarchyLoading(false)
   }
 
-  useEffect(() => { fetchAdmins() }, [])
+  useEffect(() => { fetchAdmins(); fetchAnnouncementCount() }, [])
 
   const handleOpenHierarchy = () => {
     setShowHierarchy(true)
@@ -823,8 +838,32 @@ export default function SuperAdminDashboard() {
           <span style={{ color: '#a5f3fc', fontWeight: 700, fontSize: '14px' }}>🛡️ Super Admin</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <span style={{ color: subtext, fontSize: '14px' }}>{localStorage.getItem('email')}</span>
-          <button onClick={() => setDark(!dark)}
+         <span style={{ color: subtext, fontSize: '14px' }}>{localStorage.getItem('email')}</span>
+
+{/* 📢 Announcement Icon */}
+<div
+onClick={() => { 
+  setShowAnnouncement(true)
+  localStorage.setItem('superAdminAnnouncementSeen', Date.now().toString())
+  setAnnouncementCount(0)
+  setAnnouncementMsg('') 
+}}
+
+  style={{ position: 'relative', cursor: 'pointer', padding: '6px', borderRadius: '10px', border: '1px solid rgba(251,146,60,0.35)', background: 'rgba(251,146,60,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.25s ease' }}
+  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(251,146,60,0.25)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(251,146,60,0.1)'; e.currentTarget.style.transform = 'translateY(0)' }}
+>
+  <span style={{ fontSize: '18px', lineHeight: 1 }}>📢</span>
+  {announcementCount > 0 && (
+    <div style={{ position: 'absolute', top: '-7px', right: '-7px', background: 'linear-gradient(135deg,#fb923c,#f97316)', color: '#fff', borderRadius: '50%', minWidth: '18px', height: '18px', fontSize: '9px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px', boxShadow: '0 2px 8px rgba(251,146,60,0.5)', border: '1.5px solid #020617' }}>
+      {announcementCount > 99 ? '99+' : announcementCount}
+    </div>
+  )}
+</div>
+
+<button onClick={() => setDark(!dark)}
+
+
             style={{ padding: '8px 16px', borderRadius: '16px', border: `1px solid ${border}`, background: 'transparent', color: text, cursor: 'pointer', fontWeight: 600, fontSize: '13px', transition: 'all 0.3s ease' }}>
             {dark ? '☀️ Light' : '🌙 Dark'}
           </button>
@@ -979,6 +1018,130 @@ export default function SuperAdminDashboard() {
         </div>
       )}
 
+    </div>
+  </div>
+)}
+
+{/* ── ANNOUNCEMENT SEND MODAL (Super Admin) ── */}
+{showAnnouncement && (
+  <div
+    onClick={() => setShowAnnouncement(false)}
+    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(10px)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+  >
+    <div
+      onClick={e => e.stopPropagation()}
+      style={{ background: dark ? 'linear-gradient(145deg,#0a1628,#060e1c)' : '#f8fafc', border: '1px solid rgba(251,146,60,0.3)', borderRadius: '24px', width: '95%', maxWidth: '540px', maxHeight: '90vh', overflowY: 'auto', padding: '32px', boxShadow: '0 32px 80px rgba(0,0,0,0.6)', animation: 'fadeIn 0.3s cubic-bezier(0.22,1,0.36,1)' }}
+    >
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'linear-gradient(135deg,rgba(251,146,60,0.3),rgba(249,115,22,0.15))', border: '1px solid rgba(251,146,60,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', boxShadow: '0 4px 16px rgba(251,146,60,0.2)' }}>📢</div>
+          <div>
+            <div style={{ color: '#fb923c', fontWeight: 800, fontSize: '15px', letterSpacing: '0.05em' }}>SEND ANNOUNCEMENT</div>
+            <div style={{ color: subtext, fontSize: '11px', marginTop: '2px' }}>Notify selected roles instantly</div>
+          </div>
+        </div>
+        <button onClick={() => setShowAnnouncement(false)} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', borderRadius: '8px', padding: '6px 14px', cursor: 'pointer', fontSize: '12px' }}>✕ Close</button>
+      </div>
+
+      {announcementMsg && (
+        <div style={{ background: announcementMsg.includes('✅') ? 'rgba(74,222,128,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${announcementMsg.includes('✅') ? 'rgba(74,222,128,0.3)' : 'rgba(239,68,68,0.3)'}`, color: announcementMsg.includes('✅') ? '#4ade80' : '#f87171', borderRadius: '10px', padding: '12px 16px', fontSize: '13px', marginBottom: '18px' }}>
+          {announcementMsg}
+        </div>
+      )}
+
+      {/* Title */}
+      <div style={{ marginBottom: '16px' }}>
+        <label style={{ display: 'block', color: subtext, fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>Announcement Title *</label>
+        <input
+          value={announcementForm.title}
+          onChange={e => setAnnouncementForm({ ...announcementForm, title: e.target.value })}
+          placeholder="e.g. Tomorrow Leave, Low Orders Alert..."
+          style={{ width: '100%', background: inpBg, border: `1px solid ${inpBorder}`, borderRadius: '10px', padding: '12px 16px', color: text, fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+          onFocus={e => e.target.style.borderColor = '#fb923c'}
+          onBlur={e => e.target.style.borderColor = inpBorder}
+        />
+      </div>
+
+      {/* Message */}
+      <div style={{ marginBottom: '20px' }}>
+        <label style={{ display: 'block', color: subtext, fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>Message *</label>
+        <textarea
+          value={announcementForm.message}
+          onChange={e => setAnnouncementForm({ ...announcementForm, message: e.target.value })}
+          rows={4}
+          placeholder="Type your announcement here..."
+          style={{ width: '100%', background: inpBg, border: `1px solid ${inpBorder}`, borderRadius: '10px', padding: '12px 16px', color: text, fontSize: '14px', outline: 'none', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit', lineHeight: '1.6' }}
+          onFocus={e => e.target.style.borderColor = '#fb923c'}
+          onBlur={e => e.target.style.borderColor = inpBorder}
+        />
+      </div>
+
+      {/* Role Checkboxes */}
+      <div style={{ marginBottom: '24px' }}>
+        <label style={{ display: 'block', color: subtext, fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '12px' }}>Send To (Select Roles) *</label>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+          {[
+            { key: 'admin',      label: '🛡️ Admin',      color: '#22d3ee' },
+            { key: 'dealer',     label: '🏪 Dealer',     color: '#4ade80' },
+            { key: 'sub_dealer', label: '🔗 Sub Dealer', color: '#f59e0b' },
+            { key: 'promotor',   label: '🌟 Promotor',   color: '#a78bfa' },
+            { key: 'customer',   label: '👤 Customer',   color: '#f472b6' },
+          ].map(role => {
+            const checked = announcementForm.roles.includes(role.key)
+            const r = parseInt(role.color.slice(1,3),16), g = parseInt(role.color.slice(3,5),16), b = parseInt(role.color.slice(5,7),16)
+            const rgb = `${r},${g},${b}`
+            return (
+              <div key={role.key}
+                onClick={() => {
+                  const updated = checked ? announcementForm.roles.filter(x => x !== role.key) : [...announcementForm.roles, role.key]
+                  setAnnouncementForm({ ...announcementForm, roles: updated })
+                }}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 14px', borderRadius: '10px', cursor: 'pointer', background: checked ? `rgba(${rgb},0.14)` : `rgba(${rgb},0.04)`, border: `1.5px solid ${checked ? `rgba(${rgb},0.6)` : `rgba(${rgb},0.18)`}`, transition: 'all 0.2s ease', userSelect: 'none' }}
+              >
+                <div style={{ width: '16px', height: '16px', borderRadius: '4px', border: `2px solid ${checked ? role.color : `rgba(${rgb},0.35)`}`, background: checked ? role.color : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease', flexShrink: 0 }}>
+                  {checked && <span style={{ color: '#000', fontSize: '10px', fontWeight: 900 }}>✓</span>}
+                </div>
+                <span style={{ color: checked ? role.color : subtext, fontSize: '13px', fontWeight: checked ? 700 : 500 }}>{role.label}</span>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Select All */}
+        <button
+          onClick={() => {
+            const all = ['admin','dealer','sub_dealer','promotor','customer']
+            const allSelected = all.every(r => announcementForm.roles.includes(r))
+            setAnnouncementForm({ ...announcementForm, roles: allSelected ? [] : all })
+          }}
+          style={{ marginTop: '10px', padding: '6px 14px', fontSize: '11px', fontWeight: 700, background: 'rgba(251,146,60,0.1)', border: '1px solid rgba(251,146,60,0.3)', borderRadius: '8px', color: '#fb923c', cursor: 'pointer' }}
+        >
+          {['admin','dealer','sub_dealer','promotor','customer'].every(r => announcementForm.roles.includes(r)) ? '☐ Deselect All' : '☑ Select All'}
+        </button>
+      </div>
+
+      {/* Send Button */}
+      <button
+        disabled={announcingSending}
+        onClick={async () => {
+          if (!announcementForm.title.trim() || !announcementForm.message.trim()) { setAnnouncementMsg('❌ Title and Message are required.'); return }
+          if (announcementForm.roles.length === 0) { setAnnouncementMsg('❌ Please select at least one role.'); return }
+          setAnnouncingSending(true)
+          try {
+            await api.post('/announcements/', { title: announcementForm.title, message: announcementForm.message, target_roles: announcementForm.roles })
+            setAnnouncementMsg('✅ Announcement sent successfully!')
+            setAnnouncementForm({ title: '', message: '', roles: [] })
+            fetchAnnouncementCount()
+          } catch (err) {
+            setAnnouncementMsg('❌ Failed: ' + JSON.stringify(err.response?.data))
+          }
+          setAnnouncingSending(false)
+        }}
+        style={{ width: '100%', padding: '14px', background: announcingSending ? 'rgba(251,146,60,0.3)' : 'linear-gradient(90deg,#fb923c,#f97316)', border: 'none', borderRadius: '12px', fontWeight: 800, color: announcingSending ? '#fb923c' : '#431407', fontSize: '15px', cursor: announcingSending ? 'not-allowed' : 'pointer', letterSpacing: '0.5px', transition: 'all 0.3s ease' }}
+      >
+        {announcingSending ? '⏳ Sending...' : '📢 Send Announcement'}
+      </button>
     </div>
   </div>
 )}

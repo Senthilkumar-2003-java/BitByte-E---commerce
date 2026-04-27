@@ -11,8 +11,11 @@ const PARTICLES = Array.from({ length: 15 }, (_, i) => ({
 export default function CustomerDashboard() {
   const navigate = useNavigate()
   const [dark, setDark] = useState(true)
-  const [profile, setProfile] = useState(null)
-  const canvasRef = useRef(null)
+const [profile, setProfile] = useState(null)
+const [showAnnouncements, setShowAnnouncements] = useState(false)
+const [announcements, setAnnouncements] = useState([])
+const [unreadCount, setUnreadCount] = useState(0)
+const canvasRef = useRef(null)
 
   const bg      = dark ? '#020617' : '#f8fafc'
   const text    = dark ? '#f8fafc' : '#020617'
@@ -56,9 +59,20 @@ export default function CustomerDashboard() {
     return () => { window.removeEventListener('resize',handleResize); window.removeEventListener('mousemove',handleMouseMove); cancelAnimationFrame(animationFrameId) }
   }, [dark])
 
-  useEffect(() => {
-    api.get('/dashboard/').then(res => setProfile(res.data)).catch(() => {})
-  }, [])
+const fetchAnnouncements = async () => {
+  try {
+    const res = await api.get('/announcements/')
+    const sorted = res.data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    setAnnouncements(sorted)
+    const lastSeen = parseInt(localStorage.getItem('customerAnnouncementSeen') || '0')
+    setUnreadCount(sorted.filter(a => new Date(a.created_at).getTime() > lastSeen).length)
+  } catch {}
+}
+
+useEffect(() => {
+  api.get('/dashboard/').then(res => setProfile(res.data)).catch(() => {})
+  fetchAnnouncements()
+}, [])
 
   const card  = { background: cardBg, border: cardBorder, borderRadius:'20px', padding:'32px 36px', marginBottom:'20px' }
   const sHead = { color:'#34d399', fontSize:'13px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', margin:'0 0 20px', paddingBottom:'14px', borderBottom: cardBorder }
@@ -109,7 +123,24 @@ export default function CustomerDashboard() {
   <span style={{ color:'#6ee7b7', fontWeight:700, fontSize:'14px' }}>👤 Customer Dashboard</span>
 </div>
         <div style={{ display:'flex', alignItems:'center', gap:'14px' }}>
-          <span style={{ color: subtext, fontSize:'14px' }}>{localStorage.getItem('email')}</span>
+<span style={{ color: subtext, fontSize:'14px' }}>{localStorage.getItem('email')}</span>
+
+          {/* 📢 Announcement Bell */}
+          <div
+            onClick={() => { setShowAnnouncements(true); localStorage.setItem('customerAnnouncementSeen', Date.now().toString()); setUnreadCount(0) }}
+            style={{ position: 'relative', cursor: 'pointer', padding: '6px', borderRadius: '10px', border: '1px solid rgba(52,211,153,0.35)', background: 'rgba(52,211,153,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.25s ease' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(52,211,153,0.25)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(52,211,153,0.1)'; e.currentTarget.style.transform = 'translateY(0)' }}
+          >
+            <span style={{ fontSize: '18px', lineHeight: 1 }}>📢</span>
+            {unreadCount > 0 && (
+              <div style={{ position: 'absolute', top: '-7px', right: '-7px', background: 'linear-gradient(135deg,#34d399,#22d3ee)', color: '#000', borderRadius: '50%', minWidth: '18px', height: '18px', fontSize: '9px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px', boxShadow: '0 2px 8px rgba(52,211,153,0.5)', border: '1.5px solid #020617' }}>
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </div>
+            )}
+          </div>
+
+          
           <button onClick={() => setDark(!dark)} style={{ padding:'8px 16px', borderRadius:'16px', border:`1px solid ${border}`, background:'transparent', color: text, cursor:'pointer', fontWeight:600, fontSize:'13px' }}>
             {dark ? '☀️ Light' : '🌙 Dark'}
           </button>
@@ -120,6 +151,40 @@ export default function CustomerDashboard() {
       </div>
 
       <div style={{ position:'relative', zIndex:10, padding:'36px 40px', maxWidth:'1000px', margin:'0 auto' }}>
+{/* ── ANNOUNCEMENT VIEW MODAL (Customer) ── */}
+{showAnnouncements && (
+  <div onClick={() => setShowAnnouncements(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(10px)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div onClick={e => e.stopPropagation()} style={{ background: dark ? 'linear-gradient(145deg,#0a1628,#060e1c)' : '#f8fafc', border: '1px solid rgba(52,211,153,0.3)', borderRadius: '24px', width: '95%', maxWidth: '560px', maxHeight: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 32px 80px rgba(0,0,0,0.6)', animation: 'fadeIn 0.3s cubic-bezier(0.22,1,0.36,1)' }}>
+      <div style={{ flexShrink: 0, padding: '24px 28px', borderBottom: '1px solid rgba(52,211,153,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'linear-gradient(135deg,rgba(52,211,153,0.25),rgba(34,211,238,0.15))', border: '1px solid rgba(52,211,153,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>📢</div>
+          <div>
+            <div style={{ color: '#34d399', fontWeight: 800, fontSize: '14px' }}>ANNOUNCEMENTS</div>
+            <div style={{ color: subtext, fontSize: '11px', marginTop: '2px' }}>{announcements.length} total from Super Admin</div>
+          </div>
+        </div>
+        <button onClick={() => setShowAnnouncements(false)} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', borderRadius: '8px', padding: '6px 14px', cursor: 'pointer', fontSize: '12px' }}>✕ Close</button>
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {announcements.length === 0 ? (
+          <div style={{ textAlign: 'center', color: subtext, padding: '60px 0', fontSize: '15px' }}>No announcements yet.</div>
+        ) : announcements.map((ann, idx) => (
+          <div key={ann.id} style={{ background: idx === 0 ? (dark ? 'rgba(52,211,153,0.07)' : 'rgba(52,211,153,0.05)') : (dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'), border: `1px solid ${idx === 0 ? 'rgba(52,211,153,0.35)' : (dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)')}`, borderRadius: '14px', padding: '16px 18px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {idx === 0 && <span style={{ fontSize: '9px', fontWeight: 800, padding: '2px 8px', borderRadius: '20px', background: 'rgba(52,211,153,0.15)', color: '#34d399', border: '1px solid rgba(52,211,153,0.3)' }}>● NEW</span>}
+                <span style={{ color: idx === 0 ? '#34d399' : text, fontWeight: 700, fontSize: '14px' }}>{ann.title}</span>
+              </div>
+              <span style={{ color: subtext, fontSize: '10px', whiteSpace: 'nowrap' }}>{new Date(ann.created_at).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })}</span>
+            </div>
+            <p style={{ color: dark ? '#cbd5e1' : '#475569', fontSize: '13px', lineHeight: '1.6', margin: 0 }}>{ann.message}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+)}
+
         {profile ? (
           <>
             <div className="cu-fade" style={{ background:'rgba(52,211,153,0.05)', border:'1px solid rgba(52,211,153,0.2)', borderRadius:'16px', padding:'20px 28px', marginBottom:'24px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>

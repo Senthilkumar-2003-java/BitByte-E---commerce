@@ -300,3 +300,23 @@ class CustomerProfile(models.Model):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
+
+
+class Announcement(models.Model):
+    TARGET_ROLES = [
+        ('admin', 'Admin'),
+        ('dealer', 'Dealer'),
+        ('sub_dealer', 'Sub Dealer'),
+        ('promotor', 'Promotor'),
+        ('customer', 'Customer'),
+    ]
+
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    target_roles = models.JSONField(default=list)   # ["admin","dealer"] etc.
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.title        

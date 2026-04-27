@@ -606,6 +606,9 @@ export default function SubDealerDashboard() {
   const [msg,     setMsg]     = useState('')
   const [msgType, setMsgType] = useState('success')
   const [form,    setForm]    = useState(emptyForm)
+  const [showAnnouncements, setShowAnnouncements] = useState(false)
+const [announcements, setAnnouncements] = useState([])
+const [unreadCount, setUnreadCount] = useState(0)
   const canvasRef = useRef(null)
 
   const bg         = dark ? '#020617' : '#f8fafc'
@@ -705,7 +708,17 @@ const fetchAll = async () => {
   }
 }
 
-  useEffect(() => { fetchAll() }, [])
+const fetchAnnouncements = async () => {
+  try {
+    const res = await api.get('/announcements/')
+    const sorted = res.data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    setAnnouncements(sorted)
+    const lastSeen = parseInt(localStorage.getItem('subDealerAnnouncementSeen') || '0')
+    setUnreadCount(sorted.filter(a => new Date(a.created_at).getTime() > lastSeen).length)
+  } catch {}
+}
+
+  useEffect(() => { fetchAll(); fetchAnnouncements() }, [])
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value })
   const handleSubDealerChange = (e) => {
@@ -770,6 +783,19 @@ const fetchAll = async () => {
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:'14px' }}>
           <span style={{ color: subtext, fontSize:'14px' }}>{localStorage.getItem('email')}</span>
+          <div
+  onClick={() => { setShowAnnouncements(true); localStorage.setItem('subDealerAnnouncementSeen', Date.now().toString()); setUnreadCount(0) }}
+  style={{ position: 'relative', cursor: 'pointer', padding: '6px', borderRadius: '10px', border: '1px solid rgba(167,139,250,0.35)', background: 'rgba(167,139,250,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.25s ease' }}
+  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(167,139,250,0.25)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(167,139,250,0.1)'; e.currentTarget.style.transform = 'translateY(0)' }}
+>
+  <span style={{ fontSize: '18px', lineHeight: 1 }}>📢</span>
+  {unreadCount > 0 && (
+    <div style={{ position: 'absolute', top: '-7px', right: '-7px', background: 'linear-gradient(135deg,#a78bfa,#22d3ee)', color: '#000', borderRadius: '50%', minWidth: '18px', height: '18px', fontSize: '9px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px', boxShadow: '0 2px 8px rgba(167,139,250,0.5)', border: '1.5px solid #020617' }}>
+      {unreadCount > 99 ? '99+' : unreadCount}
+    </div>
+  )}
+</div>
           <button onClick={() => setDark(!dark)} style={{ padding:'8px 16px', borderRadius:'16px', border:`1px solid ${border}`, background:'transparent', color: text, cursor:'pointer', fontWeight:600, fontSize:'13px' }}>
             {dark ? '☀️ Light' : '🌙 Dark'}
           </button>
