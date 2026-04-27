@@ -181,62 +181,102 @@ function showDLChainPopup(anchorEl, ancestors, current, dark, text, subtext, dea
   clearTimeout(_dlChainHideTimer)
   removeDLChainPopup()
 
-  const popupBg     = dark ? 'linear-gradient(160deg,#091525,#060e1c)' : 'linear-gradient(160deg,#ffffff,#f1f5f9)'
-  const popupBorder = dark ? 'rgba(245,158,11,0.2)' : 'rgba(245,158,11,0.3)'
-
   const CHAIN_LABELS = {
-    super_admin: { emoji:'🛡️', label:'SUPER ADMIN', color:'#ffd700', idKey:null },
-    admin:       { emoji:'🛡️', label:'ADMIN',       color:'#4ade80', idKey:'admin_id' },
-    dealer:      { emoji:'🏪', label:'DEALER',       color:'#f59e0b', idKey:'dealer_id' },
-    sub_dealer:  { emoji:'🔗', label:'SUB DEALER',   color:'#22d3ee', idKey:'sub_dealer_id' },
-    promotor:    { emoji:'🌟', label:'PROMOTOR',     color:'#a78bfa', idKey:'promotor_id' },
-    customer:    { emoji:'👤', label:'CUSTOMER',     color:'#f472b6', idKey:'customer_id' },
+    super_admin: { emoji: '🛡️', label: 'SUPER ADMIN', color: '#ffd700', idKey: null },
+    admin:       { emoji: '🛡️', label: 'ADMIN',       color: '#4ade80', idKey: 'admin_id' },
+    dealer:      { emoji: '🏪', label: 'DEALER',       color: '#f59e0b', idKey: 'dealer_id' },
+    sub_dealer:  { emoji: '🔗', label: 'SUB DEALER',   color: '#22d3ee', idKey: 'sub_dealer_id' },
+    promotor:    { emoji: '🌟', label: 'PROMOTOR',     color: '#a78bfa', idKey: 'promotor_id' },
+    customer:    { emoji: '👤', label: 'CUSTOMER',     color: '#f472b6', idKey: 'customer_id' },
   }
 
   const chain = [
-    { type:'super_admin', data:{ email: localStorage.getItem('superAdminEmail') || '—' } },
+    { type: 'super_admin', data: { email: localStorage.getItem('superAdminEmail') || '—' } },
     ...(dealerProfile?.admin_id ? [{
-      type:'admin',
-      data:{ admin_id: dealerProfile.admin_id, first_name: dealerProfile.admin_name, mobile_number: dealerProfile.admin_contact_no }
+      type: 'admin',
+      data: { admin_id: dealerProfile.admin_id, first_name: dealerProfile.admin_name, mobile_number: dealerProfile.admin_contact_no }
     }] : []),
-    { type:'dealer', data:{ dealer_id: dealerProfile?.dealer_id, first_name: dealerProfile?.first_name, last_name: dealerProfile?.last_name, mobile_number: dealerProfile?.mobile_number, city_name: dealerProfile?.city_name } },
+    { type: 'dealer', data: { dealer_id: dealerProfile?.dealer_id, first_name: dealerProfile?.first_name, last_name: dealerProfile?.last_name, mobile_number: dealerProfile?.mobile_number, city_name: dealerProfile?.city_name } },
     ...ancestors.map(a => ({ type: a.role, data: a.node })),
     { type: current.role, data: current.node },
   ]
 
   const el = document.createElement('div')
   el.id = 'dl-chain-popup'
+
+  // Inject scrollbar styles once
+  if (!document.getElementById('dl-chain-popup-styles')) {
+    const s = document.createElement('style')
+    s.id = 'dl-chain-popup-styles'
+    s.textContent = `
+      #dl-chain-popup::-webkit-scrollbar{width:6px}
+      #dl-chain-popup::-webkit-scrollbar-track{background:rgba(255,255,255,0.03);border-radius:10px;margin:4px 0}
+      #dl-chain-popup::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#f59e0b,#22d3ee);border-radius:10px;box-shadow:0 0 6px rgba(245,158,11,0.4)}
+      #dl-chain-popup::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,#fcd34d,#67e8f9)}
+      #dl-chain-popup{scrollbar-color:rgba(245,158,11,0.5) rgba(255,255,255,0.03)}
+    `
+    document.head.appendChild(s)
+  }
+
+  const isDark = dark
   el.style.cssText = `
     position:fixed; z-index:9999;
-    background:${popupBg}; border:1px solid ${popupBorder};
-    border-radius:14px; padding:14px 16px;
-    box-shadow:0 16px 48px rgba(0,0,0,0.55);
-    animation:dlPopupIn 0.25s cubic-bezier(0.22,1,0.36,1) both;
-    min-width:260px; max-width:320px;
-    max-height:82vh; overflow-y:auto; overflow-x:hidden;
+    background:${isDark ? 'rgba(5,10,20,0.97)' : 'rgba(248,250,252,0.98)'};
+    border:1px solid ${isDark ? 'rgba(245,158,11,0.22)' : 'rgba(245,158,11,0.28)'};
+    border-radius:20px; padding:20px;
+    box-shadow:${isDark
+      ? '0 32px 80px rgba(0,0,0,0.85), 0 0 0 1px rgba(245,158,11,0.06), inset 0 1px 0 rgba(255,255,255,0.04)'
+      : '0 32px 80px rgba(0,0,0,0.15), 0 0 0 1px rgba(245,158,11,0.05)'};
+    animation:acpSlideIn 0.3s cubic-bezier(0.22,1,0.36,1) both;
+    min-width:200px; max-width:280px;
+    max-height:85vh; overflow-y:auto; overflow-x:hidden;
     scroll-behavior:smooth; scrollbar-width:thin;
-    scrollbar-color:rgba(245,158,11,0.35) transparent;
+    scroll-padding:8px;
+    -webkit-overflow-scrolling:touch;
+    backdrop-filter:blur(28px);
+    font-family:'Inter',system-ui,sans-serif;
   `
+
+  const totalNodes = chain.length
 
   const itemsHtml = chain.map((item, idx) => {
     const isLast = idx === chain.length - 1
+    const isSuperAdmin = item.type === 'super_admin'
     const cfg = CHAIN_LABELS[item.type]
     if (!cfg) return ''
 
     const arrowHtml = idx > 0 ? `
-      <div style="display:flex;justify-content:center;padding:4px 0;">
-        <div style="display:flex;flex-direction:column;align-items:center;">
-          <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:9px solid rgba(245,158,11,0.6);"></div>
-          <div style="width:2px;height:12px;background:linear-gradient(180deg,rgba(245,158,11,0.5),rgba(245,158,11,0.1));"></div>
+      <div style="display:flex;justify-content:center;padding:5px 0;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+          <div style="width:1.5px;height:16px;background:linear-gradient(180deg,rgba(245,158,11,0.65),rgba(245,158,11,0.1));"></div>
+          <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid rgba(245,158,11,0.5);"></div>
         </div>
       </div>` : ''
 
-    if (item.type === 'super_admin') {
-      return `${arrowHtml}
-        <div style="border-radius:9px;padding:10px 12px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.25);">
-          <div style="font-size:9px;color:#ffd700;font-weight:700;margin-bottom:4px;">🛡️ SUPER ADMIN</div>
-          <div style="font-size:11px;color:${subtext};word-break:break-all;">${item.data.email || '—'}</div>
-        </div>`
+    if (isSuperAdmin) {
+      return `
+        ${arrowHtml}
+        <div style="
+          border-radius:14px;padding:14px 16px;
+          background:${isDark ? 'linear-gradient(135deg,rgba(255,215,0,0.09),rgba(255,140,0,0.04))' : 'linear-gradient(135deg,rgba(255,215,0,0.14),rgba(255,140,0,0.06))'};
+          border:1px solid rgba(255,215,0,0.28);
+          position:relative;overflow:hidden;
+        ">
+          <div style="position:absolute;top:-10px;right:-10px;width:70px;height:70px;background:radial-gradient(circle,rgba(255,215,0,0.14),transparent 70%);pointer-events:none;"></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+            <div style="width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,#ffd700,#ff8c00);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;box-shadow:0 4px 12px rgba(255,215,0,0.35);">🛡️</div>
+            <div>
+              <div style="font-size:9px;color:#ffd700;font-weight:800;letter-spacing:1.8px;">SUPER ADMIN</div>
+              <div style="font-size:8px;color:rgba(255,215,0,0.45);margin-top:2px;letter-spacing:0.5px;">ROOT • FULL ACCESS</div>
+            </div>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:5px;">
+              <div style="width:7px;height:7px;border-radius:50%;background:#4ade80;animation:acpPulse 1.8s ease-in-out infinite;box-shadow:0 0 8px rgba(74,222,128,0.9);"></div>
+              <span style="font-size:9px;color:#4ade80;font-weight:700;">LIVE</span>
+            </div>
+          </div>
+          <div style="font-size:12px;color:${isDark ? '#cbd5e1' : '#475569'};word-break:break-all;font-family:monospace;letter-spacing:0.3px;">${item.data.email || '—'}</div>
+        </div>
+      `
     }
 
     const d = item.data || {}
@@ -244,44 +284,97 @@ function showDLChainPopup(anchorEl, ancestors, current, dark, text, subtext, dea
     const name  = [d.first_name, d.last_name].filter(Boolean).join(' ') || '—'
     const phone = d.mobile_number || '—'
     const city  = d.city_name || ''
+    const rc    = hexToRgb(cfg.color)
 
-    return `${arrowHtml}
-      <div style="border-radius:9px;padding:10px 12px;
-        background:rgba(${hexToRgb(cfg.color)},0.06);
-        border:1px solid rgba(${hexToRgb(cfg.color)},${isLast ? '0.55' : '0.2'});
-        ${isLast ? `box-shadow:0 0 14px rgba(${hexToRgb(cfg.color)},0.18);` : ''}">
-        <div style="font-size:9px;color:${cfg.color};font-weight:700;margin-bottom:4px;">
-          ${cfg.emoji} ${cfg.label}${isLast ? ' <span style="font-size:8px;opacity:0.6;">(CURRENT)</span>' : ''}
+    return `
+      ${arrowHtml}
+      <div style="
+        border-radius:14px;padding:14px 16px;
+        background:${isLast
+          ? `linear-gradient(135deg,rgba(${rc},0.13),rgba(${rc},0.05))`
+          : `rgba(${rc},0.04)`};
+        border:${isLast
+          ? `1.5px solid rgba(${rc},0.55)`
+          : `1px solid rgba(${rc},0.16)`};
+        position:relative;overflow:hidden;
+        ${isLast ? `animation:acpGlow 3s ease-in-out infinite;` : ''}
+      ">
+        ${isLast ? `<div style="position:absolute;top:-15px;right:-15px;width:80px;height:80px;background:radial-gradient(circle,rgba(${rc},0.18),transparent 70%);pointer-events:none;"></div>` : ''}
+
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:11px;">
+          <div style="width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,${cfg.color},rgba(${rc},0.45));display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;box-shadow:0 4px 12px rgba(${rc},0.3);">${cfg.emoji}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:9px;color:${cfg.color};font-weight:800;letter-spacing:1.8px;">${cfg.label}</div>
+            ${idVal ? `<div style="font-size:9px;color:${cfg.color};font-family:monospace;opacity:0.6;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${idVal}</div>` : ''}
+          </div>
+          ${isLast ? `
+          <div style="font-size:8px;font-weight:800;padding:3px 9px;border-radius:20px;
+            background:rgba(${rc},0.18);color:${cfg.color};
+            border:1px solid rgba(${rc},0.4);
+            animation:acpBadgePop 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+            white-space:nowrap;letter-spacing:0.5px;">● CURRENT</div>` : ''}
         </div>
-        ${idVal ? `<div style="font-size:10px;color:${cfg.color};font-family:monospace;margin-bottom:3px;">${idVal}</div>` : ''}
-        <div style="font-size:13px;color:${text};font-weight:700;margin-bottom:4px;">${name}</div>
-        ${phone !== '—' ? `<div style="font-size:11px;color:${subtext};margin-bottom:2px;">📞 ${phone}</div>` : ''}
-        ${city ? `<div style="font-size:11px;color:${subtext};">📍 ${city}</div>` : ''}
-      </div>`
+
+        <div style="font-size:14px;color:${isDark ? '#f1f5f9' : '#0f172a'};font-weight:700;margin-bottom:9px;letter-spacing:-0.3px;">${name}</div>
+
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          ${phone !== '—' ? `
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:20px;height:20px;border-radius:6px;background:rgba(${rc},0.12);border:1px solid rgba(${rc},0.2);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;">📞</div>
+            <span style="font-size:12px;color:${isDark ? '#94a3b8' : '#64748b'};">${phone}</span>
+          </div>` : ''}
+          ${city ? `
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:20px;height:20px;border-radius:6px;background:rgba(${rc},0.12);border:1px solid rgba(${rc},0.2);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;">📍</div>
+            <span style="font-size:12px;color:${isDark ? '#94a3b8' : '#64748b'};">${city}</span>
+          </div>` : ''}
+        </div>
+      </div>
+    `
   }).join('')
 
   el.innerHTML = `
-    <div style="font-size:9px;color:#fcd34d;font-weight:700;letter-spacing:1.2px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid ${popupBorder};">
-      🔗 HIERARCHY CHAIN
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid ${isDark ? 'rgba(245,158,11,0.1)' : 'rgba(245,158,11,0.12)'};">
+      <div style="display:flex;align-items:center;gap:9px;">
+        <div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#f59e0b,#22d3ee);display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 4px 10px rgba(245,158,11,0.4);">🔗</div>
+        <div>
+          <div style="font-size:11px;color:${isDark ? '#fcd34d' : '#d97706'};font-weight:800;letter-spacing:1.8px;">HIERARCHY CHAIN</div>
+          <div style="font-size:9px;color:${isDark ? '#475569' : '#94a3b8'};margin-top:2px;">${totalNodes} level${totalNodes !== 1 ? 's' : ''} deep</div>
+        </div>
+      </div>
+      <div style="
+        font-size:9px;font-weight:800;padding:4px 11px;border-radius:20px;
+        background:linear-gradient(90deg,rgba(245,158,11,0.15),rgba(34,211,238,0.12),rgba(245,158,11,0.15));
+        background-size:200% auto;
+        animation:acpShimmer 2.5s linear infinite;
+        border:1px solid rgba(245,158,11,0.25);
+        color:${isDark ? '#fcd34d' : '#d97706'};
+        letter-spacing:1px;">● LIVE</div>
     </div>
+
     ${itemsHtml}
+
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.05)'};">
+      <div style="font-size:9px;color:${isDark ? '#334155' : '#cbd5e1'};text-align:center;letter-spacing:0.8px;font-weight:600;">BitByte Network • Hierarchy View</div>
+    </div>
   `
 
   document.body.appendChild(el)
 
   const rect = anchorEl.getBoundingClientRect()
-  const popW = 320
-  const popH = el.scrollHeight || 400
-  let left = rect.right + 14
-  let top  = rect.top
-  if (left + popW > window.innerWidth - 10)  left = rect.left - popW - 14
-  if (top < 8)                                top  = 8
-  if (top + popH > window.innerHeight - 8)   top  = window.innerHeight - popH - 8
+  const popW = 280
+  const popH = Math.min(el.scrollHeight || 460, window.innerHeight * 0.85)
+  let left = rect.right + 18
+  let top  = rect.top + (rect.height / 2) - (popH / 2)
+  if (left + popW > window.innerWidth - 12) left = rect.left - popW - 18
+  if (top < 12) top = 12
+  if (top + popH > window.innerHeight - 12) top = window.innerHeight - popH - 12
   el.style.left = left + 'px'
   el.style.top  = top  + 'px'
 
   el.addEventListener('mouseenter', () => clearTimeout(_dlChainHideTimer))
   el.addEventListener('mouseleave', () => { _dlChainHideTimer = setTimeout(() => removeDLChainPopup(), 200) })
+  _dlChainPopupEl = el
 }
 
 // ── Print ──
@@ -572,7 +665,12 @@ export default function DealerDashboard() {
         @keyframes sdPulseGlow{0%,100%{box-shadow:0 0 8px rgba(245,158,11,0.15);}50%{box-shadow:0 0 22px rgba(245,158,11,0.35);}}
         @keyframes sdDotPulse{0%,100%{transform:scale(1);opacity:0.7;}50%{transform:scale(1.6);opacity:1;}}
         @keyframes dlPopupIn{from{opacity:0;transform:translateY(8px) scale(0.97);}to{opacity:1;transform:translateY(0) scale(1);}}
-@keyframes sdDotPulse{0%,100%{transform:scale(1);opacity:0.7;}50%{transform:scale(1.6);opacity:1;}}
+        @keyframes sdDotPulse{0%,100%{transform:scale(1);opacity:0.7;}50%{transform:scale(1.6);opacity:1;}}
+        @keyframes acpSlideIn{from{opacity:0;transform:translateX(18px) scale(0.95)}to{opacity:1;transform:translateX(0) scale(1)}}
+        @keyframes acpPulse{0%,100%{opacity:0.6;transform:scale(1)}50%{opacity:1;transform:scale(1.3)}}
+        @keyframes acpGlow{0%,100%{box-shadow:0 0 0px rgba(245,158,11,0)}50%{box-shadow:0 0 20px rgba(245,158,11,0.22)}}
+        @keyframes acpShimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+        @keyframes acpBadgePop{0%{transform:scale(0.8);opacity:0}100%{transform:scale(1);opacity:1}}
         .dl-inp:focus{border-color:#f59e0b !important}
         .dl-grad-btn{position:relative;overflow:hidden}
         .dl-grad-btn::after{content:"";position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);transform:translateX(-100%)}
@@ -631,52 +729,60 @@ export default function DealerDashboard() {
         </div>
 
 {showHierarchy && (
-  <div onClick={() => { setShowHierarchy(false); setActiveSD(null); removeDLChainPopup() }}
-    style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', backdropFilter:'blur(8px)', zIndex:1000, display:'flex', alignItems:'flex-start', justifyContent:'center', paddingTop:'40px', overflowY:'auto' }}>
-    <div onClick={e => e.stopPropagation()}
-      style={{ background: dark?'#0f172a':'#f8fafc', border:'1px solid rgba(245,158,11,0.2)', borderRadius:'20px', padding:'32px', maxWidth:'1100px', width:'95%', marginBottom:'40px' }}>
+  <div
+    onClick={() => { setShowHierarchy(false); setActiveSD(null); removeDLChainPopup() }}
+    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+  >
+    <div
+      onClick={e => e.stopPropagation()}
+      style={{ background: dark ? '#0f172a' : '#f8fafc', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '22px', width: '95%', maxWidth: '1100px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+    >
 
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'28px', paddingBottom:'14px', borderBottom:'1px solid rgba(245,158,11,0.1)' }}>
-        <span style={{ color:'#fcd34d', fontSize:'13px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em' }}>🏢 Sub Dealer Hierarchy</span>
-        <button onClick={() => { setShowHierarchy(false); setActiveSD(null); removeDLChainPopup() }}
-          style={{ background:'transparent', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', borderRadius:'8px', padding:'6px 14px', cursor:'pointer', fontSize:'12px' }}>
-          ✕ Close
-        </button>
+      {/* HEADER - fixed top */}
+      <div style={{ flexShrink: 0, padding: '20px 28px', borderBottom: '1px solid rgba(245,158,11,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <span style={{ color: '#fcd34d', fontSize: '14px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>🏢 Sub Dealer Hierarchy</span>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
+            {[
+              { label: 'Sub Dealers', count: subDealers.length, color: '#22d3ee' },
+              { label: 'Promotors', count: subDealers.reduce((a, sd) => a + (sd.promotors?.length || 0), 0), color: '#a78bfa' },
+              { label: 'Customers', count: subDealers.reduce((a, sd) => a + (sd.promotors || []).reduce((b, p) => b + (p.customers?.length || 0), 0), 0), color: '#f472b6' },
+            ].map(s => (
+              <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: `rgba(${hexToRgb(s.color)},0.08)`, border: `1px solid rgba(${hexToRgb(s.color)},0.25)`, borderRadius: '20px', padding: '3px 12px' }}>
+                <span style={{ color: s.color, fontWeight: 800, fontSize: '13px' }}>{s.count}</span>
+                <span style={{ color: subtext, fontSize: '11px' }}>{s.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <button
+          onClick={() => { setShowHierarchy(false); setActiveSD(null); removeDLChainPopup() }}
+          style={{ background: 'transparent', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', borderRadius: '8px', padding: '6px 14px', cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap', flexShrink: 0 }}
+        >✕ Close</button>
       </div>
 
-      <div style={{ overflowX:'auto', overflowY:'auto', scrollBehavior:'smooth', scrollbarWidth:'thin', scrollbarColor:'rgba(245,158,11,0.35) transparent' }}>
-        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', minWidth:'max-content', margin:'0 auto' }}>
+      {/* SCROLL AREA - middle scrolls */}
+      <div style={{ flex: 1, overflowX: 'auto', overflowY: 'auto', padding: '28px 32px', scrollBehavior: 'smooth', scrollbarWidth: 'thin', scrollbarColor: 'rgba(245,158,11,0.4) rgba(255,255,255,0.03)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 'max-content', margin: '0 auto' }}>
 
           {/* Dealer Root Node */}
-          <div style={{
-            background:'linear-gradient(135deg,rgba(245,158,11,0.13),rgba(34,211,238,0.08))',
-            border:'1px solid rgba(245,158,11,0.55)',
-            borderRadius:'16px', padding:'16px 48px',
-            fontWeight:800, fontSize:'16px', color:'#f59e0b',
-            animation:'sdPulseGlow 3s ease-in-out infinite',
-            boxShadow:'0 0 24px rgba(245,158,11,0.1)',
-          }}>
+          <div style={{ background: 'linear-gradient(135deg,rgba(245,158,11,0.13),rgba(34,211,238,0.08))', border: '1px solid rgba(245,158,11,0.55)', borderRadius: '16px', padding: '16px 48px', fontWeight: 800, fontSize: '16px', color: '#f59e0b', animation: 'sdPulseGlow 3s ease-in-out infinite', boxShadow: '0 0 24px rgba(245,158,11,0.1)', textAlign: 'center' }}>
             🏪 Dealer
-            <div style={{ fontSize:'11px', color:'#94a3b8', fontWeight:400, marginTop:'4px', textAlign:'center' }}>
+            <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 400, marginTop: '4px' }}>
               {localStorage.getItem('email')}
             </div>
           </div>
 
-          <div style={{ width:2, height:32, background:'linear-gradient(180deg,#f59e0b,rgba(245,158,11,0.3))' }}>
-            <div style={{ position:'relative' }}>
-              <div style={{ position:'absolute', bottom:-4, left:'50%', transform:'translateX(-50%)', width:7, height:7, borderRadius:'50%', background:'#f59e0b', animation:'sdDotPulse 2s ease-in-out infinite' }} />
-            </div>
-          </div>
+          {/* Stem */}
+          <div style={{ width: 2, height: 32, background: 'linear-gradient(180deg,#f59e0b,rgba(245,158,11,0.3))' }} />
 
           {subDealers.length > 0 ? (
             <>
-              <div style={{ height:2, background:'linear-gradient(90deg,transparent,rgba(245,158,11,0.5),transparent)', width:'80%' }} />
-              <div style={{ display:'flex', gap:'32px', justifyContent:'center', alignItems:'flex-start', flexWrap:'wrap', paddingTop:0 }}>
+              <div style={{ height: 2, background: 'linear-gradient(90deg,transparent,rgba(245,158,11,0.5),transparent)', width: '80%' }} />
+              <div style={{ display: 'flex', gap: '32px', justifyContent: 'center', alignItems: 'flex-start' }}>
                 {subDealers.map((sd, si) => (
-                  <div key={sd.id} style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
-                    <div style={{ width:2, height:24, background:'rgba(245,158,11,0.5)', position:'relative' }}>
-                      <div style={{ position:'absolute', bottom:-3, left:'50%', transform:'translateX(-50%)', width:6, height:6, borderRadius:'50%', background:DL_TREE_COLORS[si % DL_TREE_COLORS.length], animation:`sdDotPulse ${1.8+si*0.2}s ease-in-out infinite` }} />
-                    </div>
+                  <div key={sd.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div style={{ width: 2, height: 24, background: 'rgba(245,158,11,0.5)' }} />
                     <DLTreeNode
                       node={sd}
                       role="sub_dealer"
@@ -693,27 +799,29 @@ export default function DealerDashboard() {
               </div>
             </>
           ) : (
-            <div style={{ color:subtext, padding:'60px', textAlign:'center', fontSize:'15px' }}>No sub dealers yet.</div>
+            <div style={{ color: subtext, padding: '60px', textAlign: 'center', fontSize: '15px' }}>No sub dealers yet.</div>
           )}
+
         </div>
       </div>
 
-      {/* Legend */}
-      <div style={{ display:'flex', gap:'16px', flexWrap:'wrap', justifyContent:'center', marginTop:'28px', paddingTop:'20px', borderTop:'1px solid rgba(245,158,11,0.1)' }}>
+      {/* LEGEND - fixed bottom */}
+      <div style={{ flexShrink: 0, padding: '14px 28px', borderTop: '1px solid rgba(245,158,11,0.08)', display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center' }}>
         {[
-          { role:'Sub Dealer', color:'#22d3ee', emoji:'🔗' },
-          { role:'Promotor',   color:'#a78bfa', emoji:'🌟' },
-          { role:'Customer',   color:'#f472b6', emoji:'👤' },
+          { role: 'Sub Dealer', color: '#22d3ee', emoji: '🔗' },
+          { role: 'Promotor',   color: '#a78bfa', emoji: '🌟' },
+          { role: 'Customer',   color: '#f472b6', emoji: '👤' },
         ].map(l => (
-          <div key={l.role} style={{ display:'flex', alignItems:'center', gap:'6px' }}>
-            <div style={{ width:10, height:10, borderRadius:'50%', background:l.color }} />
-            <span style={{ color:subtext, fontSize:'12px' }}>{l.emoji} {l.role}</span>
+          <div key={l.role} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ width: 9, height: 9, borderRadius: '50%', background: l.color }} />
+            <span style={{ color: subtext, fontSize: '11px' }}>{l.emoji} {l.role}</span>
           </div>
         ))}
-        <div style={{ color:subtext, fontSize:'12px', width:'100%', textAlign:'center', marginTop:'4px' }}>
+        <div style={{ color: subtext, fontSize: '11px', width: '100%', textAlign: 'center' }}>
           💡 Click any node to expand/collapse • Hover to see full chain
         </div>
       </div>
+
     </div>
   </div>
 )}

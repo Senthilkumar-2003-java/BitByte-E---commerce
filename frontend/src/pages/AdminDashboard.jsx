@@ -779,83 +779,117 @@ const fetchDealers = async () => {
         </div>
 
         {/* ── DEALER HIERARCHY MODAL ── */}
-        {showHierarchy && (
-          <div onClick={() => { setShowHierarchy(false); setActiveDealer(null); removeDealerPopup() }}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div onClick={e => e.stopPropagation()}
-              style={{ background: dark ? '#0f172a' : '#f8fafc', border: '1px solid rgba(74,222,128,0.2)', borderRadius: '20px', padding: '32px', maxWidth: '960px', width: '95%', maxHeight: '80vh', overflowY: 'auto' }}>
+{/* ── DEALER HIERARCHY MODAL ── */}
+{showHierarchy && (
+  <div
+    onClick={() => { setShowHierarchy(false); setActiveDealer(null); removeDealerPopup() }}
+    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+  >
+    <div
+      onClick={e => e.stopPropagation()}
+      style={{ background: dark ? '#0a1628' : '#f8fafc', border: '1px solid rgba(74,222,128,0.2)', borderRadius: '24px', width: '95%', maxWidth: '1100px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+    >
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', paddingBottom: '14px', borderBottom: '1px solid rgba(74,222,128,0.1)' }}>
-                <span style={{ color: '#86efac', fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>🏢 Dealer Hierarchy</span>
-                <button onClick={() => { setShowHierarchy(false); setActiveDealer(null); removeDealerPopup() }}
-                  style={{ background: 'transparent', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', borderRadius: '8px', padding: '6px 14px', cursor: 'pointer', fontSize: '12px' }}>
-                  ✕ Close
-                </button>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', overflowX: 'auto', overflowY: 'auto', scrollBehavior: 'smooth', scrollbarWidth: 'thin', scrollbarColor: 'rgba(74,222,128,0.35) transparent' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 'max-content', margin: '0 auto' }}>
-
-                    {/* Admin Root Node */}
-                    <div style={{
-                      background: 'linear-gradient(135deg,rgba(74,222,128,0.13),rgba(34,211,238,0.08))',
-                      border: '1px solid rgba(74,222,128,0.55)',
-                      borderRadius: '16px', padding: '16px 48px',
-                      fontWeight: 800, fontSize: '16px', color: '#4ade80',
-                      animation: 'dPulseGlow 3s ease-in-out infinite',
-                      boxShadow: '0 0 24px rgba(74,222,128,0.1)',
-                    }}>
-                      🛡️ Admin
-                      <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 400, marginTop: '4px', textAlign: 'center' }}>
-                        {localStorage.getItem('email')}
-                      </div>
-                    </div>
-
-                    {/* Stem */}
-                    <div style={{ width: 2, height: 32, background: 'linear-gradient(180deg,#4ade80,rgba(74,222,128,0.3))' }}>
-                      <div style={{ position: 'relative' }}>
-                        <div style={{ position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)', width: 7, height: 7, borderRadius: '50%', background: '#4ade80', animation: 'dDotPulse 2s ease-in-out infinite' }} />
-                      </div>
-                    </div>
-
-                    {dealers.length > 0 && (
-                      <>
-                        <div style={{ height: 2, background: 'linear-gradient(90deg,transparent,rgba(74,222,128,0.5),transparent)', width: '80%' }} />
-                        <div style={{ display: 'flex', gap: '32px', justifyContent: 'center', alignItems: 'flex-start', flexWrap: 'wrap', paddingTop: 0 }}>
-                          {dealers.map((dealer, di) => (
-                            <div key={dealer.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                              <div style={{ width: 2, height: 24, background: 'rgba(74,222,128,0.5)', position: 'relative' }}>
-                                <div style={{ position: 'absolute', bottom: -3, left: '50%', transform: 'translateX(-50%)', width: 6, height: 6, borderRadius: '50%', background: COLORS[di % COLORS.length], animation: `dDotPulse ${1.8 + di * 0.2}s ease-in-out infinite` }} />
-                              </div>
-                              <AdminTreeNode
-                                node={dealer}
-                                role="dealer"
-                                depth={0}
-                                dark={dark}
-                                text={text}
-                                subtext={subtext}
-                                colorIdx={di}
-                                ancestors={[]}
-                                superAdminEmail={localStorage.getItem('superAdminEmail') || ''}
-adminData={dealer._admin || null}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </>
-                    )}
-
-                    {dealers.length === 0 && (
-                      <div style={{ color: subtext, padding: '60px', textAlign: 'center', fontSize: '15px' }}>No dealers yet.</div>
-                    )}
+      {/* HEADER - fixed top */}
+      <div style={{ padding: '20px 28px', borderBottom: '1px solid rgba(74,222,128,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+        <div>
+          <span style={{ color: '#86efac', fontSize: '14px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>🏢 Full Dealer Hierarchy</span>
+          {(() => {
+            const totalSubDealers = dealers.reduce((a, d) => a + (d.sub_dealers?.length || 0), 0)
+            const totalPromotors = dealers.reduce((a, d) => a + (d.sub_dealers || []).reduce((b, sd) => b + (sd.promotors?.length || 0), 0), 0)
+            const totalCustomers = dealers.reduce((a, d) => a + (d.sub_dealers || []).reduce((b, sd) => b + (sd.promotors || []).reduce((c, p) => c + (p.customers?.length || 0), 0), 0), 0)
+            return (
+              <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
+                {[
+                  { label: 'Dealers', count: dealers.length, color: '#4ade80' },
+                  { label: 'Sub Dealers', count: totalSubDealers, color: '#f59e0b' },
+                  { label: 'Promotors', count: totalPromotors, color: '#a78bfa' },
+                  { label: 'Customers', count: totalCustomers, color: '#f472b6' },
+                ].map(s => (
+                  <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: `rgba(${hexToRgbA(s.color)},0.08)`, border: `1px solid rgba(${hexToRgbA(s.color)},0.25)`, borderRadius: '20px', padding: '3px 12px' }}>
+                    <span style={{ color: s.color, fontWeight: 800, fontSize: '13px' }}>{s.count}</span>
+                    <span style={{ color: subtext, fontSize: '11px' }}>{s.label}</span>
                   </div>
-                </div>
+                ))}
               </div>
+            )
+          })()}
+        </div>
+        <button
+          onClick={() => { setShowHierarchy(false); setActiveDealer(null); removeDealerPopup() }}
+          style={{ background: 'transparent', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', borderRadius: '8px', padding: '6px 14px', cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}
+        >✕ Close</button>
+      </div>
+
+      {/* SCROLL AREA - இதுதான் scroll ஆகும் */}
+      <div style={{ flex: 1, overflowX: 'auto', overflowY: 'auto', padding: '28px 32px', scrollBehavior: 'smooth', scrollbarWidth: 'thin', scrollbarColor: 'rgba(74,222,128,0.4) rgba(255,255,255,0.03)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 'max-content', margin: '0 auto' }}>
+
+          {/* Admin Root Node */}
+          <div style={{ background: 'linear-gradient(135deg,rgba(74,222,128,0.13),rgba(34,211,238,0.08))', border: '1px solid rgba(74,222,128,0.55)', borderRadius: '16px', padding: '16px 48px', fontWeight: 800, fontSize: '16px', color: '#4ade80', animation: 'dPulseGlow 3s ease-in-out infinite', boxShadow: '0 0 24px rgba(74,222,128,0.1)' }}>
+            🛡️ Admin
+            <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 400, marginTop: '4px', textAlign: 'center' }}>
+              {localStorage.getItem('email')}
             </div>
           </div>
-        )}
+
+          {/* Stem */}
+          <div style={{ width: 2, height: 32, background: 'linear-gradient(180deg,#4ade80,rgba(74,222,128,0.3))' }} />
+
+          {dealers.length > 0 && (
+            <>
+              <div style={{ height: 2, background: 'linear-gradient(90deg,transparent,rgba(74,222,128,0.5),transparent)', width: '80%' }} />
+              <div style={{ display: 'flex', gap: '32px', justifyContent: 'center', alignItems: 'flex-start', paddingTop: 0 }}>
+                {dealers.map((dealer, di) => (
+                  <div key={dealer.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div style={{ width: 2, height: 24, background: 'rgba(74,222,128,0.5)' }} />
+                    <AdminTreeNode
+                      node={dealer}
+                      role="dealer"
+                      depth={0}
+                      dark={dark}
+                      text={text}
+                      subtext={subtext}
+                      colorIdx={di}
+                      ancestors={[]}
+                      superAdminEmail={localStorage.getItem('superAdminEmail') || ''}
+                      adminData={dealer._admin || null}
+                    />
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {dealers.length === 0 && (
+            <div style={{ color: subtext, padding: '60px', textAlign: 'center', fontSize: '15px' }}>No dealers yet.</div>
+          )}
+
+        </div>
+      </div>
+
+      {/* LEGEND - fixed bottom */}
+      <div style={{ flexShrink: 0, padding: '14px 28px', borderTop: '1px solid rgba(74,222,128,0.08)', display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center' }}>
+        {[
+          { role: 'Admin', color: '#4ade80', emoji: '🛡️' },
+          { role: 'Dealer', color: '#22d3ee', emoji: '🏪' },
+          { role: 'Sub Dealer', color: '#f59e0b', emoji: '🔗' },
+          { role: 'Promotor', color: '#a78bfa', emoji: '🌟' },
+          { role: 'Customer', color: '#f472b6', emoji: '👤' },
+        ].map(l => (
+          <div key={l.role} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ width: 9, height: 9, borderRadius: '50%', background: l.color }} />
+            <span style={{ color: subtext, fontSize: '11px' }}>{l.emoji} {l.role}</span>
+          </div>
+        ))}
+        <div style={{ color: subtext, fontSize: '11px', width: '100%', textAlign: 'center' }}>
+          💡 Click any node to expand/collapse
+        </div>
+      </div>
+
+    </div>
+  </div>
+)}
 
         {showForm && (
           <div style={card}>
