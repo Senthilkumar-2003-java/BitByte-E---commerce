@@ -609,6 +609,7 @@ export default function SubDealerDashboard() {
   const [showAnnouncements, setShowAnnouncements] = useState(false)
 const [announcements, setAnnouncements] = useState([])
 const [unreadCount, setUnreadCount] = useState(0)
+const [showProfile, setShowProfile] = useState(false)
 
 const [replyAnn,        setReplyAnn]        = useState(null)
   const [replyText,       setReplyText]       = useState('')
@@ -739,6 +740,7 @@ draw() {
     return () => { window.removeEventListener('resize',handleResize); window.removeEventListener('mousemove',handleMouseMove); cancelAnimationFrame(animationFrameId) }
   }, [dark])
 
+const [myDashData, setMyDashData] = useState(null)  
 const fetchAll = async () => {
   try {
     const [promotorRes, customerRes, dashRes] = await Promise.allSettled([
@@ -750,6 +752,7 @@ const fetchAll = async () => {
     const promotorList = promotorRes.status === 'fulfilled' ? promotorRes.value.data : []
     const customerList = customerRes.status === 'fulfilled' ? customerRes.value.data : []
     const dashData     = dashRes.status    === 'fulfilled' ? dashRes.value.data    : {}
+    if (dashRes.status === 'fulfilled') setMyDashData(dashRes.value.data)
 
     // superAdminEmail fetch
     try {
@@ -870,7 +873,14 @@ useEffect(() => {
           <span style={{ color:'#c4b5fd', fontWeight:700, fontSize:'14px' }}>💎 Sub Dealer Dashboard</span>
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:'14px' }}>
-          <span style={{ color: subtext, fontSize:'14px' }}>{localStorage.getItem('email')}</span>
+<div
+  onClick={() => setShowProfile(true)}
+  style={{ cursor: 'pointer', width: '38px', height: '38px', borderRadius: '50%', background: 'linear-gradient(135deg,rgba(167,139,250,0.25),rgba(34,211,238,0.15))', border: '2px solid rgba(167,139,250,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', transition: 'all 0.25s ease' }}
+  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(167,139,250,0.3)' }}
+  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}
+  title="View Profile"
+>💎</div>
+
           <div
   onClick={() => { setShowAnnouncements(true); localStorage.setItem('subDealerAnnouncementSeen', Date.now().toString()); setUnreadCount(0) }}
   style={{ position: 'relative', cursor: 'pointer', padding: '6px', borderRadius: '10px', border: '1px solid rgba(167,139,250,0.35)', background: 'rgba(167,139,250,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.25s ease' }}
@@ -914,6 +924,78 @@ useEffect(() => {
           </div>
         </div>
 
+
+{showProfile && (
+  <div onClick={() => setShowProfile(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.82)', backdropFilter:'blur(10px)', zIndex:1100, display:'flex', alignItems:'center', justifyContent:'center' }}>
+    <div onClick={e => e.stopPropagation()} style={{ background: dark ? 'linear-gradient(145deg,#0a1628,#060e1c)' : '#f8fafc', border:'1px solid rgba(167,139,250,0.3)', borderRadius:'24px', width:'95%', maxWidth:'580px', maxHeight:'88vh', display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 32px 80px rgba(0,0,0,0.7)' }}>
+      <div style={{ flexShrink:0, padding:'24px 28px', borderBottom:'1px solid rgba(167,139,250,0.15)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:'14px' }}>
+          <div style={{ width:'48px', height:'48px', borderRadius:'14px', background:'linear-gradient(135deg,rgba(167,139,250,0.25),rgba(34,211,238,0.15))', border:'2px solid rgba(167,139,250,0.5)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'22px' }}>💎</div>
+          <div>
+            <div style={{ color:'#a78bfa', fontWeight:800, fontSize:'15px' }}>MY PROFILE</div>
+            <div style={{ color:subtext, fontSize:'11px', fontFamily:'monospace' }}>{myDashData?.sub_dealer_id || '—'}</div>
+          </div>
+        </div>
+        <button onClick={() => setShowProfile(false)} style={{ background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', borderRadius:'8px', padding:'6px 14px', cursor:'pointer', fontSize:'12px' }}>✕ Close</button>
+      </div>
+      <div style={{ flex:1, overflowY:'auto', padding:'24px 28px', display:'flex', flexDirection:'column', gap:'20px', scrollbarWidth:'thin' }}>
+        {!myDashData ? <div style={{ textAlign:'center', color:subtext, padding:'60px 0' }}>Loading...</div> : (
+          <>
+            {[
+              { title:'ACCOUNT INFO', color:'#a78bfa', fields:[
+                { label:'Sub Dealer ID', value:myDashData.sub_dealer_id, mono:true, color:'#a78bfa' },
+                { label:'Initial', value:myDashData.initial },
+                { label:'First Name', value:myDashData.first_name },
+                { label:'Last Name', value:myDashData.last_name },
+                { label:'Email', value:myDashData.email },
+                { label:'Mobile', value:myDashData.mobile_number },
+              ]},
+              { title:'ADDRESS', color:'#22d3ee', fields:[
+                { label:'Door No', value:myDashData.door_no },
+                { label:'Street', value:myDashData.street_name },
+                { label:'Town', value:myDashData.town_name },
+                { label:'City', value:myDashData.city_name },
+                { label:'District', value:myDashData.district },
+                { label:'State', value:myDashData.state },
+              ]},
+              { title:'IDENTITY', color:'#f472b6', fields:[
+                { label:'Aadhaar No', value:myDashData.aadhaar_no, mask:true },
+                { label:'PAN No', value:myDashData.pan_no, pan:true, mono:true },
+              ]},
+              { title:'OCCUPATION', color:'#f59e0b', fields:[
+                { label:'Type', value:myDashData.occupation ? myDashData.occupation.charAt(0).toUpperCase()+myDashData.occupation.slice(1) : '—' },
+                { label:'Detail', value:myDashData.occupation_detail },
+                { label:'Annual Salary', value:myDashData.annual_salary ? `₹ ${Number(myDashData.annual_salary).toLocaleString('en-IN')}` : '—' },
+              ]},
+              { title:'DEALER INFO', color:'#f59e0b', fields:[
+                { label:'Dealer ID', value:myDashData.dealer_id, mono:true, color:'#f59e0b' },
+                { label:'Dealer Name', value:myDashData.dealer_name },
+                { label:'Dealer Contact', value:myDashData.dealer_contact_no },
+                { label:'Member Since', value:myDashData.created_at ? new Date(myDashData.created_at).toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'}) : '—' },
+              ]},
+            ].map(section => (
+              <div key={section.title} style={{ background:`rgba(${section.color==='#a78bfa'?'167,139,250':section.color==='#22d3ee'?'34,211,238':section.color==='#f472b6'?'244,114,182':'245,158,11'},0.04)`, border:`1px solid rgba(${section.color==='#a78bfa'?'167,139,250':section.color==='#22d3ee'?'34,211,238':section.color==='#f472b6'?'244,114,182':'245,158,11'},0.18)`, borderRadius:'16px', padding:'18px 20px' }}>
+                <div style={{ color:section.color, fontSize:'10px', fontWeight:800, letterSpacing:'1.5px', marginBottom:'14px', display:'flex', alignItems:'center', gap:'8px' }}>
+                  <span style={{ width:6, height:6, borderRadius:'50%', background:section.color, display:'inline-block' }} />{section.title}
+                </div>
+                <div style={{ display:'grid', gridTemplateColumns:section.fields.length===3?'1fr 1fr 1fr':'1fr 1fr', gap:'12px' }}>
+                  {section.fields.map(f => (
+                    <div key={f.label}>
+                      <div style={{ color:subtext, fontSize:'10px', fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:'4px' }}>{f.label}</div>
+                      <div style={{ color:f.color||text, fontSize:'13px', fontWeight:f.mono?700:500, fontFamily:f.mono?'monospace':'inherit', wordBreak:'break-all' }}>
+                        {f.mask&&f.value?`XXXX-XXXX-${f.value.slice(-4)}`:f.pan&&f.value?`XXXXXXX${f.value.slice(-4)}`:(f.value||'—')}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+    </div>
+  </div>
+)}
 
 
         {/* PROMOTOR HIERARCHY MODAL */}

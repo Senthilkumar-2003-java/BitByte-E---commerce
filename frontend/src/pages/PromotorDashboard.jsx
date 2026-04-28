@@ -336,6 +336,7 @@ export default function PromotorDashboard() {
 const [showAnnouncements, setShowAnnouncements] = useState(false)
 const [announcements, setAnnouncements] = useState([])
 const [unreadCount, setUnreadCount] = useState(0)
+const [showProfile, setShowProfile] = useState(false)
 const canvasRef = useRef(null)
 
   const bg         = dark ? '#020617' : '#f8fafc'
@@ -519,7 +520,12 @@ useEffect(() => {
           <span style={{ color:'#fbcfe8', fontWeight:700, fontSize:'14px' }}>🌟 Promotor Dashboard</span>
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:'14px' }}>
-<span style={{ color: subtext, fontSize:'14px' }}>{localStorage.getItem('email')}</span>
+<div
+  onClick={() => setShowProfile(true)}
+  style={{ cursor:'pointer', width:'38px', height:'38px', borderRadius:'50%', background:'linear-gradient(135deg,rgba(244,114,182,0.25),rgba(167,139,250,0.15))', border:'2px solid rgba(244,114,182,0.5)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', transition:'all 0.25s ease' }}
+  onMouseEnter={e => { e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 4px 16px rgba(244,114,182,0.3)' }}
+  onMouseLeave={e => { e.currentTarget.style.transform='translateY(0)'; e.currentTarget.style.boxShadow='none' }}
+>🌟</div>
 
           {/* 📢 Announcement Bell */}
           <div
@@ -567,7 +573,78 @@ useEffect(() => {
           </div>
         </div>
 
-        {/* ── HIERARCHY MODAL ── */}
+ {showProfile && (
+  <div onClick={() => setShowProfile(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.82)', backdropFilter:'blur(10px)', zIndex:1100, display:'flex', alignItems:'center', justifyContent:'center' }}>
+    <div onClick={e => e.stopPropagation()} style={{ background: dark ? 'linear-gradient(145deg,#0a1628,#060e1c)' : '#f8fafc', border:'1px solid rgba(244,114,182,0.3)', borderRadius:'24px', width:'95%', maxWidth:'580px', maxHeight:'88vh', display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 32px 80px rgba(0,0,0,0.7)' }}>
+      <div style={{ flexShrink:0, padding:'24px 28px', borderBottom:'1px solid rgba(244,114,182,0.15)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:'14px' }}>
+          <div style={{ width:'48px', height:'48px', borderRadius:'14px', background:'linear-gradient(135deg,rgba(244,114,182,0.25),rgba(167,139,250,0.15))', border:'2px solid rgba(244,114,182,0.5)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'22px' }}>🌟</div>
+          <div>
+            <div style={{ color:'#f472b6', fontWeight:800, fontSize:'15px' }}>MY PROFILE</div>
+            <div style={{ color:subtext, fontSize:'11px', fontFamily:'monospace' }}>{promotorInfo?.promotor_id || '—'}</div>
+          </div>
+        </div>
+        <button onClick={() => setShowProfile(false)} style={{ background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', borderRadius:'8px', padding:'6px 14px', cursor:'pointer', fontSize:'12px' }}>✕ Close</button>
+      </div>
+      <div style={{ flex:1, overflowY:'auto', padding:'24px 28px', display:'flex', flexDirection:'column', gap:'20px', scrollbarWidth:'thin' }}>
+        {!promotorInfo ? <div style={{ textAlign:'center', color:subtext, padding:'60px 0' }}>Loading...</div> : (
+          <>
+            {[
+              { title:'ACCOUNT INFO', color:'#f472b6', fields:[
+                { label:'Promotor ID', value:promotorInfo.promotor_id, mono:true, color:'#f472b6' },
+                { label:'Initial', value:promotorInfo.initial },
+                { label:'First Name', value:promotorInfo.first_name },
+                { label:'Last Name', value:promotorInfo.last_name },
+                { label:'Email', value:promotorInfo.email },
+                { label:'Mobile', value:promotorInfo.mobile_number },
+              ]},
+              { title:'ADDRESS', color:'#22d3ee', fields:[
+                { label:'Door No', value:promotorInfo.door_no },
+                { label:'Street', value:promotorInfo.street_name },
+                { label:'Town', value:promotorInfo.town_name },
+                { label:'City', value:promotorInfo.city_name },
+                { label:'District', value:promotorInfo.district },
+                { label:'State', value:promotorInfo.state },
+              ]},
+              { title:'IDENTITY', color:'#a78bfa', fields:[
+                { label:'Aadhaar No', value:promotorInfo.aadhaar_no, mask:true },
+                { label:'PAN No', value:promotorInfo.pan_no, pan:true, mono:true },
+              ]},
+              { title:'OCCUPATION', color:'#f59e0b', fields:[
+                { label:'Type', value:promotorInfo.occupation ? promotorInfo.occupation.charAt(0).toUpperCase()+promotorInfo.occupation.slice(1) : '—' },
+                { label:'Detail', value:promotorInfo.occupation_detail },
+                { label:'Annual Salary', value:promotorInfo.annual_salary ? `₹ ${Number(promotorInfo.annual_salary).toLocaleString('en-IN')}` : '—' },
+              ]},
+              { title:'SUB DEALER INFO', color:'#f59e0b', fields:[
+                { label:'Sub Dealer ID', value:promotorInfo.sub_dealer_id, mono:true, color:'#f59e0b' },
+                { label:'Sub Dealer Name', value:promotorInfo.sub_dealer_name },
+                { label:'Sub Dealer Contact', value:promotorInfo.sub_dealer_contact_no },
+                { label:'Member Since', value:promotorInfo.created_at ? new Date(promotorInfo.created_at).toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'}) : '—' },
+              ]},
+            ].map(section => (
+              <div key={section.title} style={{ background:`rgba(${section.color==='#f472b6'?'244,114,182':section.color==='#22d3ee'?'34,211,238':section.color==='#a78bfa'?'167,139,250':'245,158,11'},0.04)`, border:`1px solid rgba(${section.color==='#f472b6'?'244,114,182':section.color==='#22d3ee'?'34,211,238':section.color==='#a78bfa'?'167,139,250':'245,158,11'},0.18)`, borderRadius:'16px', padding:'18px 20px' }}>
+                <div style={{ color:section.color, fontSize:'10px', fontWeight:800, letterSpacing:'1.5px', marginBottom:'14px', display:'flex', alignItems:'center', gap:'8px' }}>
+                  <span style={{ width:6, height:6, borderRadius:'50%', background:section.color, display:'inline-block' }} />{section.title}
+                </div>
+                <div style={{ display:'grid', gridTemplateColumns:section.fields.length===3?'1fr 1fr 1fr':'1fr 1fr', gap:'12px' }}>
+                  {section.fields.map(f => (
+                    <div key={f.label}>
+                      <div style={{ color:subtext, fontSize:'10px', fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:'4px' }}>{f.label}</div>
+                      <div style={{ color:f.color||text, fontSize:'13px', fontWeight:f.mono?700:500, fontFamily:f.mono?'monospace':'inherit', wordBreak:'break-all' }}>
+                        {f.mask&&f.value?`XXXX-XXXX-${f.value.slice(-4)}`:f.pan&&f.value?`XXXXXXX${f.value.slice(-4)}`:(f.value||'—')}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+    </div>
+  </div>
+)}
+
   {/* ── HIERARCHY MODAL ── */}
 {showHierarchy && (
   <div

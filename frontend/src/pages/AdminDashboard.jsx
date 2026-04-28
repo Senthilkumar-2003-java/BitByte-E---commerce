@@ -80,6 +80,7 @@ function showAdminChainPopup(anchorEl, ancestors, current, dark, text, subtext, 
       @keyframes acpGlow{0%,100%{box-shadow:0 0 0px rgba(74,222,128,0)}50%{box-shadow:0 0 20px rgba(74,222,128,0.22)}}
       @keyframes acpShimmer{0%{background-position:-200% center}100%{background-position:200% center}}
       @keyframes acpBadgePop{0%{transform:scale(0.8);opacity:0}100%{transform:scale(1);opacity:1}}
+      @keyframes fadeSlideIn{from{opacity:0;transform:translateY(16px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
       #admin-chain-popup::-webkit-scrollbar{width:6px}
       #admin-chain-popup::-webkit-scrollbar-track{background:rgba(255,255,255,0.03);border-radius:10px;margin:4px 0}
       #admin-chain-popup::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#4ade80,#22d3ee);border-radius:10px;box-shadow:0 0 6px rgba(74,222,128,0.4)}

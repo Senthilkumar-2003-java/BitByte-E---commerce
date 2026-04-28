@@ -536,6 +536,8 @@ export default function DealerDashboard() {
   const [showAnnouncements, setShowAnnouncements] = useState(false)
 const [announcements, setAnnouncements] = useState([])
 const [unreadCount, setUnreadCount] = useState(0)
+const [showProfile, setShowProfile] = useState(false)
+const [profileData, setProfileData] = useState(null)
 
 // ── ADD after existing useState ──
   const [replyAnn,        setReplyAnn]        = useState(null)
@@ -802,8 +804,16 @@ useEffect(() => {
           <span style={{ color: '#fcd34d', fontWeight: 700, fontSize: '14px' }}>🏪 Dealer Dashboard</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <span style={{ color: subtext, fontSize: '14px' }}>{localStorage.getItem('email')}</span>
-          {/* 📢 Announcement Bell */}
+
+{/* 👤 Profile Icon */}
+<div
+  onClick={() => { setShowProfile(true) }}
+  style={{ cursor: 'pointer', width: '38px', height: '38px', borderRadius: '50%', background: 'linear-gradient(135deg,rgba(245,158,11,0.25),rgba(34,211,238,0.15))', border: '2px solid rgba(245,158,11,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', transition: 'all 0.25s ease' }}
+  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(245,158,11,0.3)'; e.currentTarget.style.borderColor = 'rgba(245,158,11,0.9)' }}
+  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(245,158,11,0.5)' }}
+  title="View Profile"
+>🏪</div>    
+      {/* 📢 Announcement Bell */}
 <div
   onClick={() => { setShowAnnouncements(true); localStorage.setItem('dealerAnnouncementSeen', Date.now().toString()); setUnreadCount(0) }}
   style={{ position: 'relative', cursor: 'pointer', padding: '6px', borderRadius: '10px', border: '1px solid rgba(245,158,11,0.35)', background: 'rgba(245,158,11,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.25s ease' }}
@@ -849,6 +859,8 @@ useEffect(() => {
           </div>
         </div>
 
+        
+
 {/* ── ANNOUNCEMENT VIEW MODAL (Dealer) ── */}
 {showAnnouncements && (
   <div onClick={() => setShowAnnouncements(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(10px)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -878,6 +890,89 @@ useEffect(() => {
             <p style={{ color: dark ? '#cbd5e1' : '#475569', fontSize: '13px', lineHeight: '1.6', margin: 0 }}>{ann.message}</p>
           </div>
         ))}
+      </div>
+    </div>
+  </div>
+)}
+
+{/* ── DEALER PROFILE MODAL ── */}
+{showProfile && (
+  <div
+    onClick={() => setShowProfile(false)}
+    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(10px)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+  >
+    <div
+      onClick={e => e.stopPropagation()}
+      style={{ background: dark ? 'linear-gradient(145deg,#0a1628,#060e1c)' : '#f8fafc', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '24px', width: '95%', maxWidth: '580px', maxHeight: '88vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}
+    >
+      <div style={{ flexShrink: 0, padding: '24px 28px', borderBottom: '1px solid rgba(245,158,11,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'linear-gradient(135deg,rgba(245,158,11,0.25),rgba(34,211,238,0.15))', border: '2px solid rgba(245,158,11,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>🏪</div>
+          <div>
+            <div style={{ color: '#f59e0b', fontWeight: 800, fontSize: '15px', letterSpacing: '0.05em' }}>MY PROFILE</div>
+            <div style={{ color: subtext, fontSize: '11px', marginTop: '3px', fontFamily: 'monospace' }}>{myProfile?.dealer_id || '—'}</div>
+          </div>
+        </div>
+        <button onClick={() => setShowProfile(false)} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', borderRadius: '8px', padding: '6px 14px', cursor: 'pointer', fontSize: '12px' }}>✕ Close</button>
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: '20px', scrollbarWidth: 'thin', scrollbarColor: 'rgba(245,158,11,0.4) transparent' }}>
+        {!myProfile ? (
+          <div style={{ textAlign: 'center', color: subtext, padding: '60px 0' }}>Loading...</div>
+        ) : (
+          <>
+            {[
+              { title: 'ACCOUNT INFO', color: '#f59e0b', fields: [
+                { label: 'Dealer ID', value: myProfile.dealer_id, mono: true, color: '#f59e0b' },
+                { label: 'Initial', value: myProfile.initial },
+                { label: 'First Name', value: myProfile.first_name },
+                { label: 'Last Name', value: myProfile.last_name },
+                { label: 'Email', value: myProfile.email },
+                { label: 'Mobile', value: myProfile.mobile_number },
+              ]},
+              { title: 'ADDRESS', color: '#22d3ee', fields: [
+                { label: 'Door No', value: myProfile.door_no },
+                { label: 'Street', value: myProfile.street_name },
+                { label: 'Town', value: myProfile.town_name },
+                { label: 'City', value: myProfile.city_name },
+                { label: 'District', value: myProfile.district },
+                { label: 'State', value: myProfile.state },
+              ]},
+              { title: 'IDENTITY', color: '#a78bfa', fields: [
+                { label: 'Aadhaar No', value: myProfile.aadhaar_no, mask: true },
+                { label: 'PAN No', value: myProfile.pan_no, pan: true, mono: true },
+              ]},
+              { title: 'OCCUPATION', color: '#f59e0b', fields: [
+                { label: 'Type', value: myProfile.occupation ? myProfile.occupation.charAt(0).toUpperCase() + myProfile.occupation.slice(1) : '—' },
+                { label: 'Detail', value: myProfile.occupation_detail },
+                { label: 'Annual Salary', value: myProfile.annual_salary ? `₹ ${Number(myProfile.annual_salary).toLocaleString('en-IN')}` : '—' },
+              ]},
+              { title: 'ADMIN INFO', color: '#4ade80', fields: [
+                { label: 'Admin ID', value: myProfile.admin_id, mono: true, color: '#4ade80' },
+                { label: 'Admin Name', value: myProfile.admin_name },
+                { label: 'Admin Contact', value: myProfile.admin_contact_no },
+                { label: 'Member Since', value: myProfile.created_at ? new Date(myProfile.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : '—' },
+              ]},
+            ].map(section => (
+              <div key={section.title} style={{ background: dark ? `rgba(${section.color === '#f59e0b' ? '245,158,11' : section.color === '#22d3ee' ? '34,211,238' : section.color === '#a78bfa' ? '167,139,250' : '74,222,128'},0.04)` : 'rgba(0,0,0,0.02)', border: `1px solid rgba(${section.color === '#f59e0b' ? '245,158,11' : section.color === '#22d3ee' ? '34,211,238' : section.color === '#a78bfa' ? '167,139,250' : '74,222,128'},0.18)`, borderRadius: '16px', padding: '18px 20px' }}>
+                <div style={{ color: section.color, fontSize: '10px', fontWeight: 800, letterSpacing: '1.5px', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: section.color, display: 'inline-block' }} />
+                  {section.title}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: section.fields.length === 3 ? '1fr 1fr 1fr' : '1fr 1fr', gap: '12px' }}>
+                  {section.fields.map(f => (
+                    <div key={f.label}>
+                      <div style={{ color: subtext, fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '4px' }}>{f.label}</div>
+                      <div style={{ color: f.color || text, fontSize: '13px', fontWeight: f.mono ? 700 : 500, fontFamily: f.mono ? 'monospace' : 'inherit', wordBreak: 'break-all' }}>
+                        {f.mask && f.value ? `XXXX-XXXX-${f.value.slice(-4)}` : f.pan && f.value ? `XXXXXXX${f.value.slice(-4)}` : (f.value || '—')}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </>
+        )}
       </div>
     </div>
   </div>
