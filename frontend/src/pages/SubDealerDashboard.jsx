@@ -703,39 +703,7 @@ draw() {
     function animate(){ctx.clearRect(0,0,canvas.width,canvas.height);particlesArray.forEach(p=>{p.update();p.draw()});connect();animationFrameId=requestAnimationFrame(animate)}
     init(); animate()
 
-    function extractIdsFromTitle(title) {
-    return title.match(/BB[A-Z]+\d+/g) || []
-  }
 
-  function isCurrentUserMentioned(title) {
-    const myId = subDealers[0]?.sub_dealer_id
-    if (!myId) return false
-    return extractIdsFromTitle(title).includes(myId)
-  }
-
-  async function fetchReplies(annId) {
-    try {
-      const res = await api.get(`/announcements/${annId}/replies/`)
-      setAnnReplies(prev => ({ ...prev, [annId]: res.data }))
-    } catch {}
-  }
-
-  async function submitReply() {
-    if (!replyText.trim()) return
-    setReplyLoading(true)
-    try {
-      await api.post(`/announcements/${replyAnn.id}/replies/`, { message: replyText })
-      setRepliedIds(prev => new Set([...prev, replyAnn.id]))
-      setReplyMsg('✅ Wish sent!')
-      setReplyText('')
-    } catch (err) {
-      if (err.response?.data?.error === 'Already replied') {
-        setRepliedIds(prev => new Set([...prev, replyAnn.id]))
-        setReplyMsg('⚠️ Already sent!')
-      } else { setReplyMsg('❌ Failed.') }
-    }
-    setReplyLoading(false)
-  }
   
     return () => { window.removeEventListener('resize',handleResize); window.removeEventListener('mousemove',handleMouseMove); cancelAnimationFrame(animationFrameId) }
   }, [dark])
@@ -804,6 +772,41 @@ const fetchAnnouncements = async () => {
     setUnreadCount(sorted.filter(a => new Date(a.created_at).getTime() > lastSeen).length)
   } catch {}
 }
+
+
+function extractIdsFromTitle(title) {
+    return title.match(/BB[A-Z]+\d+/g) || []
+  }
+
+  function isCurrentUserMentioned(title) {
+    const myId = subDealers[0]?.sub_dealer_id
+    if (!myId) return false
+    return extractIdsFromTitle(title).includes(myId)
+  }
+
+  async function fetchReplies(annId) {
+    try {
+      const res = await api.get(`/announcements/${annId}/replies/`)
+      setAnnReplies(prev => ({ ...prev, [annId]: res.data }))
+    } catch {}
+  }
+
+  async function submitReply() {
+    if (!replyText.trim()) return
+    setReplyLoading(true)
+    try {
+      await api.post(`/announcements/${replyAnn.id}/replies/`, { message: replyText })
+      setRepliedIds(prev => new Set([...prev, replyAnn.id]))
+      setReplyMsg('✅ Wish sent!')
+      setReplyText('')
+    } catch (err) {
+      if (err.response?.data?.error === 'Already replied') {
+        setRepliedIds(prev => new Set([...prev, replyAnn.id]))
+        setReplyMsg('⚠️ Already sent!')
+      } else { setReplyMsg('❌ Failed.') }
+    }
+    setReplyLoading(false)
+  }
 
 useEffect(() => { 
   fetchAll(); fetchAnnouncements()
@@ -1185,34 +1188,72 @@ useEffect(() => {
           <div style={{ textAlign: 'center', color: subtext }}>
             No announcements yet
           </div>
-        ) : announcements.map((ann, i) => (
-          <div key={ann.id} style={{
-            background: i === 0
-              ? 'rgba(167,139,250,0.08)'
-              : 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(167,139,250,0.25)',
-            borderRadius: '14px',
-            padding: '16px'
-          }}>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              marginBottom: '6px'
-            }}>
-              <span style={{ fontWeight: 700, color: '#a78bfa' }}>
-                {ann.title}
-              </span>
-              <span style={{ fontSize: '11px', color: subtext }}>
-                {new Date(ann.created_at).toLocaleDateString()}
-              </span>
+       ) : announcements.map((ann, i) => {
+          const isMentioned = isCurrentUserMentioned(ann.title)
+          const alreadyReplied = repliedIds.has(ann.id)
+          const replies = annReplies[ann.id] || []
+          return (
+            <div key={ann.id} style={{ background: i === 0 ? 'rgba(167,139,250,0.08)' : 'rgba(255,255,255,0.03)', border: '1px solid rgba(167,139,250,0.25)', borderRadius: '14px', padding: '16px', position: 'relative' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {i === 0 && <span style={{ fontSize: '9px', fontWeight: 800, padding: '2px 8px', borderRadius: '20px', background: 'rgba(167,139,250,0.15)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)' }}>● NEW</span>}
+                  <span style={{ fontWeight: 700, color: '#a78bfa', fontSize: '14px' }}>{ann.title}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '11px', color: subtext }}>{new Date(ann.created_at).toLocaleDateString()}</span>
+                  <button disabled={alreadyReplied} onClick={() => { setReplyAnn(ann); setReplyMsg(''); setReplyText('') }} style={{ padding: '4px 12px', fontSize: '10px', fontWeight: 700, borderRadius: '20px', cursor: alreadyReplied ? 'not-allowed' : 'pointer', background: alreadyReplied ? 'rgba(255,255,255,0.05)' : 'rgba(167,139,250,0.15)', border: `1px solid ${alreadyReplied ? 'rgba(255,255,255,0.1)' : 'rgba(167,139,250,0.4)'}`, color: alreadyReplied ? subtext : '#a78bfa', whiteSpace: 'nowrap' }}>
+                    {alreadyReplied ? '✓ Wished' : '💬 Reply'}
+                  </button>
+                </div>
+              </div>
+              <p style={{ margin: 0, fontSize: '13px', color: subtext }}>{ann.message}</p>
+              {isMentioned && (
+                <div onMouseEnter={() => { setReplyPopupAnnId(ann.id); fetchReplies(ann.id) }} onMouseLeave={() => setReplyPopupAnnId(null)} style={{ marginTop: '10px', display: 'flex', justifyContent: 'center', position: 'relative' }}>
+                  <div style={{ fontSize: '10px', color: '#a78bfa', padding: '3px 14px', border: '1px solid rgba(167,139,250,0.3)', borderRadius: '20px', cursor: 'default', background: 'rgba(167,139,250,0.06)', fontWeight: 600 }}>
+                    🎂 You are mentioned · {replies.length} wish{replies.length !== 1 ? 'es' : ''} — hover to see
+                  </div>
+                  {replyPopupAnnId === ann.id && (
+                    <div style={{ position: 'absolute', bottom: '28px', left: '50%', transform: 'translateX(-50%)', background: dark ? 'rgba(5,10,20,0.97)' : '#fff', border: '1px solid rgba(167,139,250,0.3)', borderRadius: '16px', padding: '14px 16px', minWidth: '260px', maxWidth: '340px', maxHeight: '260px', overflowY: 'auto', zIndex: 9999, boxShadow: '0 16px 48px rgba(0,0,0,0.6)' }}>
+                      <div style={{ fontSize: '10px', fontWeight: 800, color: '#a78bfa', letterSpacing: '1.5px', marginBottom: '10px' }}>💬 WISHES ({replies.length})</div>
+                      {replies.length === 0 ? <div style={{ color: subtext, fontSize: '12px', textAlign: 'center', padding: '16px 0' }}>No wishes yet</div>
+                      : replies.map(r => (
+                        <div key={r.id} style={{ marginBottom: '8px', padding: '8px 10px', background: 'rgba(255,255,255,0.04)', borderRadius: '10px', border: '1px solid rgba(167,139,250,0.15)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                            <span style={{ fontSize: '10px', fontWeight: 700, color: '#a78bfa' }}>{r.replied_by_name}</span>
+                            <span style={{ fontSize: '9px', color: subtext }}>{new Date(r.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
+                          </div>
+                          <p style={{ margin: 0, fontSize: '12px', color: subtext }}>{r.message}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-
-            <p style={{ margin: 0, fontSize: '13px', color: subtext }}>
-              {ann.message}
-            </p>
-          </div>
-        ))}
+          )
+        })}
       </div>
+    </div>
+  </div>
+)}
+
+
+{/* ── REPLY MODAL — SubDealer ── */}
+{replyAnn && (
+  <div onClick={() => { setReplyAnn(null); setReplyMsg(''); setReplyText('') }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div onClick={e => e.stopPropagation()} style={{ background: dark ? 'linear-gradient(145deg,#0a1628,#060e1c)' : '#f8fafc', border: '1px solid rgba(167,139,250,0.3)', borderRadius: '20px', padding: '28px', width: '95%', maxWidth: '460px', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+        <div>
+          <div style={{ color: '#a78bfa', fontWeight: 800, fontSize: '14px' }}>💬 SEND YOUR WISH</div>
+          <div style={{ color: subtext, fontSize: '11px', marginTop: '4px' }}>Replying to: <span style={{ color: text, fontWeight: 600 }}>{replyAnn.title}</span></div>
+        </div>
+        <button onClick={() => setReplyAnn(null)} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', borderRadius: '8px', padding: '5px 12px', cursor: 'pointer', fontSize: '12px' }}>✕</button>
+      </div>
+      {replyMsg && <div style={{ background: replyMsg.includes('✅') ? 'rgba(74,222,128,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${replyMsg.includes('✅') ? 'rgba(74,222,128,0.3)' : 'rgba(239,68,68,0.3)'}`, color: replyMsg.includes('✅') ? '#4ade80' : '#f87171', borderRadius: '10px', padding: '10px 14px', fontSize: '13px', marginBottom: '16px' }}>{replyMsg}</div>}
+      <textarea value={replyText} onChange={e => setReplyText(e.target.value)} rows={4} placeholder="Type your wish..." style={{ width: '100%', background: inpBg, border: `1px solid ${inpBorder}`, borderRadius: '10px', padding: '12px 14px', color: text, fontSize: '14px', outline: 'none', resize: 'vertical', fontFamily: 'inherit', lineHeight: '1.6', boxSizing: 'border-box' }} onFocus={e => e.target.style.borderColor = '#a78bfa'} onBlur={e => e.target.style.borderColor = inpBorder} />
+      <button disabled={replyLoading || !replyText.trim()} onClick={submitReply} style={{ marginTop: '14px', width: '100%', padding: '13px', background: replyLoading || !replyText.trim() ? 'rgba(167,139,250,0.2)' : 'linear-gradient(90deg,#a78bfa,#22d3ee)', border: 'none', borderRadius: '12px', fontWeight: 800, fontSize: '14px', color: replyLoading || !replyText.trim() ? '#a78bfa' : '#1e003b', cursor: replyLoading || !replyText.trim() ? 'not-allowed' : 'pointer' }}>
+        {replyLoading ? '⏳ Sending...' : '💬 Send Wish'}
+      </button>
     </div>
   </div>
 )}
