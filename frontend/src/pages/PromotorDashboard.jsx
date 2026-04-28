@@ -360,18 +360,59 @@ const canvasRef = useRef(null)
     window.addEventListener('resize', onResize)
     window.addEventListener('mousemove', onMouse)
     onResize()
-    class Pt {
-      constructor() { this.x=Math.random()*canvas.width; this.y=Math.random()*canvas.height; this.size=Math.random()*2+1; this.sx=(Math.random()-.5)*.8; this.sy=(Math.random()-.5)*.8 }
-      update() {
-        this.x+=this.sx; this.y+=this.sy
-        if(this.x>canvas.width||this.x<0) this.sx*=-1
-        if(this.y>canvas.height||this.y<0) this.sy*=-1
-        let dx=mouse.x-this.x,dy=mouse.y-this.y,d=Math.sqrt(dx*dx+dy*dy)
-        if(d<mouse.radius){const fx=dx/d,fy=dy/d,f=(mouse.radius-d)/mouse.radius;this.x-=fx*f*5;this.y-=fy*f*5}
+  class Particle {
+  constructor() {
+    this.x = Math.random() * canvas.width
+    this.y = Math.random() * canvas.height
+    this.size = Math.random() * 4 + 2 
+    this.speedX = (Math.random() - 0.5) * 0.3
+    this.speedY = (Math.random() - 0.5) * 0.3
+  }
+
+  update() {
+    this.x += this.speedX
+    this.y += this.speedY
+    if (this.x > canvas.width || this.x < 0) this.speedX *= -1
+    if (this.y > canvas.height || this.y < 0) this.speedY *= -1
+
+    if (mouse.x !== null && mouse.y !== null) {
+      let dx = mouse.x - this.x
+      let dy = mouse.y - this.y
+      let distance = Math.sqrt(dx * dx + dy * dy)
+      if (distance < mouse.radius) {
+        const forceDirectionX = dx / distance
+        const forceDirectionY = dy / distance
+        const force = (mouse.radius - distance) / mouse.radius
+        this.x += forceDirectionX * force * 2
+        this.y += forceDirectionY * force * 2
       }
-      draw() { ctx.fillStyle= dark?'rgba(244,114,182,0.5)':'rgba(219,39,119,0.4)'; ctx.beginPath(); ctx.arc(this.x,this.y,this.size,0,Math.PI*2); ctx.fill() }
     }
-    function init(){pts=[];for(let i=0;i<60;i++)pts.push(new Pt())}
+  }                          // ← update() ends here
+
+draw() {
+  ctx.fillStyle = dark ? 'rgba(34, 211, 238, 0.9)' : 'rgba(37, 99, 235, 0.8)'
+  ctx.save()
+  ctx.translate(this.x, this.y)
+  ctx.beginPath()
+  
+  const spikes = 5
+  const outerRadius = this.size * 1
+  const innerRadius = this.size * 0.4
+  
+  for (let i = 0; i < spikes * 2; i++) {
+    const radius = i % 2 === 0 ? outerRadius : innerRadius
+    const angle = (i * Math.PI) / spikes - Math.PI / 2
+    if (i === 0) ctx.moveTo(Math.cos(angle) * radius, Math.sin(angle) * radius)
+    else ctx.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius)
+  }
+  
+  ctx.closePath()
+  ctx.fill()
+  ctx.restore()
+}
+
+}
+function init(){pts=[];for(let i=0;i<60;i++)pts.push(new Particle())}
     function connect(){
       for(let a=0;a<pts.length;a++) for(let b=a;b<pts.length;b++){
         let dx=pts[a].x-pts[b].x,dy=pts[a].y-pts[b].y,d=Math.sqrt(dx*dx+dy*dy)
@@ -408,6 +449,12 @@ const canvasRef = useRef(null)
     setUnreadCount(sorted.filter(a => new Date(a.created_at).getTime() > lastSeen).length)
   } catch {}
 }
+
+function isCurrentUserMentioned(title) {
+    const myId = promotorInfo?.promotor_id
+    if (!myId) return false
+    return extractIdsFromTitle(title).includes(myId)
+  }
 
 useEffect(() => { 
   fetchAll(); fetchAnnouncements()

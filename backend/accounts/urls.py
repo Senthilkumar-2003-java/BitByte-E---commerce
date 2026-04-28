@@ -4,7 +4,7 @@ from .views import (
     LoginView, CreateAdminView, CreateDealerView,
     CreateSubDealerView, CreatePromotorView, CreateCustomerView,
     DashboardView, AdminListForAdminView, DealerListForDealerView,
-    SubDealerListForView, PromotorListForView,  FullHierarchyView, AnnouncementView, ping
+    SubDealerListForView, PromotorListForView,  FullHierarchyView, AnnouncementView, AnnouncementReplyView, ping
 )
 
 urlpatterns = [
@@ -23,5 +23,6 @@ urlpatterns = [
     path('hierarchy/full/', FullHierarchyView.as_view()),  # ✅ correct
     path('dashboard/', DashboardView.as_view()),
     path('announcements/', AnnouncementView.as_view()),
+    path('announcements/<int:pk>/replies/', AnnouncementReplyView.as_view()),
     
 ]

@@ -320,3 +320,19 @@ class Announcement(models.Model):
 
     def __str__(self):
         return self.title        
+
+class AnnouncementReply(models.Model):
+    announcement = models.ForeignKey(
+        Announcement, on_delete=models.CASCADE, related_name='replies'
+    )
+    replied_by = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='announcement_replies'
+    )
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['announcement', 'replied_by']  # one reply per user
+
+    def __str__(self):
+        return f"{self.replied_by.email} → {self.announcement.title}"        

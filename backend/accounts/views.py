@@ -4,8 +4,36 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from rest_framework.decorators import api_view, permission_classes
-from .models import User, AdminProfile, DealerProfile, SubDealerProfile, PromotorProfile, CustomerProfile, Announcement
+from .models import User, AdminProfile, DealerProfile, SubDealerProfile, PromotorProfile, CustomerProfile, Announcement, AnnouncementReply
 from .serializers import *
+
+
+def get_user_profile_id(user):
+    """Returns the user's role-specific ID string."""
+    try:
+        role_map = {
+            'admin':      ('admin_profile',      'admin_id'),
+            'dealer':     ('dealer_profile',     'dealer_id'),
+            'sub_dealer': ('sub_dealer_profile', 'sub_dealer_id'),
+            'promotor':   ('promotor_profile',   'promotor_id'),
+            'customer':   ('customer_profile',   'customer_id'),
+        }
+        if user.role in role_map:
+            profile_attr, id_field = role_map[user.role]
+            p = getattr(user, profile_attr)
+            return getattr(p, id_field)
+    except Exception:
+        pass
+    return None
+
+def is_user_mentioned_in_title(title, user):
+    """Check if user's ID appears in the announcement title."""
+    user_id = get_user_profile_id(user)
+    if not user_id:
+        return False
+    return user_id in title
+
+    
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
@@ -401,6 +429,50 @@ class AnnouncementView(APIView):
             ).order_by('-created_at')
         serializer = AnnouncementSerializer(announcements, many=True)
         return Response(serializer.data)
+
+
+class AnnouncementReplyView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        """Only super_admin OR the mentioned person can read replies."""
+        try:
+            announcement = Announcement.objects.get(id=pk)
+        except Announcement.DoesNotExist:
+            return Response({'error': 'Not found'}, status=404)
+
+        user = request.user
+        if user.role != 'super_admin' and not is_user_mentioned_in_title(announcement.title, user):
+            return Response({'error': 'Permission denied'}, status=403)
+
+        replies = AnnouncementReply.objects.filter(
+            announcement=announcement
+        ).order_by('-created_at')
+        serializer = AnnouncementReplySerializer(replies, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, pk):
+        """Anyone can reply, but only once per announcement."""
+        try:
+            announcement = Announcement.objects.get(id=pk)
+        except Announcement.DoesNotExist:
+            return Response({'error': 'Not found'}, status=404)
+
+        if AnnouncementReply.objects.filter(
+            announcement=announcement, replied_by=request.user
+        ).exists():
+            return Response({'error': 'Already replied'}, status=400)
+
+        message = request.data.get('message', '').strip()
+        if not message:
+            return Response({'error': 'Message required'}, status=400)
+
+        reply = AnnouncementReply.objects.create(
+            announcement=announcement,
+            replied_by=request.user,
+            message=message
+        )
+        return Response(AnnouncementReplySerializer(reply).data, status=201)        
 
 @api_view(['GET'])
 @permission_classes([AllowAny])

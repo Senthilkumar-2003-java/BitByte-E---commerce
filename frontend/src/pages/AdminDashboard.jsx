@@ -568,6 +568,15 @@ export default function AdminDashboard() {
   const [showAnnouncements, setShowAnnouncements] = useState(false)
 const [announcements, setAnnouncements] = useState([])
 const [unreadCount, setUnreadCount] = useState(0)
+// ── ADD after existing useState declarations ──
+  const [myAdminId,       setMyAdminId]       = useState(null)
+  const [replyAnn,        setReplyAnn]        = useState(null)
+  const [replyText,       setReplyText]       = useState('')
+  const [replyLoading,    setReplyLoading]    = useState(false)
+  const [replyMsg,        setReplyMsg]        = useState('')
+  const [repliedIds,      setRepliedIds]      = useState(new Set())
+  const [annReplies,      setAnnReplies]      = useState({})
+  const [replyPopupAnnId, setReplyPopupAnnId] = useState(null)
   const canvasRef = useRef(null)
 
   // Elite Color Palette
@@ -592,17 +601,58 @@ const [unreadCount, setUnreadCount] = useState(0)
     window.addEventListener('resize', handleResize)
     window.addEventListener('mousemove', handleMouseMove)
     handleResize()
-    class Particle {
-      constructor() { this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height; this.size = Math.random() * 2 + 1; this.speedX = (Math.random() - .5) * .8; this.speedY = (Math.random() - .5) * .8 }
-      update() {
-        this.x += this.speedX; this.y += this.speedY
-        if (this.x > canvas.width || this.x < 0) this.speedX *= -1
-        if (this.y > canvas.height || this.y < 0) this.speedY *= -1
-        let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.sqrt(dx * dx + dy * dy)
-        if (d < mouse.radius) { const fx = dx / d, fy = dy / d, f = (mouse.radius - d) / mouse.radius; this.x -= fx * f * 5; this.y -= fy * f * 5 }
+  class Particle {
+  constructor() {
+    this.x = Math.random() * canvas.width
+    this.y = Math.random() * canvas.height
+    this.size = Math.random() * 4 + 2 
+    this.speedX = (Math.random() - 0.5) * 0.3
+    this.speedY = (Math.random() - 0.5) * 0.3
+  }
+
+  update() {
+    this.x += this.speedX
+    this.y += this.speedY
+    if (this.x > canvas.width || this.x < 0) this.speedX *= -1
+    if (this.y > canvas.height || this.y < 0) this.speedY *= -1
+
+    if (mouse.x !== null && mouse.y !== null) {
+      let dx = mouse.x - this.x
+      let dy = mouse.y - this.y
+      let distance = Math.sqrt(dx * dx + dy * dy)
+      if (distance < mouse.radius) {
+        const forceDirectionX = dx / distance
+        const forceDirectionY = dy / distance
+        const force = (mouse.radius - distance) / mouse.radius
+        this.x += forceDirectionX * force * 2
+        this.y += forceDirectionY * force * 2
       }
-      draw() { ctx.fillStyle = dark ? 'rgba(34,211,238,0.5)' : 'rgba(37,99,235,0.4)'; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill() }
     }
+  }                          // ← update() ends here
+
+draw() {
+  ctx.fillStyle = dark ? 'rgba(34, 211, 238, 0.9)' : 'rgba(37, 99, 235, 0.8)'
+  ctx.save()
+  ctx.translate(this.x, this.y)
+  ctx.beginPath()
+  
+  const spikes = 5
+  const outerRadius = this.size * 1
+  const innerRadius = this.size * 0.4
+  
+  for (let i = 0; i < spikes * 2; i++) {
+    const radius = i % 2 === 0 ? outerRadius : innerRadius
+    const angle = (i * Math.PI) / spikes - Math.PI / 2
+    if (i === 0) ctx.moveTo(Math.cos(angle) * radius, Math.sin(angle) * radius)
+    else ctx.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius)
+  }
+  
+  ctx.closePath()
+  ctx.fill()
+  ctx.restore()
+}
+
+}  
     function init() { particlesArray = []; for (let i = 0; i < 60; i++)particlesArray.push(new Particle()) }
     function connect() {
       for (let a = 0; a < particlesArray.length; a++) for (let b = a; b < particlesArray.length; b++) {
@@ -612,6 +662,45 @@ const [unreadCount, setUnreadCount] = useState(0)
     }
     function animate() { ctx.clearRect(0, 0, canvas.width, canvas.height); particlesArray.forEach(p => { p.update(); p.draw() }); connect(); animationFrameId = requestAnimationFrame(animate) }
     init(); animate()
+
+    // ── ADD before return() ──────────────────────────────────────────
+
+  function extractIdsFromTitle(title) {
+    return title.match(/BB[A-Z]+\d+/g) || []
+  }
+
+  function isCurrentUserMentioned(title) {
+    if (!myAdminId) return false
+    return extractIdsFromTitle(title).includes(myAdminId)
+  }
+
+  async function fetchReplies(annId) {
+    try {
+      const res = await api.get(`/announcements/${annId}/replies/`)
+      setAnnReplies(prev => ({ ...prev, [annId]: res.data }))
+    } catch {}
+  }
+
+  async function submitReply() {
+    if (!replyText.trim()) return
+    setReplyLoading(true)
+    try {
+      await api.post(`/announcements/${replyAnn.id}/replies/`, { message: replyText })
+      setRepliedIds(prev => new Set([...prev, replyAnn.id]))
+      setReplyMsg('✅ Wish sent!')
+      setReplyText('')
+    } catch (err) {
+      if (err.response?.data?.error === 'Already replied') {
+        setRepliedIds(prev => new Set([...prev, replyAnn.id]))
+        setReplyMsg('⚠️ Already sent!')
+      } else {
+        setReplyMsg('❌ Failed.')
+      }
+    }
+    setReplyLoading(false)
+  }
+
+
     return () => { window.removeEventListener('resize', handleResize); window.removeEventListener('mousemove', handleMouseMove); cancelAnimationFrame(animationFrameId) }
   }, [dark])
 
@@ -679,20 +768,27 @@ const fetchDealers = async () => {
     console.error('dealers error:', err)
   }
 }
-  const fetchAdmins = async () => {
-    try { const res = await api.get('/admins/list/'); setAdmins(res.data) } catch (err) { console.error('admins error:', err.response?.status) }
+ const fetchAdmins = async () => {
+    try { 
+      const res = await api.get('/admins/list/')
+      setAdmins(res.data)
+      // ── ADD THIS LINE ──
+      const me = res.data.find(a => a.email === localStorage.getItem('email'))
+      if (me) setMyAdminId(me.admin_id)
+      // ── END ADD ──
+    } catch (err) { console.error('admins error:', err.response?.status) }
   }
 
-  const fetchAnnouncements = async () => {
-  try {
-    const res = await api.get('/announcements/')
-    const sorted = res.data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    setAnnouncements(sorted)
-    const lastSeen = parseInt(localStorage.getItem('adminAnnouncementSeen') || '0')
-    const unread = sorted.filter(a => new Date(a.created_at).getTime() > lastSeen).length
-    setUnreadCount(unread)
-  } catch {}
-}
+const fetchAnnouncements = async () => {
+    try {
+      const res = await api.get('/announcements/')
+      const sorted = res.data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      setAnnouncements(sorted)
+      const lastSeen = parseInt(localStorage.getItem('adminAnnouncementSeen') || '0')
+      const unread = sorted.filter(a => new Date(a.created_at).getTime() > lastSeen).length
+      setUnreadCount(unread)
+    } catch {}
+  }
   
 useEffect(() => { 
   fetchDealers(); fetchAdmins(); fetchAnnouncements()
@@ -949,25 +1045,130 @@ useEffect(() => {
         <button onClick={() => setShowAnnouncements(false)} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', borderRadius: '8px', padding: '6px 14px', cursor: 'pointer', fontSize: '12px' }}>✕ Close</button>
       </div>
 
-      {/* List */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: '12px', scrollbarWidth: 'thin', scrollbarColor: 'rgba(74,222,128,0.4) transparent' }}>
-        {announcements.length === 0 ? (
-          <div style={{ textAlign: 'center', color: subtext, padding: '60px 0', fontSize: '15px' }}>No announcements yet.</div>
-        ) : (
-          announcements.map((ann, idx) => (
-            <div key={ann.id} style={{ background: idx === 0 ? (dark ? 'rgba(74,222,128,0.07)' : 'rgba(74,222,128,0.05)') : (dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'), border: `1px solid ${idx === 0 ? 'rgba(74,222,128,0.35)' : (dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)')}`, borderRadius: '14px', padding: '16px 18px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  {idx === 0 && <span style={{ fontSize: '9px', fontWeight: 800, padding: '2px 8px', borderRadius: '20px', background: 'rgba(74,222,128,0.15)', color: '#4ade80', border: '1px solid rgba(74,222,128,0.3)' }}>● NEW</span>}
-                  <span style={{ color: idx === 0 ? '#4ade80' : text, fontWeight: 700, fontSize: '14px' }}>{ann.title}</span>
-                </div>
-                <span style={{ color: subtext, fontSize: '10px', whiteSpace: 'nowrap' }}>{new Date(ann.created_at).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })}</span>
-              </div>
-              <p style={{ color: dark ? '#cbd5e1' : '#475569', fontSize: '13px', lineHeight: '1.6', margin: 0 }}>{ann.message}</p>
+  {/* EXISTING: List — REPLACE the .map() section with this: */}
+<div style={{ flex: 1, overflowY: 'auto', padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: '12px', scrollbarWidth: 'thin', scrollbarColor: 'rgba(74,222,128,0.4) transparent' }}>
+  {announcements.length === 0 ? (
+    <div style={{ textAlign: 'center', color: subtext, padding: '60px 0', fontSize: '15px' }}>No announcements yet.</div>
+  ) : (
+    announcements.map((ann, idx) => {
+      const isMentioned = isCurrentUserMentioned(ann.title)
+      const alreadyReplied = repliedIds.has(ann.id)
+      const replies = annReplies[ann.id] || []
+
+      return (
+        <div key={ann.id} style={{ background: idx === 0 ? (dark ? 'rgba(74,222,128,0.07)' : 'rgba(74,222,128,0.05)') : (dark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'), border: `1px solid ${idx === 0 ? 'rgba(74,222,128,0.35)' : (dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)')}`, borderRadius: '14px', padding: '16px 18px', position: 'relative' }}>
+          
+          {/* Title row */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {idx === 0 && <span style={{ fontSize: '9px', fontWeight: 800, padding: '2px 8px', borderRadius: '20px', background: 'rgba(74,222,128,0.15)', color: '#4ade80', border: '1px solid rgba(74,222,128,0.3)' }}>● NEW</span>}
+              <span style={{ color: idx === 0 ? '#4ade80' : text, fontWeight: 700, fontSize: '14px' }}>{ann.title}</span>
             </div>
-          ))
-        )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ color: subtext, fontSize: '10px', whiteSpace: 'nowrap' }}>
+                {new Date(ann.created_at).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })}
+              </span>
+              {/* REPLY BUTTON */}
+              <button
+                disabled={alreadyReplied}
+                onClick={() => { setReplyAnn(ann); setReplyMsg(''); setReplyText('') }}
+                style={{
+                  padding: '4px 12px', fontSize: '10px', fontWeight: 700,
+                  borderRadius: '20px', cursor: alreadyReplied ? 'not-allowed' : 'pointer',
+                  background: alreadyReplied ? 'rgba(255,255,255,0.05)' : 'rgba(74,222,128,0.15)',
+                  border: `1px solid ${alreadyReplied ? 'rgba(255,255,255,0.1)' : 'rgba(74,222,128,0.4)'}`,
+                  color: alreadyReplied ? subtext : '#4ade80',
+                  whiteSpace: 'nowrap', transition: 'all 0.2s ease',
+                }}
+              >
+                {alreadyReplied ? '✓ Wished' : '💬 Reply'}
+              </button>
+            </div>
+          </div>
+
+          {/* Message */}
+          <p style={{ color: dark ? '#cbd5e1' : '#475569', fontSize: '13px', lineHeight: '1.6', margin: 0 }}>{ann.message}</p>
+
+          {/* HOVER POPUP — only if this admin is mentioned */}
+          {isMentioned && (
+            <div
+              onMouseEnter={() => { setReplyPopupAnnId(ann.id); fetchReplies(ann.id) }}
+              onMouseLeave={() => setReplyPopupAnnId(null)}
+              style={{ marginTop: '10px', display: 'flex', justifyContent: 'center', position: 'relative' }}
+            >
+              <div style={{ fontSize: '10px', color: '#4ade80', padding: '3px 14px', border: '1px solid rgba(74,222,128,0.3)', borderRadius: '20px', cursor: 'default', background: 'rgba(74,222,128,0.06)', fontWeight: 600 }}>
+                🎂 You are mentioned · {replies.length} wish{replies.length !== 1 ? 'es' : ''} — hover to see
+              </div>
+
+              {replyPopupAnnId === ann.id && (
+                <div style={{ position: 'absolute', bottom: '28px', left: '50%', transform: 'translateX(-50%)', background: dark ? 'rgba(5,10,20,0.97)' : '#fff', border: '1px solid rgba(74,222,128,0.3)', borderRadius: '16px', padding: '14px 16px', minWidth: '260px', maxWidth: '340px', maxHeight: '260px', overflowY: 'auto', zIndex: 9999, boxShadow: '0 16px 48px rgba(0,0,0,0.6)', animation: 'fadeIn 0.2s ease' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 800, color: '#4ade80', letterSpacing: '1.5px', marginBottom: '10px' }}>💬 WISHES ({replies.length})</div>
+                  {replies.length === 0 ? (
+                    <div style={{ color: subtext, fontSize: '12px', textAlign: 'center', padding: '16px 0' }}>No wishes yet</div>
+                  ) : replies.map(r => (
+                    <div key={r.id} style={{ marginBottom: '8px', padding: '8px 10px', background: 'rgba(255,255,255,0.04)', borderRadius: '10px', border: '1px solid rgba(74,222,128,0.15)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '10px', fontWeight: 700, color: '#4ade80' }}>{r.replied_by_name}</span>
+                        <span style={{ fontSize: '9px', color: subtext }}>{new Date(r.created_at).toLocaleDateString('en-IN',{day:'2-digit',month:'short'})}</span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '12px', color: dark ? '#cbd5e1' : '#475569' }}>{r.message}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )
+    })
+  )}
+</div>
+    </div>
+  </div>
+)}
+
+
+{/* ── REPLY MODAL — AdminDashboard ── */}
+{replyAnn && (
+  <div
+    onClick={() => { setReplyAnn(null); setReplyMsg(''); setReplyText('') }}
+    style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.85)', backdropFilter:'blur(12px)', zIndex:1200, display:'flex', alignItems:'center', justifyContent:'center' }}
+  >
+    <div
+      onClick={e => e.stopPropagation()}
+      style={{ background: dark ? 'linear-gradient(145deg,#0a1628,#060e1c)' : '#f8fafc', border:'1px solid rgba(74,222,128,0.3)', borderRadius:'20px', padding:'28px', width:'95%', maxWidth:'460px', boxShadow:'0 32px 80px rgba(0,0,0,0.7)', animation:'fadeIn 0.25s ease' }}
+    >
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'20px' }}>
+        <div>
+          <div style={{ color:'#4ade80', fontWeight:800, fontSize:'14px', letterSpacing:'0.05em' }}>💬 SEND YOUR WISH</div>
+          <div style={{ color:subtext, fontSize:'11px', marginTop:'4px' }}>Replying to: <span style={{ color:text, fontWeight:600 }}>{replyAnn.title}</span></div>
+        </div>
+        <button onClick={() => setReplyAnn(null)} style={{ background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', borderRadius:'8px', padding:'5px 12px', cursor:'pointer', fontSize:'12px' }}>✕</button>
       </div>
+
+      {replyMsg && (
+        <div style={{ background: replyMsg.includes('✅') ? 'rgba(74,222,128,0.1)' : 'rgba(239,68,68,0.1)', border:`1px solid ${replyMsg.includes('✅') ? 'rgba(74,222,128,0.3)' : 'rgba(239,68,68,0.3)'}`, color: replyMsg.includes('✅') ? '#4ade80' : '#f87171', borderRadius:'10px', padding:'10px 14px', fontSize:'13px', marginBottom:'16px' }}>
+          {replyMsg}
+        </div>
+      )}
+
+      <textarea
+        value={replyText}
+        onChange={e => setReplyText(e.target.value)}
+        rows={4}
+        placeholder="Type your wish or message..."
+        style={{ width:'100%', background: inpBg, border:`1px solid ${inpBorder}`, borderRadius:'10px', padding:'12px 14px', color:text, fontSize:'14px', outline:'none', resize:'vertical', fontFamily:'inherit', lineHeight:'1.6', boxSizing:'border-box' }}
+        onFocus={e => e.target.style.borderColor = '#4ade80'}
+        onBlur={e => e.target.style.borderColor = inpBorder}
+      />
+
+      <button
+        disabled={replyLoading || !replyText.trim()}
+        onClick={submitReply}
+        style={{ marginTop:'14px', width:'100%', padding:'13px', background: replyLoading || !replyText.trim() ? 'rgba(74,222,128,0.2)' : 'linear-gradient(90deg,#4ade80,#22d3ee)', border:'none', borderRadius:'12px', fontWeight:800, fontSize:'14px', color: replyLoading || !replyText.trim() ? '#4ade80' : '#003b40', cursor: replyLoading || !replyText.trim() ? 'not-allowed' : 'pointer', transition:'all 0.3s ease' }}
+      >
+        {replyLoading ? '⏳ Sending...' : '💬 Send Wish'}
+      </button>
     </div>
   </div>
 )}

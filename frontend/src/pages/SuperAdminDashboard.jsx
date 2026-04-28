@@ -685,6 +685,13 @@ const [announcementForm, setAnnouncementForm] = useState({ title: '', message: '
 const [announcementMsg, setAnnouncementMsg] = useState('')
 const [announcingSending, setAnnouncingSending] = useState(false)
 const [announcementCount, setAnnouncementCount] = useState(0)
+const [replyAnn,        setReplyAnn]        = useState(null)
+  const [replyText,       setReplyText]        = useState('')
+  const [replyLoading,    setReplyLoading]     = useState(false)
+  const [replyMsg,        setReplyMsg]         = useState('')
+  const [repliedIds,      setRepliedIds]       = useState(new Set())
+  const [annReplies,      setAnnReplies]       = useState({})
+  const [replyPopupAnnId, setReplyPopupAnnId]  = useState(null)
   const canvasRef = useRef(null)
 
   const bg = dark ? '#020617' : '#f8fafc'
@@ -709,17 +716,58 @@ const [announcementCount, setAnnouncementCount] = useState(0)
     window.addEventListener('resize', handleResize)
     window.addEventListener('mousemove', handleMouseMove)
     handleResize()
-    class Particle {
-      constructor() { this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height; this.size = Math.random() * 2 + 1; this.speedX = (Math.random() - .5) * .8; this.speedY = (Math.random() - .5) * .8 }
-      update() {
-        this.x += this.speedX; this.y += this.speedY
-        if (this.x > canvas.width || this.x < 0) this.speedX *= -1
-        if (this.y > canvas.height || this.y < 0) this.speedY *= -1
-        let dx = mouse.x - this.x, dy = mouse.y - this.y, d = Math.sqrt(dx * dx + dy * dy)
-        if (d < mouse.radius) { const fx = dx / d, fy = dy / d, f = (mouse.radius - d) / mouse.radius; this.x -= fx * f * 5; this.y -= fy * f * 5 }
+   class Particle {
+  constructor() {
+    this.x = Math.random() * canvas.width
+    this.y = Math.random() * canvas.height
+    this.size = Math.random() * 4 + 2 
+    this.speedX = (Math.random() - 0.5) * 0.3
+    this.speedY = (Math.random() - 0.5) * 0.3
+  }
+
+  update() {
+    this.x += this.speedX
+    this.y += this.speedY
+    if (this.x > canvas.width || this.x < 0) this.speedX *= -1
+    if (this.y > canvas.height || this.y < 0) this.speedY *= -1
+
+    if (mouse.x !== null && mouse.y !== null) {
+      let dx = mouse.x - this.x
+      let dy = mouse.y - this.y
+      let distance = Math.sqrt(dx * dx + dy * dy)
+      if (distance < mouse.radius) {
+        const forceDirectionX = dx / distance
+        const forceDirectionY = dy / distance
+        const force = (mouse.radius - distance) / mouse.radius
+        this.x += forceDirectionX * force * 2
+        this.y += forceDirectionY * force * 2
       }
-      draw() { ctx.fillStyle = dark ? 'rgba(34,211,238,0.5)' : 'rgba(37,99,235,0.4)'; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill() }
     }
+  }                          // ← update() ends here
+
+draw() {
+  ctx.fillStyle = dark ? 'rgba(34, 211, 238, 0.9)' : 'rgba(37, 99, 235, 0.8)'
+  ctx.save()
+  ctx.translate(this.x, this.y)
+  ctx.beginPath()
+  
+  const spikes = 5
+  const outerRadius = this.size * 1
+  const innerRadius = this.size * 0.4
+  
+  for (let i = 0; i < spikes * 2; i++) {
+    const radius = i % 2 === 0 ? outerRadius : innerRadius
+    const angle = (i * Math.PI) / spikes - Math.PI / 2
+    if (i === 0) ctx.moveTo(Math.cos(angle) * radius, Math.sin(angle) * radius)
+    else ctx.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius)
+  }
+  
+  ctx.closePath()
+  ctx.fill()
+  ctx.restore()
+}
+
+}  
     function init() { particlesArray = []; for (let i = 0; i < 60; i++) particlesArray.push(new Particle()) }
     function connect() {
       for (let a = 0; a < particlesArray.length; a++) for (let b = a; b < particlesArray.length; b++) {
@@ -729,6 +777,47 @@ const [announcementCount, setAnnouncementCount] = useState(0)
     }
     function animate() { ctx.clearRect(0, 0, canvas.width, canvas.height); particlesArray.forEach(p => { p.update(); p.draw() }); connect(); animationFrameId = requestAnimationFrame(animate) }
     init(); animate()
+
+// ── ADD THESE FUNCTIONS before return() ───────────────────────────
+
+  function extractIdsFromTitle(title) {
+    const matches = title.match(/BB[A-Z]+\d+/g) || []
+    return matches
+  }
+
+  // Super Admin can always see replies (they are the sender)
+  function isCurrentUserMentioned(title) {
+    return true  // super_admin sees all reply popups
+  }
+
+  async function fetchReplies(annId) {
+    try {
+      const res = await api.get(`/announcements/${annId}/replies/`)
+      setAnnReplies(prev => ({ ...prev, [annId]: res.data }))
+    } catch {}
+  }
+
+  async function submitReply() {
+    if (!replyText.trim()) return
+    setReplyLoading(true)
+    try {
+      await api.post(`/announcements/${replyAnn.id}/replies/`, { message: replyText })
+      setRepliedIds(prev => new Set([...prev, replyAnn.id]))
+      setReplyMsg('✅ Wish sent!')
+      setReplyText('')
+    } catch (err) {
+      if (err.response?.data?.error === 'Already replied') {
+        setRepliedIds(prev => new Set([...prev, replyAnn.id]))
+        setReplyMsg('⚠️ You already sent a wish!')
+      } else {
+        setReplyMsg('❌ Failed to send.')
+      }
+    }
+    setReplyLoading(false)
+  }
+
+  
+
     return () => { window.removeEventListener('resize', handleResize); window.removeEventListener('mousemove', handleMouseMove); cancelAnimationFrame(animationFrameId) }
   }, [dark])
 
@@ -742,6 +831,16 @@ const fetchAnnouncementCount = async () => {
     const lastSeen = parseInt(localStorage.getItem('superAdminAnnouncementSeen') || '0')
     const unread = res.data.filter(a => new Date(a.created_at).getTime() > lastSeen).length
     setAnnouncementCount(unread)
+  } catch {}
+}
+
+const [myAnnouncements, setMyAnnouncements] = useState([])
+
+// Add inside fetchAnnouncementCount or separate:
+const fetchMyAnnouncements = async () => {
+  try {
+    const res = await api.get('/announcements/')
+    setMyAnnouncements(res.data)
   } catch {}
 }
 
@@ -760,9 +859,11 @@ const fetchAnnouncementCount = async () => {
 useEffect(() => { 
   fetchAdmins()
   fetchAnnouncementCount()
+  fetchMyAnnouncements()
   const interval = setInterval(() => {
     fetchAdmins()
     fetchAnnouncementCount()
+    fetchMyAnnouncements()
   }, 30000)
   return () => clearInterval(interval)
 }, [])
@@ -851,12 +952,12 @@ useEffect(() => {
 
 {/* 📢 Announcement Icon */}
 <div
-onClick={() => { 
-  setShowAnnouncement(true)
-  localStorage.setItem('superAdminAnnouncementSeen', Date.now().toString())
-  setAnnouncementCount(0)
-  setAnnouncementMsg('') 
-}}
+  onClick={() => { 
+    setShowAnnouncement(true)  // keep existing behavior (send modal)
+    localStorage.setItem('superAdminAnnouncementSeen', Date.now().toString())
+    setAnnouncementCount(0)
+    setAnnouncementMsg('') 
+  }}
 
   style={{ position: 'relative', cursor: 'pointer', padding: '6px', borderRadius: '10px', border: '1px solid rgba(251,146,60,0.35)', background: 'rgba(251,146,60,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.25s ease' }}
   onMouseEnter={e => { e.currentTarget.style.background = 'rgba(251,146,60,0.25)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
@@ -1151,6 +1252,63 @@ onClick={() => {
       >
         {announcingSending ? '⏳ Sending...' : '📢 Send Announcement'}
       </button>
+    </div>
+  </div>
+)}
+
+{/* ── SUPER ADMIN: VIEW REPLIES MODAL ── */}
+{replyAnn && (
+  <div
+    onClick={() => { setReplyAnn(null); setReplyMsg(''); setReplyText('') }}
+    style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.85)', backdropFilter:'blur(12px)', zIndex:1300, display:'flex', alignItems:'center', justifyContent:'center' }}
+  >
+    <div
+      onClick={e => e.stopPropagation()}
+      style={{ background: dark ? 'linear-gradient(145deg,#0a1628,#060e1c)' : '#f8fafc', border:'1px solid rgba(34,211,238,0.3)', borderRadius:'20px', padding:'28px', width:'95%', maxWidth:'520px', maxHeight:'75vh', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.7)' }}
+    >
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'20px', flexShrink:0 }}>
+        <div>
+          <div style={{ color:'#22d3ee', fontWeight:800, fontSize:'14px', letterSpacing:'0.05em' }}>💬 WISHES RECEIVED</div>
+          <div style={{ color:subtext, fontSize:'11px', marginTop:'4px' }}>{replyAnn.title}</div>
+        </div>
+        <button onClick={() => setReplyAnn(null)} style={{ background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)', color:'#f87171', borderRadius:'8px', padding:'5px 12px', cursor:'pointer', fontSize:'12px' }}>✕</button>
+      </div>
+      <div style={{ flex:1, overflowY:'auto', display:'flex', flexDirection:'column', gap:'10px', scrollbarWidth:'thin', scrollbarColor:'rgba(34,211,238,0.4) transparent' }}>
+        {(annReplies[replyAnn.id] || []).length === 0 ? (
+          <div style={{ textAlign:'center', color:subtext, padding:'40px 0', fontSize:'14px' }}>No wishes received yet.</div>
+        ) : (annReplies[replyAnn.id] || []).map(r => (
+          <div key={r.id} style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(34,211,238,0.15)', borderRadius:'12px', padding:'12px 14px' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'6px' }}>
+              <span style={{ fontSize:'11px', fontWeight:700, color:'#22d3ee' }}>{r.replied_by_name}</span>
+              <span style={{ fontSize:'10px', color:subtext }}>{new Date(r.created_at).toLocaleDateString('en-IN',{day:'2-digit',month:'short'})}</span>
+            </div>
+            <p style={{ margin:0, fontSize:'13px', color: dark ? '#cbd5e1' : '#475569' }}>{r.message}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+)}  
+
+{/* ── SENT ANNOUNCEMENTS WITH REPLY VIEWER — inside showAnnouncement modal, after Send button ── */}
+{myAnnouncements.length > 0 && (
+  <div style={{ marginTop:'24px', borderTop:`1px solid rgba(251,146,60,0.2)`, paddingTop:'20px' }}>
+    <div style={{ fontSize:'11px', color:'#fb923c', fontWeight:800, letterSpacing:'1.5px', marginBottom:'12px' }}>📋 SENT ANNOUNCEMENTS</div>
+    <div style={{ display:'flex', flexDirection:'column', gap:'8px', maxHeight:'200px', overflowY:'auto' }}>
+      {myAnnouncements.map(ann => (
+        <div key={ann.id} style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(251,146,60,0.2)', borderRadius:'12px', padding:'10px 14px', display:'flex', justifyContent:'space-between', alignItems:'center', gap:'10px' }}>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ color:text, fontWeight:600, fontSize:'13px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{ann.title}</div>
+            <div style={{ color:subtext, fontSize:'10px', marginTop:'2px' }}>{new Date(ann.created_at).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}</div>
+          </div>
+          <button
+            onClick={() => { fetchReplies(ann.id); setReplyAnn(ann) }}
+            style={{ padding:'5px 12px', fontSize:'10px', fontWeight:700, background:'rgba(34,211,238,0.12)', border:'1px solid rgba(34,211,238,0.3)', borderRadius:'20px', color:'#22d3ee', cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}
+          >
+            💬 View Wishes
+          </button>
+        </div>
+      ))}
     </div>
   </div>
 )}

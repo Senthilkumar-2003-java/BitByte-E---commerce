@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, AdminProfile, DealerProfile, SubDealerProfile, PromotorProfile, CustomerProfile, Announcement
+from .models import User, AdminProfile, DealerProfile, SubDealerProfile, PromotorProfile, CustomerProfile, Announcement, AnnouncementReply
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -337,3 +337,31 @@ class AnnouncementSerializer(serializers.ModelSerializer):
     class Meta:
         model = Announcement
         fields = ['id', 'title', 'message', 'target_roles', 'created_at', 'is_active']
+
+class AnnouncementReplySerializer(serializers.ModelSerializer):
+    replied_by_email = serializers.EmailField(source='replied_by.email', read_only=True)
+    replied_by_role  = serializers.CharField(source='replied_by.role',  read_only=True)
+    replied_by_name  = serializers.SerializerMethodField()
+
+    class Meta:
+        model  = AnnouncementReply
+        fields = ['id', 'message', 'replied_by_email', 'replied_by_role',
+                  'replied_by_name', 'created_at']
+
+    def get_replied_by_name(self, obj):
+        user = obj.replied_by
+        try:
+            role_map = {
+                'admin':      ('admin_profile',      'admin_id'),
+                'dealer':     ('dealer_profile',     'dealer_id'),
+                'sub_dealer': ('sub_dealer_profile', 'sub_dealer_id'),
+                'promotor':   ('promotor_profile',   'promotor_id'),
+                'customer':   ('customer_profile',   'customer_id'),
+            }
+            if user.role in role_map:
+                profile_attr, id_field = role_map[user.role]
+                p = getattr(user, profile_attr)
+                return f"{p.first_name} {p.last_name} ({getattr(p, id_field)})"
+        except Exception:
+            pass
+        return user.email

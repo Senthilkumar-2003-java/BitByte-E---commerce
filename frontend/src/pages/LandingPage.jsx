@@ -31,48 +31,67 @@ export default function LandingPage() {
       canvas.height = window.innerHeight
     }
 
-    const handleMouseMove = (e) => {
-      mouse.x = e.x
-      mouse.y = e.y
-    }
+   const handleMouseMove = (e) => {
+  mouse.x = e.clientX
+  mouse.y = e.clientY
+}
 
     window.addEventListener('resize', handleResize)
     window.addEventListener('mousemove', handleMouseMove)
     handleResize()
 
-    class Particle {
-      constructor() {
-        this.x = Math.random() * canvas.width
-        this.y = Math.random() * canvas.height
-        this.size = Math.random() * 2 + 1
-        this.speedX = (Math.random() - 0.5) * 0.8
-        this.speedY = (Math.random() - 0.5) * 0.8
-      }
-      update() {
-        this.x += this.speedX
-        this.y += this.speedY
-        if (this.x > canvas.width || this.x < 0) this.speedX *= -1
-        if (this.y > canvas.height || this.y < 0) this.speedY *= -1
+ class Particle {
+  constructor() {
+    this.x = Math.random() * canvas.width
+    this.y = Math.random() * canvas.height
+    this.size = Math.random() * 4 + 2 
+    this.speedX = (Math.random() - 0.5) * 0.3
+    this.speedY = (Math.random() - 0.5) * 0.3
+  }
 
-        // Mouse interaction (push away effect)
-        let dx = mouse.x - this.x
-        let dy = mouse.y - this.y
-        let distance = Math.sqrt(dx * dx + dy * dy)
-        if (distance < mouse.radius) {
-          const forceDirectionX = dx / distance
-          const forceDirectionY = dy / distance
-          const force = (mouse.radius - distance) / mouse.radius
-          this.x -= forceDirectionX * force * 5
-          this.y -= forceDirectionY * force * 5
-        }
-      }
-      draw() {
-        ctx.fillStyle = dark ? 'rgba(34, 211, 238, 0.5)' : 'rgba(37, 99, 235, 0.4)'
-        ctx.beginPath()
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2)
-        ctx.fill()
+  update() {
+    this.x += this.speedX
+    this.y += this.speedY
+    if (this.x > canvas.width || this.x < 0) this.speedX *= -1
+    if (this.y > canvas.height || this.y < 0) this.speedY *= -1
+
+    if (mouse.x !== null && mouse.y !== null) {
+      let dx = mouse.x - this.x
+      let dy = mouse.y - this.y
+      let distance = Math.sqrt(dx * dx + dy * dy)
+      if (distance < mouse.radius) {
+        const forceDirectionX = dx / distance
+        const forceDirectionY = dy / distance
+        const force = (mouse.radius - distance) / mouse.radius
+        this.x += forceDirectionX * force * 2
+        this.y += forceDirectionY * force * 2
       }
     }
+  }                          // ← update() ends here
+
+draw() {
+  ctx.fillStyle = dark ? 'rgba(34, 211, 238, 0.9)' : 'rgba(37, 99, 235, 0.8)'
+  ctx.save()
+  ctx.translate(this.x, this.y)
+  ctx.beginPath()
+  
+  const spikes = 5
+  const outerRadius = this.size * 1
+  const innerRadius = this.size * 0.4
+  
+  for (let i = 0; i < spikes * 2; i++) {
+    const radius = i % 2 === 0 ? outerRadius : innerRadius
+    const angle = (i * Math.PI) / spikes - Math.PI / 2
+    if (i === 0) ctx.moveTo(Math.cos(angle) * radius, Math.sin(angle) * radius)
+    else ctx.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius)
+  }
+  
+  ctx.closePath()
+  ctx.fill()
+  ctx.restore()
+}
+
+}                            // ← class ends here
 
     function init() {
       particlesArray = []
@@ -87,7 +106,7 @@ export default function LandingPage() {
           let distance = Math.sqrt(dx * dx + dy * dy)
           if (distance < 150) {
             ctx.strokeStyle = dark ? `rgba(34, 211, 238, ${1 - distance/150})` : `rgba(37, 99, 235, ${0.5 - distance/300})`
-            ctx.lineWidth = 0.5
+            ctx.lineWidth = 1  
             ctx.beginPath()
             ctx.moveTo(particlesArray[a].x, particlesArray[a].y)
             ctx.lineTo(particlesArray[b].x, particlesArray[b].y)
