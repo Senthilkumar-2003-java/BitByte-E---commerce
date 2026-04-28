@@ -1233,7 +1233,9 @@ useEffect(() => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 {[
                   { label: 'Admin ID',   value: profileData.admin_id,       mono: true,  color: '#4ade80' },
-                  { label: 'Full Name',  value: `${profileData.initial ? profileData.initial + '. ' : ''}${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() },
+                  { label: 'Initial',    value: profileData.initial },
+                  { label: 'First Name', value: profileData.first_name },
+                  { label: 'Last Name',  value: profileData.last_name },
                   { label: 'Email',      value: profileData.email },
                   { label: 'Mobile',     value: profileData.mobile_number },
                 ].map(f => (
@@ -1277,12 +1279,12 @@ useEffect(() => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 {[
                   { label: 'Aadhaar No', value: profileData.aadhaar_no, mask: true },
-                  { label: 'PAN No',     value: profileData.pan_no,     mono: true },
+                  { label: 'PAN No', value: profileData.pan_no, panMask: true, mono: true },
                 ].map(f => (
                   <div key={f.label}>
                     <div style={{ color: subtext, fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '4px' }}>{f.label}</div>
                     <div style={{ color: text, fontSize: '13px', fontFamily: f.mono || f.mask ? 'monospace' : 'inherit', letterSpacing: f.mask ? '0.1em' : 'normal' }}>
-                      {f.mask && f.value ? `XXXX-XXXX-${f.value.slice(-4)}` : (f.value || '—')}
+                      {f.mask && f.value ? `XXXX-XXXX-${f.value.slice(-4)}` : f.panMask && f.value ? `XXXXXXX${f.value.slice(-4)}` : (f.value || '—')}
                     </div>
                   </div>
                 ))}
