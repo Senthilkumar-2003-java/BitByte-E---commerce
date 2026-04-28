@@ -559,6 +559,8 @@ export default function AdminDashboard() {
   const [dealers, setDealers] = useState([])
   const [admins, setAdmins] = useState([])
   const [selectedAdmin, setSelectedAdmin] = useState(null)
+  const [showProfile, setShowProfile] = useState(false)
+  const [profileData, setProfileData] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [showHierarchy, setShowHierarchy] = useState(false)
   const [activeDealer, setActiveDealer] = useState(null)
@@ -768,6 +770,16 @@ const fetchDealers = async () => {
     console.error('dealers error:', err)
   }
 }
+
+const fetchProfile = async () => {
+  try {
+    const res = await api.get('/dashboard/')
+    setProfileData(res.data)
+  } catch (err) {
+    console.error('profile error:', err)
+  }
+}
+
  const fetchAdmins = async () => {
     try { 
       const res = await api.get('/admins/list/')
@@ -791,7 +803,7 @@ const fetchAnnouncements = async () => {
   }
   
 useEffect(() => { 
-  fetchDealers(); fetchAdmins(); fetchAnnouncements()
+  fetchDealers(); fetchAdmins(); fetchAnnouncements(); fetchProfile()
   const interval = setInterval(fetchAnnouncements, 30000)
   return () => clearInterval(interval)
 }, [])
@@ -857,37 +869,45 @@ useEffect(() => {
           <span style={{ color: '#86efac', fontWeight: 700, fontSize: '14px' }}>🛡️ Admin Dashboard</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-<span style={{ color: subtext, fontSize: '14px' }}>{localStorage.getItem('email')}</span>
 
-          {/* 📢 Announcement Bell */}
-          <div
-            onClick={() => { setShowAnnouncements(true); localStorage.setItem('adminAnnouncementSeen', Date.now().toString()); setUnreadCount(0) }}
-            style={{ position: 'relative', cursor: 'pointer', padding: '6px', borderRadius: '10px', border: '1px solid rgba(74,222,128,0.35)', background: 'rgba(74,222,128,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.25s ease' }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(74,222,128,0.25)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(74,222,128,0.1)'; e.currentTarget.style.transform = 'translateY(0)' }}
-          >
-            <span style={{ fontSize: '18px', lineHeight: 1 }}>📢</span>
-            {unreadCount > 0 && (
-              <div style={{ position: 'absolute', top: '-7px', right: '-7px', background: 'linear-gradient(135deg,#4ade80,#22d3ee)', color: '#000', borderRadius: '50%', minWidth: '18px', height: '18px', fontSize: '9px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px', boxShadow: '0 2px 8px rgba(74,222,128,0.5)', border: '1.5px solid #020617' }}>
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </div>
-            )}
-          </div>
-
-        
-
-          {/* ── DARK / LIGHT TOGGLE ── */}
-          <button onClick={() => setDark(!dark)}
-            style={{ padding: '8px 16px', borderRadius: '16px', border: `1px solid ${border}`, background: 'transparent', color: text, cursor: 'pointer', fontWeight: 600, fontSize: '13px', transition: 'all 0.3s ease' }}>
-            {dark ? '☀️ Light' : '🌙 Dark'}
-          </button>
-
-          <button onClick={() => { localStorage.clear(); navigate('/login') }}
-            style={{ padding: '8px 18px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', borderRadius: '10px', fontSize: '13px', cursor: 'pointer' }}>
-            Logout
-          </button>
-        </div>
+  {/* 📢 Announcement Bell */}
+  <div
+    onClick={() => { setShowAnnouncements(true); localStorage.setItem('adminAnnouncementSeen', Date.now().toString()); setUnreadCount(0) }}
+    style={{ position: 'relative', cursor: 'pointer', padding: '6px', borderRadius: '10px', border: '1px solid rgba(74,222,128,0.35)', background: 'rgba(74,222,128,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.25s ease' }}
+    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(74,222,128,0.25)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(74,222,128,0.1)'; e.currentTarget.style.transform = 'translateY(0)' }}
+  >
+    <span style={{ fontSize: '18px', lineHeight: 1 }}>📢</span>
+    {unreadCount > 0 && (
+      <div style={{ position: 'absolute', top: '-7px', right: '-7px', background: 'linear-gradient(135deg,#4ade80,#22d3ee)', color: '#000', borderRadius: '50%', minWidth: '18px', height: '18px', fontSize: '9px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px', boxShadow: '0 2px 8px rgba(74,222,128,0.5)', border: '1.5px solid #020617' }}>
+        {unreadCount > 99 ? '99+' : unreadCount}
       </div>
+    )}
+  </div>
+
+  {/* 👤 Profile Icon */}
+  <div
+    onClick={() => { setShowProfile(true); fetchProfile() }}
+    style={{ cursor: 'pointer', width: '38px', height: '38px', borderRadius: '50%', background: 'linear-gradient(135deg,rgba(74,222,128,0.25),rgba(34,211,238,0.15))', border: '2px solid rgba(74,222,128,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', transition: 'all 0.25s ease', boxShadow: '0 0 0 0 rgba(74,222,128,0.3)' }}
+    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(74,222,128,0.3)'; e.currentTarget.style.borderColor = 'rgba(74,222,128,0.9)' }}
+    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 0 0 0 rgba(74,222,128,0.3)'; e.currentTarget.style.borderColor = 'rgba(74,222,128,0.5)' }}
+    title="View Profile"
+  >
+    🛡️
+  </div>
+
+  {/* ── DARK / LIGHT TOGGLE ── */}
+  <button onClick={() => setDark(!dark)}
+    style={{ padding: '8px 16px', borderRadius: '16px', border: `1px solid ${border}`, background: 'transparent', color: text, cursor: 'pointer', fontWeight: 600, fontSize: '13px', transition: 'all 0.3s ease' }}>
+    {dark ? '☀️ Light' : '🌙 Dark'}
+  </button>
+
+  <button onClick={() => { localStorage.clear(); navigate('/login') }}
+    style={{ padding: '8px 18px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', borderRadius: '10px', fontSize: '13px', cursor: 'pointer' }}>
+    Logout
+  </button>
+</div>   
+   </div>
 
       <div style={{ position: 'relative', zIndex: 10, padding: '36px 40px', maxWidth: '1200px', margin: '0 auto' }}>
         {msg && (
@@ -1128,6 +1148,8 @@ useEffect(() => {
 )}
 
 
+
+
 {/* ── REPLY MODAL — AdminDashboard ── */}
 {replyAnn && (
   <div
@@ -1173,9 +1195,150 @@ useEffect(() => {
   </div>
 )}
 
+{/* ── ADMIN PROFILE MODAL ── */}
+{showProfile && (
+  <div
+    onClick={() => setShowProfile(false)}
+    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(10px)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+  >
+    <div
+      onClick={e => e.stopPropagation()}
+      style={{ background: dark ? 'linear-gradient(145deg,#0a1628,#060e1c)' : '#f8fafc', border: '1px solid rgba(74,222,128,0.3)', borderRadius: '24px', width: '95%', maxWidth: '580px', maxHeight: '88vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 32px 80px rgba(0,0,0,0.7)', animation: 'fadeSlideIn 0.3s cubic-bezier(0.22,1,0.36,1)' }}
+    >
+      {/* Header */}
+      <div style={{ flexShrink: 0, padding: '24px 28px', borderBottom: `1px solid rgba(74,222,128,0.15)`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'linear-gradient(135deg,rgba(74,222,128,0.25),rgba(34,211,238,0.15))', border: '2px solid rgba(74,222,128,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', boxShadow: '0 4px 16px rgba(74,222,128,0.2)' }}>🛡️</div>
+          <div>
+            <div style={{ color: '#4ade80', fontWeight: 800, fontSize: '15px', letterSpacing: '0.05em' }}>MY PROFILE</div>
+            <div style={{ color: subtext, fontSize: '11px', marginTop: '3px', fontFamily: 'monospace' }}>{profileData?.admin_id || '—'}</div>
+          </div>
+        </div>
+        <button onClick={() => setShowProfile(false)} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', borderRadius: '8px', padding: '6px 14px', cursor: 'pointer', fontSize: '12px' }}>✕ Close</button>
+      </div>
+
+      {/* Scrollable Content */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: '20px', scrollbarWidth: 'thin', scrollbarColor: 'rgba(74,222,128,0.4) transparent' }}>
+
+        {!profileData ? (
+          <div style={{ textAlign: 'center', color: subtext, padding: '60px 0' }}>Loading...</div>
+        ) : (
+          <>
+            {/* Account Info */}
+            <div style={{ background: dark ? 'rgba(74,222,128,0.04)' : 'rgba(74,222,128,0.03)', border: '1px solid rgba(74,222,128,0.18)', borderRadius: '16px', padding: '18px 20px' }}>
+              <div style={{ color: '#4ade80', fontSize: '10px', fontWeight: 800, letterSpacing: '1.5px', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ade80', display: 'inline-block' }} />
+                ACCOUNT INFO
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                {[
+                  { label: 'Admin ID',   value: profileData.admin_id,       mono: true,  color: '#4ade80' },
+                  { label: 'Full Name',  value: `${profileData.initial ? profileData.initial + '. ' : ''}${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() },
+                  { label: 'Email',      value: profileData.email },
+                  { label: 'Mobile',     value: profileData.mobile_number },
+                ].map(f => (
+                  <div key={f.label}>
+                    <div style={{ color: subtext, fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '4px' }}>{f.label}</div>
+                    <div style={{ color: f.color || text, fontSize: '13px', fontWeight: f.mono ? 700 : 500, fontFamily: f.mono ? 'monospace' : 'inherit', wordBreak: 'break-all' }}>{f.value || '—'}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Address */}
+            <div style={{ background: dark ? 'rgba(34,211,238,0.04)' : 'rgba(34,211,238,0.03)', border: '1px solid rgba(34,211,238,0.18)', borderRadius: '16px', padding: '18px 20px' }}>
+              <div style={{ color: '#22d3ee', fontSize: '10px', fontWeight: 800, letterSpacing: '1.5px', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22d3ee', display: 'inline-block' }} />
+                ADDRESS
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                {[
+                  { label: 'Door No',     value: profileData.door_no },
+                  { label: 'Street',      value: profileData.street_name },
+                  { label: 'Town',        value: profileData.town_name },
+                  { label: 'City',        value: profileData.city_name },
+                  { label: 'District',    value: profileData.district },
+                  { label: 'State',       value: profileData.state },
+                ].map(f => (
+                  <div key={f.label}>
+                    <div style={{ color: subtext, fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '4px' }}>{f.label}</div>
+                    <div style={{ color: text, fontSize: '13px' }}>{f.value || '—'}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Identity */}
+            <div style={{ background: dark ? 'rgba(167,139,250,0.04)' : 'rgba(167,139,250,0.03)', border: '1px solid rgba(167,139,250,0.18)', borderRadius: '16px', padding: '18px 20px' }}>
+              <div style={{ color: '#a78bfa', fontSize: '10px', fontWeight: 800, letterSpacing: '1.5px', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#a78bfa', display: 'inline-block' }} />
+                IDENTITY
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                {[
+                  { label: 'Aadhaar No', value: profileData.aadhaar_no, mask: true },
+                  { label: 'PAN No',     value: profileData.pan_no,     mono: true },
+                ].map(f => (
+                  <div key={f.label}>
+                    <div style={{ color: subtext, fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '4px' }}>{f.label}</div>
+                    <div style={{ color: text, fontSize: '13px', fontFamily: f.mono || f.mask ? 'monospace' : 'inherit', letterSpacing: f.mask ? '0.1em' : 'normal' }}>
+                      {f.mask && f.value ? `XXXX-XXXX-${f.value.slice(-4)}` : (f.value || '—')}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Occupation */}
+            <div style={{ background: dark ? 'rgba(245,158,11,0.04)' : 'rgba(245,158,11,0.03)', border: '1px solid rgba(245,158,11,0.18)', borderRadius: '16px', padding: '18px 20px' }}>
+              <div style={{ color: '#f59e0b', fontSize: '10px', fontWeight: 800, letterSpacing: '1.5px', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }} />
+                OCCUPATION
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                {[
+                  { label: 'Type',          value: profileData.occupation ? profileData.occupation.charAt(0).toUpperCase() + profileData.occupation.slice(1) : '—' },
+                  { label: 'Detail',        value: profileData.occupation_detail },
+                  { label: 'Annual Salary', value: profileData.annual_salary ? `₹ ${Number(profileData.annual_salary).toLocaleString('en-IN')}` : '—' },
+                ].map(f => (
+                  <div key={f.label}>
+                    <div style={{ color: subtext, fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '4px' }}>{f.label}</div>
+                    <div style={{ color: text, fontSize: '13px' }}>{f.value || '—'}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Admin Info */}
+            <div style={{ background: dark ? 'rgba(74,222,128,0.06)' : 'rgba(74,222,128,0.04)', border: '1.5px solid rgba(74,222,128,0.35)', borderRadius: '16px', padding: '18px 20px' }}>
+              <div style={{ color: '#4ade80', fontSize: '10px', fontWeight: 800, letterSpacing: '1.5px', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ade80', display: 'inline-block', boxShadow: '0 0 6px #4ade80' }} />
+                ADMIN INFO
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                {[
+                  { label: 'Admin ID',      value: profileData.admin_id,      mono: true, color: '#4ade80' },
+                  { label: 'Admin Name',    value: profileData.admin_name },
+                  { label: 'Contact No',    value: profileData.admin_contact_no },
+                  { label: 'Member Since',  value: profileData.created_at ? new Date(profileData.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : '—' },
+                ].map(f => (
+                  <div key={f.label}>
+                    <div style={{ color: subtext, fontSize: '10px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '4px' }}>{f.label}</div>
+                    <div style={{ color: f.color || text, fontSize: '13px', fontFamily: f.mono ? 'monospace' : 'inherit', fontWeight: f.mono ? 700 : 500 }}>{f.value || '—'}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  </div>
+)}
+
         {showForm && (
           <div style={card}>
-            <p style={secHead('#86efac')}>Create New Dealer</p>
+            <p style={secHead('#192b1f')}>Create New Dealer</p>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
 
               <p style={secLabel('#86efac')}>Account Info</p>

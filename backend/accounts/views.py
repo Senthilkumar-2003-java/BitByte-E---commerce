@@ -142,7 +142,34 @@ class DashboardView(APIView):
         user = request.user
         data = {'role': user.role, 'email': user.email}
 
-        if user.role == 'dealer':
+        if user.role == 'admin':
+            try:
+                p = AdminProfile.objects.get(user=user)
+                data.update({
+                    'initial': p.initial,
+                    'first_name': p.first_name,
+                    'last_name': p.last_name,
+                    'mobile_number': p.mobile_number,
+                    'admin_id': p.admin_id,
+                    'admin_name': p.admin_name,
+                    'admin_contact_no': p.admin_contact_no,
+                    'door_no': p.door_no,
+                    'street_name': p.street_name,
+                    'town_name': p.town_name,
+                    'city_name': p.city_name,
+                    'district': p.district,
+                    'state': p.state,
+                    'aadhaar_no': p.aadhaar_no,
+                    'pan_no': p.pan_no,
+                    'occupation': p.occupation,
+                    'occupation_detail': p.occupation_detail,
+                    'annual_salary': p.annual_salary,
+                    'created_at': p.user.created_at,
+                })
+            except Exception:
+                pass
+
+        elif user.role == 'dealer':
             try:
                 p = user.dealer_profile
                 data.update({
